@@ -13,6 +13,7 @@ Configuration window - /up or /unitplates
 - (NOTE: I do not wish to clutter the addon logic with many config options, I will only be keeping minimal amount of options)
 
 TODO list:
+- Did not bother with critter nameplates yet (just turn them off in UnitXP-SP3 for now, and it will be preferable mostly anyways)
 - Totem icons are untested much yet, will probably need to fix it a bit
 - Did not test it in party/raid yet, will probably have to adjust for these cases
 - Did not have time to test with pets, but should be working (if not, I will fix when I am able to)
