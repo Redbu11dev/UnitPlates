@@ -20,7 +20,7 @@ TODO list:
 - Add hunter pet happines indicator (only for your own pet, and only if not happy)
 - Add threat display (at least minimal indication - 0/100 %)
 - More range indicators - melee / throwing / shooting , maybe spells as well
-- More buffs/debuffs (currently can only show as much as there are in local library, but the library is based on shaguplates - so at the very least no less that shaguplates can show)
+- More buffs/debuffs (currently can only show as much as there are in local library, but the library is based on shaguplates - so at the very least no less than shaguplates can show)
 
 Features:
 
