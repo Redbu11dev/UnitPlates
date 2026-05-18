@@ -3,7 +3,7 @@ Nameplates for twow/octowow (or vanilla 1.12)
 
 Continuation of https://github.com/Redbu11dev/ShaguPlates-extra (Complete rewrite based on kui nameplates, no more shaguplates dependencies, no kui dependencies either, no third party libraries, much better code, etc.)
 
-REQUIRES SUPERWOW https://github.com/balakethelock/SuperWoW
+REQUIRES SUPERWOW https://github.com/balakethelock/SuperWoW (and preferably UnitXP-SP3 https://codeberg.org/konaka/UnitXP_SP3/releases) 
 
 (!) Rename folder to "UnitPlates" (!)
 
