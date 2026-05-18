@@ -38,7 +38,7 @@ Features:
 - Shooting range indicator (works only if you have "Auto Shot" somewhere on the action bars)
 - 
 - pfquest integration (shows icons for quest mobs)
-- MobHealth integration
+- MobHealth integration https://github.com/kc8pnd/MobHealth
 - and more
 
 
