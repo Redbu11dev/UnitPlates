@@ -13,9 +13,13 @@ REQUIRES SUPERWOW https://github.com/balakethelock/SuperWoW
 (NOTE: I do not wish to clutter the addon logic with many config options, I will only be keeping minimal amount of options)
 
 TODO list:
-- Threat
+- Totem icons are untested much yet, will probably need to fix it a bit
+- Did not test it in party/raid yet, will probably have to adjust for these cases
+- Did not have time to test with pets, but should be working (if not, I will fix when I am able to)
+- Add hunter pet happines indicator (only for your own pet, and only if not happy)
+- Add threat display (at least minimal indication - 0/100 %)
+- More range indicators - melee / throwing / shooting , maybe spells as well
 - More buffs/debuffs (currently can only show as much as there are in local library, but the library is based on shaguplates - so at the very least no less that shaguplates can show)
-- Hunter pet happines indicator (only for your own pet, and only if not happy)
 
 Features:
 
@@ -30,6 +34,7 @@ Features:
 - Combo points
 - Cast bar
 - Buffs/Debuffs (auras)
+- Shooting range indicator (works only if you have "Auto Shot" somewhere on the action bars)
 - 
 - pfquest integration (shows icons for quest mobs)
 - MobHealth integration
