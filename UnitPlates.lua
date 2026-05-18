@@ -612,7 +612,7 @@ local function UpdatePlate(kuiPlateFrame)
 	
 	--TOTEM
 	if kuiPlateFrame.originalPlateFrame.isTotem then
-		kuiPlateFrame.originalPlateFrame.totem.icon:SetTexture(totemIcon)
+		kuiPlateFrame.originalPlateFrame.totem.icon:SetTexture(UpApiGetTotemIconForName(kuiPlateFrame.nameTextVariable))
 		local totemR,totemG,totemB,totemA = kuiPlateFrame.health:GetStatusBarColor()
 		kuiPlateFrame.originalPlateFrame.totem:SetBackdropColor(totemR,totemG,totemB,totemA)
 		kuiPlateFrame.originalPlateFrame.totem:SetBackdropBorderColor(totemR,totemG,totemB,totemA)

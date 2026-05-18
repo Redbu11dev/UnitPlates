@@ -145,7 +145,7 @@ local UPApiTotemNameToIconList = {
   ["Wrath of Air Totem"] = "spell_nature_slowingtotem"
 }
 
-local function UpApiGetTotemIconForName(name)
+function UpApiGetTotemIconForName(name)
 	for totem, icon in pairs(UPApiTotemNameToIconList) do
 		if string.find(name, totem) then
 			return ("Interface\\Icons\\"..icon)
