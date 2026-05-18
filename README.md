@@ -36,6 +36,7 @@ Features:
 - Cast bar
 - Buffs/Debuffs (auras)
 - Shooting range indicator (works only if you have "Auto Shot" somewhere on the action bars)
+- "Tapped" state indicator - when an NPC is tapped by another player (when the kill would not be yours - when you get no loot or xp for killing it)
 - 
 - pfquest integration (shows icons for quest mobs)
 - MobHealth integration https://github.com/kc8pnd/MobHealth
