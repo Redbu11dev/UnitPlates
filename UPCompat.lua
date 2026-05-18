@@ -1,0 +1,183 @@
+function UPCompatGetHealthFromMobHealth(guid)
+	local current, max
+	
+	if guid and (MobHealthDB) then
+		local index
+		if UnitIsPlayer(guid) then
+			index = UnitName(guid)
+		else
+			index = UnitName(guid)..":"..UnitLevel(guid)
+		end
+
+		local table = MobHealthDB
+		if (not (table and table[index])) then
+			table = MobHealthPlayerDB
+		end
+		if (table and table[index]) then
+			local s, e
+			local pts
+			local pct
+
+			if ( type(table[index]) ~= "string" ) then
+				frameHealthBarText:SetText(targethealth.."%")
+			end
+			s, e, pts, pct = strfind(table[index], "^(%d+)/(%d+)$")
+
+			if ( pts and pct ) then
+				pts = pts + 0
+				pct = pct + 0
+				if( pct ~= 0 ) then
+					pointsPerPct = pts / pct
+				else
+					pointsPerPct = 0
+				end
+			end
+			local currentPct = UnitHealth(guid)
+			if ( pointsPerPct > 0 ) then
+				current = (currentPct * pointsPerPct) + 0.5
+				max = (100 * pointsPerPct) + 0.5
+			end
+		end
+	end
+	
+	return current, max
+end
+
+
+------------------------------------------------------------------------------------
+
+--pfquest compatibility
+local UPComapt_PFQUEST_SWORD_ICON = "Interface\\AddOns\\UnitPlates\\img\\quest\\slay"
+local UPComapt_PFQUEST_BAG_ICON = "Interface\\AddOns\\UnitPlates\\img\\quest\\loot"
+
+UPCompatPfQuestQuestObjectives = {}
+
+local function UPCompatPfQuestScanQuestObjectives()
+    UPCompatPfQuestQuestObjectives = {}
+
+    if not pfDB or not pfDB["quests"] or not pfDB["quests"]["data"] or not pfDB["quests"]["enUS"] then
+        return
+    end
+
+    local activeQuests = {}
+    
+    -- 1. Scan the actual Quest Log
+    for qid = 1, GetNumQuestLogEntries() do
+        local questTitle, _, _, _, _, _, complete = GetQuestLogTitle(qid)
+        if questTitle and complete ~= 1 then
+            activeQuests[questTitle] = {}
+            local numObjectives = GetNumQuestLeaderBoards(qid)
+
+            for i = 1, numObjectives do
+                local text, objType, finished = GetQuestLogLeaderBoard(i, qid)
+                if text and not finished then
+                    -- 1.12 regex is picky; we match the name and the numbers
+                    local _, _, objName, current, total = string.find(text, "(.*):%s*(%d+)%s*/%s*(%d+)")
+                    
+                    if objName then
+                        objName = string.gsub(objName, "^%s*(.-)%s*$", "%1") -- Trim whitespace
+                        table.insert(activeQuests[questTitle], {
+                            objective = objName,
+                            current = tonumber(current) or 0,
+                            total = tonumber(total) or 1
+                        })
+                    else
+                        -- FALLBACK: If it's a "Talk to" or "Special" objective without 0/1 numbers
+                        table.insert(activeQuests[questTitle], {
+                            objective = text,
+                            current = 0,
+                            total = 1
+                        })
+                    end
+                end
+            end
+        end
+    end
+
+    -- 2. Match Quest Log against pfDB
+    for questId, localizedData in pairs(pfDB["quests"]["enUS"]) do
+        local questTitle = localizedData["T"]
+
+        if questTitle and activeQuests[questTitle] then
+            local questData = pfDB["quests"]["data"][questId]
+            if questData and questData["obj"] then
+                
+				-- CASE A: KILL OBJECTIVES
+				if questData["obj"]["U"] then
+					for _, unitId in pairs(questData["obj"]["U"]) do
+						local targetName = pfDB["units"]["enUS"][unitId]
+						if targetName and activeQuests[questTitle] then
+							for _, activeObj in ipairs(activeQuests[questTitle]) do
+								-- VITAL SAFETY CHECK
+								local objStr = type(activeObj) == "table" and activeObj.objective or activeObj
+								local current = type(activeObj) == "table" and activeObj.current or 0
+								local total   = type(activeObj) == "table" and activeObj.total or 1
+
+								if type(objStr) == "string" then
+									-- FIX: Use string.gsub(string, pattern, replacement) instead of string:gsub()
+									local objNameBase = string.gsub(objStr, " slain$", "")
+									objNameBase = string.gsub(objNameBase, " killed$", "")
+									
+									if objNameBase == targetName or string.find(objStr, targetName, 1, true) then
+										if current < total then
+											UPCompatPfQuestQuestObjectives[targetName] = UPComapt_PFQUEST_SWORD_ICON
+										end
+									end
+								end
+							end
+						end
+					end
+				end
+
+				-- CASE B: LOOT OBJECTIVES
+				if questData["obj"]["I"] then
+					for _, itemId in pairs(questData["obj"]["I"]) do
+						local itemName = pfDB["items"]["enUS"][itemId]
+						local itemData = pfDB["items"]["data"][itemId]
+
+						if itemName and itemData and itemData["U"] then
+							for unitId, _ in pairs(itemData["U"]) do
+								local npcName = pfDB["units"]["enUS"][unitId]
+								if npcName and activeQuests[questTitle] then
+									for _, activeObj in ipairs(activeQuests[questTitle]) do
+										local objStr = type(activeObj) == "table" and activeObj.objective or activeObj
+										local current = type(activeObj) == "table" and activeObj.current or 0
+										local total   = type(activeObj) == "table" and activeObj.total or 1
+
+										-- FIX: Use string.find(string, ...) instead of string:find()
+										if type(objStr) == "string" and string.find(objStr, itemName, 1, true) then
+											if current < total then
+												UPCompatPfQuestQuestObjectives[npcName] = UPComapt_PFQUEST_BAG_ICON
+											end
+										end
+									end
+								end
+							end
+						end
+					end
+				end
+                
+            end
+        end
+    end
+end
+--pfquest compatibility END
+
+
+--UPCompatFrame
+local UPCompatFrame = CreateFrame("Frame", "UPCompatFrameFrame", UIParent)
+UPCompatFrame:SetFrameStrata("LOW")
+UPCompatFrame.TimeToCheck = 0
+UPCompatFrame.numFrames = 0
+
+UPCompatFrame:RegisterEvent("QUEST_LOG_UPDATE")
+UPCompatFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+UPCompatFrame:RegisterEvent("ZONE_CHANGED")
+UPCompatFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+
+UPCompatFrame:SetScript("OnEvent", function()
+	if event == "QUEST_LOG_UPDATE" or event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED" or event == "ZONE_CHANGED_NEW_AREA" then
+		UPCompatPfQuestScanQuestObjectives()
+	end
+end)
+--UPCompatFrame END

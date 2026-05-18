@@ -1,0 +1,21 @@
+## Interface: 11200
+## Author: Redbu11
+## Title: UnitPlates
+## Version: 1
+## LoadOnDemand: 0
+## DefaultState: enabled
+## Notes: Best nameplates.
+## SavedVariables: UPDebugMissingSpells
+## SavedVariablesPerCharacter: UnitPlatesSettings
+## X-Website: https://github.com/Redbu11dev
+
+UPDebug.lua
+
+UPLibAuraDurations.lua
+
+UPCompat.lua
+
+UPApi.lua
+UPCore.lua
+UPConfig.lua
+UnitPlates.lua
