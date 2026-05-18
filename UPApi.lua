@@ -152,6 +152,7 @@ function UpApiGetTotemIconForName(name)
 		end
 	end
 	return nil
+	--return ("Interface\\Icons\\".."spell_nature_slowingtotem")
 end
 
 function UPApiIsTotem(name)
@@ -160,6 +161,7 @@ function UPApiIsTotem(name)
 		return true
 	end
 	return false
+	--return true
 end
 ---------------TOTEMS END
 

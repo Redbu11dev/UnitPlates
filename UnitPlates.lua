@@ -60,6 +60,8 @@ UPConstants.shootingIconSize = UPConstants.nameplateHealthBarHeight * 0.9
 UPConstants.nameplateTypeIconSize = UPConstants.nameplateHealthBarHeight
 UPConstants.nameplateClassIconSize = UPConstants.nameplateHealthBarHeight * 1.25
 
+UPConstants.totemIconSize = UPConstants.nameplateHealthBarHeight * 2
+
 UPConstants.raidIconSize = UPConstants.nameplateHealthBarHeight * 2
 
 UPConstants.threatFrameSize = UPConstants.nameplateHealthBarHeight
@@ -79,8 +81,6 @@ local combopointsSizes = {
 	combopoints = UPConstants.nameplateHealthBarHeight * 0.5625,
 	spacing = UPConstants.minimalOnePixel
 }
-
-local totemIconSize = UPConstants.nameplateHealthBarHeight * 2.5
 
 --OFFSETS
 local nameplateRarityXOffset = UPConstants.nameplateRarityW * 0.619
@@ -175,6 +175,7 @@ local function ResetFrame(kuiPlateFrame, originalPlateFrame)
 	kuiPlateFrame:SetFrameLevel(0)
 	kuiPlateFrame.glow:Hide() 
 	kuiPlateFrame.glow2:Hide()
+	originalPlateFrame.totem:Hide()
 	kuiPlateFrame.isTarget = nil
 	UPCoreFrameFadeRemoveFrame(kuiPlateFrame.castWarning)
 	kuiPlateFrame.castWarning:Hide()
@@ -239,6 +240,7 @@ local function UpdatePlate(kuiPlateFrame)
 	--init data
 	kuiPlateFrame.guid = kuiPlateFrame.originalPlateFrame:GetName(1)	
 	
+	--print("UnitName(kuiPlateFrame.guid): "..tostring(UnitName(kuiPlateFrame.guid)))
 	kuiPlateFrame.nameTextVariable = UnitName(kuiPlateFrame.guid)	
 	
 	kuiPlateFrame.originalPlateFrame.isTotem = UPApiIsTotem(kuiPlateFrame.nameTextVariable)
@@ -558,12 +560,12 @@ local function UpdatePlate(kuiPlateFrame)
 	--combo points update end
 	
 	--mouseover
-	if kuiPlateFrame.isInMouseOver then
-		kuiPlateFrame:SetFrameStrata("LOW")
+	if kuiPlateFrame.originalPlateFrame.isInMouseOver then
+		kuiPlateFrame.originalPlateFrame:SetFrameStrata("LOW")
 		-- kuiPlateFrame.name:SetTextColor(1,1,0,1)
 		-- kuiPlateFrame.guild:SetTextColor(1,1,0,1)
 	else
-		kuiPlateFrame:SetFrameStrata("BACKGROUND")
+		kuiPlateFrame.originalPlateFrame:SetFrameStrata("BACKGROUND")
 		-- kuiPlateFrame.name:SetTextColor(1,1,0,1)
 		-- kuiPlateFrame.guild:SetTextColor(1,1,0,1)
 	end
@@ -574,6 +576,8 @@ local function UpdatePlate(kuiPlateFrame)
 		kuiPlateFrame:SetFrameStrata("LOW")
 		kuiPlateFrame.glow:Show() 
 		kuiPlateFrame.glow2:Show()
+		kuiPlateFrame.originalPlateFrame.totem.glow:Show()
+		kuiPlateFrame.originalPlateFrame.totem.glow2:Show()
 		
 		-- kuiPlateFrame.health:SetBackdropColor(unpack(glowColor))
 		-- kuiPlateFrame.power:SetBackdropColor(unpack(glowColor))
@@ -586,6 +590,8 @@ local function UpdatePlate(kuiPlateFrame)
 	else
 		kuiPlateFrame.glow:Hide() 
 		kuiPlateFrame.glow2:Hide()
+		kuiPlateFrame.originalPlateFrame.totem.glow:Hide()
+		kuiPlateFrame.originalPlateFrame.totem.glow2:Hide()
 		
 		-- kuiPlateFrame.health:SetBackdropColor(0, 0, 0, 1)
 		-- kuiPlateFrame.power:SetBackdropColor(0, 0, 0, 1)
@@ -843,8 +849,8 @@ local function OnFrameUpdate(originalPlateFrame, e)
 	end
 	
 	
-	if MouseIsOver(kuiPlateFrame.health) or MouseIsOver(kuiPlateFrame.typeIcon) or MouseIsOver(kuiPlateFrame.power) then
-		kuiPlateFrame.isInMouseOver = true
+	if MouseIsOver(kuiPlateFrame.health) or MouseIsOver(kuiPlateFrame.typeIcon) or MouseIsOver(kuiPlateFrame.power) or MouseIsOver(originalPlateFrame.totem) then
+		kuiPlateFrame.originalPlateFrame.isInMouseOver = true
 		--print("MouseIsOver")
 		--SetMouseoverUnit(kuiPlateFrame.guid)
 		if kuiPlateFrame.guid and UnitCanAttack("player", kuiPlateFrame.guid) then
@@ -863,7 +869,7 @@ local function OnFrameUpdate(originalPlateFrame, e)
 		GameTooltip:Show()
 	else
 		-- --SetMouseoverUnit()
-		kuiPlateFrame.isInMouseOver = false
+		kuiPlateFrame.originalPlateFrame.isInMouseOver = false
 	end
 end
 
@@ -1388,8 +1394,9 @@ local function InitFrame(originalPlateFrame)
 	--totem
 	originalPlateFrame.totem = CreateFrame("Frame", nil, originalPlateFrame)
 	originalPlateFrame.totem:SetPoint("TOP", originalPlateFrame, "TOP", 0, 0)
-	originalPlateFrame.totem:SetHeight(totemIconSize)
-	originalPlateFrame.totem:SetWidth(totemIconSize)
+	originalPlateFrame.totem:SetHeight(UPConstants.totemIconSize)
+	originalPlateFrame.totem:SetWidth(UPConstants.totemIconSize)
+	--originalPlateFrame.totem:SetFrameLevel(5)
 	originalPlateFrame.totem.icon = originalPlateFrame.totem:CreateTexture(nil, "OVERLAY")
 	originalPlateFrame.totem.icon:SetTexCoord(.078, .92, .079, .937)
 	originalPlateFrame.totem.icon:SetAllPoints()
@@ -1403,6 +1410,27 @@ local function InitFrame(originalPlateFrame)
 	originalPlateFrame.totem:SetBackdropBorderColor(0, 0, 0, 1) -- Black Border
 	--originalPlateFrame.totem:SetVertexColor(1, 1, 1, 1)
 	originalPlateFrame.totem:Hide()
+	
+	originalPlateFrame.totem.glow = originalPlateFrame.totem:CreateTexture(nil, "BACKGROUND")
+	originalPlateFrame.totem.glow:SetPoint("LEFT", originalPlateFrame.totem, "LEFT", -UPConstants.nameplateArrowSize * 1.1, 0)
+	originalPlateFrame.totem.glow:SetTexture("Interface\\AddOns\\UnitPlates\\img\\arrow_left")
+	--nameplate.glow:SetFrameLevel(1)
+	originalPlateFrame.totem.glow:SetDrawLayer("BACKGROUND")
+	originalPlateFrame.totem.glow:SetWidth(UPConstants.nameplateArrowSize)
+	originalPlateFrame.totem.glow:SetHeight(UPConstants.nameplateArrowSize)
+	originalPlateFrame.totem.glow:SetVertexColor(unpack(glowColor))
+	originalPlateFrame.totem.glow:Hide()
+
+	originalPlateFrame.totem.glow2 = originalPlateFrame.totem:CreateTexture(nil, "BACKGROUND")
+	originalPlateFrame.totem.glow2:SetPoint("RIGHT", originalPlateFrame.totem, "RIGHT", UPConstants.nameplateArrowSize * 1.1, 0)
+	originalPlateFrame.totem.glow2:SetTexture("Interface\\AddOns\\UnitPlates\\img\\arrow_right")
+	--nameplate.glow:SetFrameLevel(1)
+	originalPlateFrame.totem.glow2:SetDrawLayer("BACKGROUND")
+	--nameplate.glow2.texture:SetRotation(2)
+	originalPlateFrame.totem.glow2:SetWidth(UPConstants.nameplateArrowSize)
+	originalPlateFrame.totem.glow2:SetHeight(UPConstants.nameplateArrowSize)
+	originalPlateFrame.totem.glow2:SetVertexColor(unpack(glowColor))
+	originalPlateFrame.totem.glow2:Hide()
 	--totem END
 	
 	--auras
@@ -1774,6 +1802,7 @@ local function InitFrame(originalPlateFrame)
 	kuiPlateFrame.health:EnableMouse(true)
 	kuiPlateFrame.typeIcon:EnableMouse(true)
 	kuiPlateFrame.power:EnableMouse(true)
+	originalPlateFrame.totem:EnableMouse(true)
 	
 	kuiPlateFrame.health:SetScript("OnMouseUp", function()
 		--print("here1")
@@ -1796,6 +1825,30 @@ local function InitFrame(originalPlateFrame)
 			originalPlateFrame:Click(arg1)
 		end
 	end)
+	-- originalPlateFrame.totem:SetScript("OnMouseUp", function()
+		-- --print("here1")
+		-- if MouseIsOver(originalPlateFrame.totem) then
+			-- --print("here")
+			-- originalPlateFrame:Click(arg1)
+		-- end
+	-- end)
+	originalPlateFrame.totem:SetScript("OnMouseDown", function()
+		-- arg1 contains "LeftButton" or "RightButton"
+		if MouseIsOver(originalPlateFrame.totem) then
+			originalPlateFrame:Click(arg1)
+			
+			--USE CUSTOM LOGIC LATER
+			-- if kuiPlateFrame and kuiPlateFrame.nameTextVariable then
+				-- -- Force selection via the target system instantly
+				-- TargetByName(kuiPlateFrame.nameTextVariable, true)
+				
+				-- -- If right-clicking, start attacking/auto-shotting immediately
+				-- if arg1 == "RightButton" then
+					-- AttackTarget()
+				-- end
+			-- end
+		end
+	end)
 	
 	kuiPlateFrame.health:SetScript("OnEnter", function()
 		--print("here1")
@@ -1815,6 +1868,13 @@ local function InitFrame(originalPlateFrame)
 			SetMouseoverUnit(kuiPlateFrame.guid)
 		end
 	end)
+	originalPlateFrame.totem:SetScript("OnEnter", function()
+		--print("here1")
+		if kuiPlateFrame.guid then
+			SetMouseoverUnit(kuiPlateFrame.guid)
+		end
+	end)
+	
 	
 	kuiPlateFrame.health:SetScript("OnLeave", function()
 		--print("here1")
@@ -1825,6 +1885,10 @@ local function InitFrame(originalPlateFrame)
 		SetMouseoverUnit()
 	end)
 	kuiPlateFrame.power:SetScript("OnLeave", function()
+		--print("here1")
+		SetMouseoverUnit()
+	end)
+	originalPlateFrame.totem:SetScript("OnLeave", function()
 		--print("here1")
 		SetMouseoverUnit()
 	end)
