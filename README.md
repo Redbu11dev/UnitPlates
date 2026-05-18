@@ -10,7 +10,7 @@ REQUIRES SUPERWOW https://github.com/balakethelock/SuperWoW
 (!) I do not and do not plan to support non-english locales (!)
 
 Configuration window - /up or /unitplates
-(NOTE: I do not wish to clutter the addon logic with many config options, I will only be keeping minimal amount of options)
+- (NOTE: I do not wish to clutter the addon logic with many config options, I will only be keeping minimal amount of options)
 
 TODO list:
 - Totem icons are untested much yet, will probably need to fix it a bit
