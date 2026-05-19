@@ -115,6 +115,10 @@ local chatTextColors = {
     ["CHAT_MSG_MONSTER_YELL"] = {1.0, 0.48, 0.0, 0.99}, -- Orange-Gold (Distinct from Say)
 }
 
+--FONT
+--local mainFontPath = "Interface\\AddOns\\UnitPlates\\fonts\\francois.ttf"
+local mainFontPath = "Interface\\AddOns\\UnitPlates\\fonts\\INTERNATIONAL_FRIZQT__.ttf"
+
 ---------------------------CONSTANTS END
 
 --aura
@@ -226,6 +230,9 @@ local function UpdatePlate(kuiPlateFrame)
 		
 		-- 1. Get the Center X and Center Y of the aura frame
         local auraTopY = auraFrame:GetTop()
+		if not auraTopY then
+			auraTopY = 0
+		end
 		kuiPlateFrame.originalPlateFrame.raidIconRegion:SetPoint("CENTER", kuiPlateFrame.name, "CENTER", 0, 0) -- Align X center with nameplate
         kuiPlateFrame.originalPlateFrame.raidIconRegion:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, auraTopY + (2 * UPConstants.minimalOnePixel)) -- Align BOTTOM Y with screen coordinate
 	end
@@ -1012,7 +1019,7 @@ local function InitFrame(originalPlateFrame)
 	-- kuiPlateFrame.health.p.osize = "health" -- original font size used to update/restore
 	--nameplate.health.text:SetAllPoints()
 	kuiPlateFrame.health.p = kuiPlateFrame.health:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-	kuiPlateFrame.health.p:SetFont("Interface\\AddOns\\UnitPlates\\fonts\\francois.ttf", UPConstants.healthBigFontSize, "OUTLINE")
+	kuiPlateFrame.health.p:SetFont(mainFontPath, UPConstants.healthBigFontSize, "OUTLINE")
 	kuiPlateFrame.health.p:SetJustifyH("RIGHT")
 	kuiPlateFrame.health.p:SetTextColor(1,1,1,1)
 	kuiPlateFrame.health.p:ClearAllPoints()
@@ -1068,7 +1075,7 @@ local function InitFrame(originalPlateFrame)
 	kuiPlateFrame.threat:SetWidth(UPConstants.threatFrameSize)
 	
 	kuiPlateFrame.threat.text = kuiPlateFrame.threat:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-	kuiPlateFrame.threat.text:SetFont("Interface\\AddOns\\UnitPlates\\fonts\\francois.ttf", UPConstants.threatFontSize, "OUTLINE")
+	kuiPlateFrame.threat.text:SetFont(mainFontPath, UPConstants.threatFontSize, "OUTLINE")
 	kuiPlateFrame.threat.text:SetJustifyH("RIGHT")
 	kuiPlateFrame.threat.text:SetTextColor(1,1,1,1)
 	kuiPlateFrame.threat.text:ClearAllPoints()
@@ -1093,7 +1100,7 @@ local function InitFrame(originalPlateFrame)
 	
 	-- kuiPlateFrame.level:ClearAllPoints()
 	kuiPlateFrame.level = kuiPlateFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-	kuiPlateFrame.level:SetFont("Interface\\AddOns\\UnitPlates\\fonts\\francois.ttf", UPConstants.levelFontSize, "OUTLINE")
+	kuiPlateFrame.level:SetFont(mainFontPath, UPConstants.levelFontSize, "OUTLINE")
 	kuiPlateFrame.level:SetParent(kuiPlateFrame.overlay)
 	kuiPlateFrame.level:SetJustifyH("CENTER")
 	-- kuiPlateFrame.level:SetPoint("RIGHT", kuiPlateFrame.typeIcon, "RIGHT", -2, -4)
@@ -1111,7 +1118,7 @@ local function InitFrame(originalPlateFrame)
 	-- kuiPlateFrame.guild.osize = "name" -- original font size used to update/restore
 	-- kuiPlateFrame.guild:SetHeight(10)
 	kuiPlateFrame.guild = kuiPlateFrame:CreateFontString(nil, "OVERLAY")
-	kuiPlateFrame.guild:SetFont("Interface\\AddOns\\UnitPlates\\fonts\\francois.ttf", UPConstants.nameFontSize, "OUTLINE")
+	kuiPlateFrame.guild:SetFont(mainFontPath, UPConstants.nameFontSize, "OUTLINE")
 	kuiPlateFrame.guild:ClearAllPoints()
 	kuiPlateFrame.guild:SetWidth(0)
 	kuiPlateFrame.guild:SetPoint("BOTTOM", kuiPlateFrame.health, "TOP", 0, 2 * UPConstants.minimalOnePixel)
@@ -1124,7 +1131,7 @@ local function InitFrame(originalPlateFrame)
 	-- kuiPlateFrame.name.osize = "name" -- original font size used to update/restore
 	
 	kuiPlateFrame.name = kuiPlateFrame:CreateFontString(nil, "OVERLAY")
-	kuiPlateFrame.name:SetFont("Interface\\AddOns\\UnitPlates\\fonts\\francois.ttf", UPConstants.nameFontSize, "OUTLINE")
+	kuiPlateFrame.name:SetFont(mainFontPath, UPConstants.nameFontSize, "OUTLINE")
 	--kuiPlateFrame.name:SetHeight(10)
 	kuiPlateFrame.name:ClearAllPoints()
 	kuiPlateFrame.name:SetWidth(0)
@@ -1187,7 +1194,7 @@ local function InitFrame(originalPlateFrame)
 	kuiPlateFrame.power:Hide()
 	
 	kuiPlateFrame.power.text = kuiPlateFrame.power:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-	kuiPlateFrame.power.text:SetFont("Interface\\AddOns\\UnitPlates\\fonts\\francois.ttf", UPConstants.powerFontSize, "OUTLINE")
+	kuiPlateFrame.power.text:SetFont(mainFontPath, UPConstants.powerFontSize, "OUTLINE")
 	kuiPlateFrame.power.text:SetJustifyH("RIGHT")
 	kuiPlateFrame.power.text:SetPoint("BOTTOMRIGHT", kuiPlateFrame.power, "BOTTOMRIGHT", -1 * UPConstants.minimalOnePixel, -(UPConstants.powerFontSize * 0.5))
 	kuiPlateFrame.power.text:SetText("69")
@@ -1328,13 +1335,13 @@ local function InitFrame(originalPlateFrame)
 	kuiPlateFrame.castWarning.spark:SetWidth(6)
 	
 	kuiPlateFrame.castWarning.curr = kuiPlateFrame.castWarning.bar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-	kuiPlateFrame.castWarning.curr:SetFont("Interface\\AddOns\\UnitPlates\\fonts\\francois.ttf", UPConstants.castWarningDurationFontSize, "OUTLINE")
+	kuiPlateFrame.castWarning.curr:SetFont(mainFontPath, UPConstants.castWarningDurationFontSize, "OUTLINE")
 	--kuiPlateFrame.castWarning.curr:SetPoint("LEFT", kuiPlateFrame.castWarning.bar, "RIGHT", 2, 0)
 	kuiPlateFrame.castWarning.curr:SetPoint("BOTTOMRIGHT", kuiPlateFrame.castWarning.bar, "BOTTOMRIGHT", -1 * UPConstants.minimalOnePixel, -(UPConstants.castWarningDurationFontSize * 0.65))
 	kuiPlateFrame.castWarning.curr:SetText("0")
 	
 	kuiPlateFrame.castWarning.text = kuiPlateFrame.castWarning:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-	kuiPlateFrame.castWarning.text:SetFont("Interface\\AddOns\\UnitPlates\\fonts\\francois.ttf", UPConstants.castWarningNameFontSize, "OUTLINE")
+	kuiPlateFrame.castWarning.text:SetFont(mainFontPath, UPConstants.castWarningNameFontSize, "OUTLINE")
 	kuiPlateFrame.castWarning.text:SetPoint("TOP", kuiPlateFrame.castWarning.bar, "BOTTOM", 0, -5)
 	-- kuiPlateFrame.castWarning.text:SetText("69")
 	-- kuiPlateFrame.castWarning.text:SetTextColor(1,1,1,1)
@@ -1582,7 +1589,7 @@ local function InitFrame(originalPlateFrame)
 			else
 				icon.cdText:SetFont("Fonts\\FRIZQT__.TTF", iconSize/2, "OUTLINE")
 			end
-			icon.countText:SetFont("Interface\\AddOns\\UnitPlates\\fonts\\francois.ttf", iconSize/3, "OUTLINE")
+			icon.countText:SetFont(mainFontPath, iconSize/3, "OUTLINE")
 			
 			icon:ClearAllPoints()
 			-- We use BOTTOMLEFT so that as 'row' increases, icons move UP (on top)
@@ -1615,12 +1622,12 @@ local function InitFrame(originalPlateFrame)
 		
 		icon.countText = icon:CreateFontString(nil, "OVERLAY", "SubSpellFont")
 		icon.countText:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", 2, 0)
-		icon.countText:SetFont("Interface\\AddOns\\UnitPlates\\fonts\\francois.ttf", UPConstants.powerFontSize, "OUTLINE")
+		icon.countText:SetFont(mainFontPath, UPConstants.powerFontSize, "OUTLINE")
 		icon.countText:SetTextColor(1,1,1,1)
 		
 		icon.cdText = icon:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 		icon.cdText:SetPoint("CENTER", icon, "CENTER", 0, 0)
-		icon.cdText:SetFont("Interface\\AddOns\\UnitPlates\\fonts\\francois.ttf", UPConstants.levelFontSize, "OUTLINE")
+		icon.cdText:SetFont(mainFontPath, UPConstants.levelFontSize, "OUTLINE")
 		icon.cdText:SetTextColor(1,1,1,1)
 		
 		icon.quads = {
