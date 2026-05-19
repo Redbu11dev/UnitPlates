@@ -760,12 +760,12 @@ local function UpdatePlate(kuiPlateFrame)
 		-- local isTanking, status, threatpct, rawthreatpct, threatvalue = UnitDetailedThreatSituation("player", guid)
 		-- if threatpct then
 			-- local p = threatpct / 100
-        
+
 			-- -- Interpolate: StartValue + (EndValue - StartValue) * Ratio
 			-- local r = 0.2 + (0.7 - 0.2) * p
 			-- local g = 0.6 + (0.2 - 0.6) * p
-			-- local b = 0.1 -- Both start and end at 0.1		
-		
+			-- local b = 0.1 -- Both start and end at 0.1
+
 			-- kuiPlateFrame.threat.text:SetTextColor(r, g, b, 1)
 			-- kuiPlateFrame.threat.text:SetText(string.format("%d", threatpct).."%")
 			-- kuiPlateFrame.threat.text:Show()
@@ -783,13 +783,21 @@ local function UpdatePlate(kuiPlateFrame)
 		--print("here")
 		
 		ignoredBuffNames = {}
-		for word in string.gmatch(UnitPlatesSettings.ignoredBuffNames, '([^,]+)') do
+		local buffPos = 1
+		while buffPos <= string.len(UnitPlatesSettings.ignoredBuffNames) do
+			local s, e, word = string.find(UnitPlatesSettings.ignoredBuffNames, "([^,]+)", buffPos)
+			if not s then break end
 			table.insert(ignoredBuffNames, UPCoreTrimString(word))
+			buffPos = e + 1
 		end
-		
+
 		ignoredDebuffNames = {}
-		for word in string.gmatch(UnitPlatesSettings.ignoredBuffNames, '([^,]+)') do
+		local debuffPos = 1
+		while debuffPos <= string.len(UnitPlatesSettings.ignoredDebuffNames) do
+			local s, e, word = string.find(UnitPlatesSettings.ignoredDebuffNames, "([^,]+)", debuffPos)
+			if not s then break end
 			table.insert(ignoredDebuffNames, UPCoreTrimString(word))
+			debuffPos = e + 1
 		end
 		
 		--print("here")
