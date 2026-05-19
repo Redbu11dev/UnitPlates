@@ -296,7 +296,7 @@ local function UpdatePlate(kuiPlateFrame)
 	--setGuild end
 	
 	--setName
-	kuiPlateFrame.name:SetText(kuiPlateFrame.oldName:GetText())
+	kuiPlateFrame.name:SetText(kuiPlateFrame.nameTextVariable)
 	kuiPlateFrame.name:SetTextColor(1,1,1,1)
 	if (kuiPlateFrame.guild:GetText() == nil or kuiPlateFrame.guild:GetText() == '') then
 		kuiPlateFrame.name:SetPoint("BOTTOM", kuiPlateFrame.health, "TOP", 0, 2 * UPConstants.minimalOnePixel)
@@ -842,7 +842,7 @@ local function OnFrameUpdate(originalPlateFrame, e)
 		
 		--pfquest compatibility
 		if not kuiPlateFrame.isPlayer then
-			local icon = UPCompatPfQuestQuestObjectives[kuiPlateFrame.oldName:GetText()]
+			local icon = UPCompatPfQuestQuestObjectives[kuiPlateFrame.nameTextVariable]
 			if icon then
 				kuiPlateFrame.questIcon.icon:SetTexture(icon)
 				kuiPlateFrame.questIcon:Show()
