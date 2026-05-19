@@ -41,7 +41,6 @@ end
 
 local UPApiActionSlotScanner = CreateFrame("GameTooltip", "UPApiActionSlotScanner", nil, "GameTooltipTemplate")
 UPApiActionSlotScanner:SetOwner(WorldFrame, "ANCHOR_NONE")
-UPApiActionSlotScannerTextLeft1 = UPApiActionSlotScannerTextLeft1
 
 --PUBLIC
 function UPApiIsTargetInShootingDistance()

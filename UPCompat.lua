@@ -18,9 +18,7 @@ function UPCompatGetHealthFromMobHealth(guid)
 			local pts
 			local pct
 
-			if ( type(table[index]) ~= "string" ) then
-				frameHealthBarText:SetText(targethealth.."%")
-			end
+			if ( type(table[index]) ~= "string" ) then return end
 			s, e, pts, pct = strfind(table[index], "^(%d+)/(%d+)$")
 
 			if ( pts and pct ) then
