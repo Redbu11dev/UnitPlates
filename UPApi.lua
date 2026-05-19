@@ -1,6 +1,6 @@
 UPApiScanTool = CreateFrame( "GameTooltip", "UPApiScanTool", nil, "GameTooltipTemplate" )
 UPApiScanTool:SetOwner( WorldFrame, "ANCHOR_NONE" )
-UPApiScanToolTextLine2 = _G["UPApiScanToolTextLeft2"] -- This is the line with <[Player]'s Pet>
+UPApiScanToolTextLine2 = UPApiScanToolTextLeft2 -- This is the line with <[Player]'s Pet>
 
 --PUBLIC
 function UPApiGetGuildText(guid)
@@ -41,7 +41,7 @@ end
 
 local UPApiActionSlotScanner = CreateFrame("GameTooltip", "UPApiActionSlotScanner", nil, "GameTooltipTemplate")
 UPApiActionSlotScanner:SetOwner(WorldFrame, "ANCHOR_NONE")
-UPApiActionSlotScannerTextLeft1 = _G["UPApiActionSlotScannerTextLeft1"]
+UPApiActionSlotScannerTextLeft1 = UPApiActionSlotScannerTextLeft1
 
 --PUBLIC
 function UPApiIsTargetInShootingDistance()

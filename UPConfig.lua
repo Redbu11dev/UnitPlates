@@ -1,5 +1,5 @@
-_G.SLASH_UNITPLATES1 = "/unitplates"
-_G.SLASH_UNITPLATES2 = "/up"
+SLASH_UNITPLATES1 = "/unitplates"
+SLASH_UNITPLATES2 = "/up"
 
 function SlashCmdList.UNITPLATES()
 	--print("UnitPlates config is not available yet")
@@ -121,7 +121,7 @@ function UPConfigInitUnitPlatesSettings()
 	-- Create the scrolling parent frame and size it to fit inside the texture
 	UnitPlatesOptionsFrame.scrollFrame = CreateFrame("ScrollFrame", "UnitPlatesOptionsFrame_ScrollFrame", UnitPlatesOptionsFrame, "UIPanelScrollFrameTemplate")
 	UnitPlatesOptionsFrame.scrollFrame:SetHeight(UnitPlatesOptionsFrame:GetHeight())
-	UnitPlatesOptionsFrame.scrollBar = _G[UnitPlatesOptionsFrame.scrollFrame:GetName() .. "ScrollBar"]
+	UnitPlatesOptionsFrame.scrollBar = getglobal(UnitPlatesOptionsFrame.scrollFrame:GetName() .. "ScrollBar")
     UnitPlatesOptionsFrame.scrollFrame:SetWidth(UnitPlatesOptionsFrame:GetWidth())
 	UnitPlatesOptionsFrame.scrollFrame:SetPoint("TOPLEFT", 10, -30)
 	UnitPlatesOptionsFrame.scrollFrame:SetPoint("BOTTOMRIGHT", -30, 50)
