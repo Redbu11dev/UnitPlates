@@ -284,7 +284,8 @@ local function UPApiCacheInAuraIfValid(guid, auraName, isDebuff)
 			rank = "Rank 0"
 		end
 		--parse rank into number
-		local rankNumber = tonumber(string.match(rank, "(%d+)"))
+		local _, _, rankDigits = string.find(rank, "(%d+)")
+		local rankNumber = tonumber(rankDigits)
 		
 		if auraName == name then
 			--rank can be empty string (then use 0)
