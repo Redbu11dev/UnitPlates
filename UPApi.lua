@@ -1,6 +1,6 @@
 UPApiScanTool = CreateFrame( "GameTooltip", "UPApiScanTool", nil, "GameTooltipTemplate" )
 UPApiScanTool:SetOwner( WorldFrame, "ANCHOR_NONE" )
-UPApiScanToolTextLine2 = _G["UPApiScanToolTextLeft2"] -- This is the line with <[Player]'s Pet>
+UPApiScanToolTextLine2 = UPApiScanToolTextLeft2 -- This is the line with <[Player]'s Pet>
 
 --PUBLIC
 function UPApiGetGuildText(guid)
@@ -41,7 +41,7 @@ end
 
 local UPApiActionSlotScanner = CreateFrame("GameTooltip", "UPApiActionSlotScanner", nil, "GameTooltipTemplate")
 UPApiActionSlotScanner:SetOwner(WorldFrame, "ANCHOR_NONE")
-UPApiActionSlotScannerTextLeft1 = _G["UPApiActionSlotScannerTextLeft1"]
+UPApiActionSlotScannerTextLeft1 = UPApiActionSlotScannerTextLeft1
 
 --PUBLIC
 function UPApiIsTargetInShootingDistance()
@@ -284,7 +284,8 @@ local function UPApiCacheInAuraIfValid(guid, auraName, isDebuff)
 			rank = "Rank 0"
 		end
 		--parse rank into number
-		local rankNumber = tonumber(string.match(rank, "(%d+)"))
+		local _, _, rankDigits = string.find(rank, "(%d+)")
+		local rankNumber = tonumber(rankDigits)
 		
 		if auraName == name then
 			--rank can be empty string (then use 0)

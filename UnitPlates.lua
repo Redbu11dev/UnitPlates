@@ -783,13 +783,21 @@ local function UpdatePlate(kuiPlateFrame)
 		--print("here")
 		
 		ignoredBuffNames = {}
-		for word in string.gmatch(UnitPlatesSettings.ignoredBuffNames, '([^,]+)') do
+		local buffPos = 1
+		while buffPos <= string.len(UnitPlatesSettings.ignoredBuffNames) do
+			local s, e, word = string.find(UnitPlatesSettings.ignoredBuffNames, "([^,]+)", buffPos)
+			if not s then break end
 			table.insert(ignoredBuffNames, UPCoreTrimString(word))
+			buffPos = e + 1
 		end
-		
+
 		ignoredDebuffNames = {}
-		for word in string.gmatch(UnitPlatesSettings.ignoredBuffNames, '([^,]+)') do
+		local debuffPos = 1
+		while debuffPos <= string.len(UnitPlatesSettings.ignoredDebuffNames) do
+			local s, e, word = string.find(UnitPlatesSettings.ignoredDebuffNames, "([^,]+)", debuffPos)
+			if not s then break end
 			table.insert(ignoredDebuffNames, UPCoreTrimString(word))
+			debuffPos = e + 1
 		end
 		
 		--print("here")
