@@ -1,6 +1,14 @@
 # UnitPlates
 Nameplates for twow/octowow (or vanilla 1.12)
 
+IMPORTANT:
+seems like I have relied to some of the Ace libs hooked up by something else
+
+will need some time to recheck relations and unhook the code from unintended external library usage
+
+so the addon will not work if you don't have an addon that hiddenly hooks up some bs libraries
+
+
 Continuation of https://github.com/Redbu11dev/ShaguPlates-extra (Complete rewrite based on kui nameplates, no more shaguplates dependencies, no kui dependencies either, no third party libraries, much better code, etc.)
 
 REQUIRES SUPERWOW https://github.com/balakethelock/SuperWoW (and preferably UnitXP-SP3 https://codeberg.org/konaka/UnitXP_SP3/releases) 
