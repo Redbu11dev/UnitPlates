@@ -51,5 +51,5 @@ Features:
 - and more
 
 
-<img width="1195" height="423" alt="image" src="https://github.com/user-attachments/assets/365ef01f-8e43-4d26-8e99-15b2220c8d85" />
+![image](https://github.com/user-attachments/assets/365ef01f-8e43-4d26-8e99-15b2220c8d85)
 
