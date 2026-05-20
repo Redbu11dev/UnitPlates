@@ -2348,6 +2348,14 @@ UnitPlatesMainFrame:SetScript("OnUpdate", function()
 			kuiPlateFrame.textLayerHost:SetFrameLevel(targetLevel + 5)
 		end
 		
+		if kuiPlateFrame.shootingIcon then
+			kuiPlateFrame.shootingIcon:SetFrameLevel(targetLevel + 5)
+		end
+		
+		if kuiPlateFrame.combopoints then
+			kuiPlateFrame.combopoints:SetFrameLevel(targetLevel + 5)
+		end
+		
 		if kuiPlateFrame.originalPlateFrame.totem then
 			if kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame then
 				kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame:SetFrameLevel(targetLevel + 2)
