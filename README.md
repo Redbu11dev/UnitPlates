@@ -3,7 +3,7 @@ Nameplates for twow/octowow (or vanilla 1.12)
 
 ---
 IMPORTANT:
-seems like I have relied om some of the Ace libs hooked up by something else
+seems like I have relied on some of the Ace libs hooked up by something else
 
 will need some time to recheck relations and unhook the code from unintended external library usage
 
