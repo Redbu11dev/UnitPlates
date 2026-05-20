@@ -176,7 +176,7 @@ local function ResetFrame(kuiPlateFrame, originalPlateFrame)
 	kuiPlateFrame.critElap = 0
 	kuiPlateFrame.aurasUpdateElapsed = 0
 	
-	kuiPlateFrame:SetFrameLevel(0)
+	--kuiPlateFrame:SetFrameLevel(0)
 	kuiPlateFrame.glow:Hide() 
 	kuiPlateFrame.glow2:Hide()
 	originalPlateFrame.totem:Hide()
@@ -196,6 +196,7 @@ end
 -------------------------------------------------------
 
 local function UpdatePlate(kuiPlateFrame)
+	--print("here1")
 	kuiPlateFrame.originalPlateFrame.totem:Hide()
 	kuiPlateFrame:Show()
 	kuiPlateFrame.typeIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\loading.tga")
@@ -209,6 +210,8 @@ local function UpdatePlate(kuiPlateFrame)
 	if not kuiPlateFrame.originalPlateFrame.level then return nil end
 	kuiPlateFrame.oldLevel = kuiPlateFrame.originalPlateFrame.level
 	kuiPlateFrame.originalPlateFrame.level:Hide()
+	
+	-- print("here2")
 	
 	--raid icon
 	--adjust aurcasContainer position
@@ -245,7 +248,13 @@ local function UpdatePlate(kuiPlateFrame)
 	--own player end
 	
 	--init data
-	kuiPlateFrame.guid = kuiPlateFrame.originalPlateFrame:GetName(1)	
+	kuiPlateFrame.guid = kuiPlateFrame.originalPlateFrame:GetName(1)
+	
+	if kuiPlateFrame.bossIconRegion and kuiPlateFrame.bossIconRegion:IsVisible() then
+		-- This unit is a Boss (it has the skull icon active)
+		bossIconRegion:SetTexture(nil)
+		kuiPlateFrame.isBoss = true
+	end
 	
 	--print("UnitName(kuiPlateFrame.guid): "..tostring(UnitName(kuiPlateFrame.guid)))
 	kuiPlateFrame.nameTextVariable = UnitName(kuiPlateFrame.guid)	
@@ -281,7 +290,7 @@ local function UpdatePlate(kuiPlateFrame)
 	
 	
 	
-	
+	-- print("here3")
 	
 	
 	--setGuild
@@ -445,7 +454,14 @@ local function UpdatePlate(kuiPlateFrame)
 	kuiPlateFrame.health:SetValue(kuiPlateFrame.health.curr)
 	if UPCoreNum(kuiPlateFrame.health.max) == 100 then
 		--most likely it is unknown hp
+		--try to get from MobHealth
 		local current, max = UPCompatGetHealthFromMobHealth(kuiPlateFrame.guid)
+		
+		if not current then
+			--try shaguTweaks fallback
+			current, max = UPCompatGetHealthFromShaguTweaks(kuiPlateFrame.guid)
+		end
+		
 		if current then
 			kuiPlateFrame.health.p:SetText(UPCoreNum(tonumber(string.format("%d", current))))
 		else
@@ -593,7 +609,10 @@ local function UpdatePlate(kuiPlateFrame)
 		kuiPlateFrame.power:SetBackdropBorderColor(unpack(glowColor))
 		kuiPlateFrame.typeIcon:SetBackdropBorderColor(unpack(glowColor))
 		
-		kuiPlateFrame:SetFrameLevel(3)
+		-- kuiPlateFrame.health.bgOffsetFrame:SetBackdropBorderColor(unpack(glowColor)) -- Very dark grey subtle border
+		-- kuiPlateFrame.health.overlayMask:SetBackdropBorderColor(unpack(glowColor)) -- Black masking border
+		
+		--kuiPlateFrame:SetFrameLevel(3)
 	else
 		kuiPlateFrame.glow:Hide() 
 		kuiPlateFrame.glow2:Hide()
@@ -607,7 +626,10 @@ local function UpdatePlate(kuiPlateFrame)
 		kuiPlateFrame.power:SetBackdropBorderColor(0, 0, 0, 1)
 		kuiPlateFrame.typeIcon:SetBackdropBorderColor(0, 0, 0, 1)
 		
-		kuiPlateFrame:SetFrameLevel(0)
+		-- kuiPlateFrame.health.bgOffsetFrame:SetBackdropBorderColor(0.1, 0.1, 0.1, 1) -- Very dark grey subtle border
+		-- kuiPlateFrame.health.overlayMask:SetBackdropBorderColor(0, 0, 0, 1) -- Black masking border
+		
+		--kuiPlateFrame:SetFrameLevel(0)
 	end
 	--target end
 	
@@ -629,6 +651,11 @@ local function UpdatePlate(kuiPlateFrame)
 		local totemR,totemG,totemB,totemA = kuiPlateFrame.health:GetStatusBarColor()
 		kuiPlateFrame.originalPlateFrame.totem:SetBackdropColor(totemR,totemG,totemB,totemA)
 		kuiPlateFrame.originalPlateFrame.totem:SetBackdropBorderColor(totemR,totemG,totemB,totemA)
+		
+		kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame:SetBackdropColor(totemR,totemG,totemB,totemA) -- Dark backdrop fill
+		kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame:SetBackdropBorderColor(totemR,totemG,totemB,totemA) -- Matte grey border rim
+		kuiPlateFrame.originalPlateFrame.totem.overlayMask:SetBackdropBorderColor(0, 0, 0, 1) -- Pure black mask to match layouts
+		
 		kuiPlateFrame.originalPlateFrame.totem:Show()
 		kuiPlateFrame:Hide()
 	else
@@ -783,12 +810,12 @@ local function UpdatePlate(kuiPlateFrame)
 		--print("here")
 		
 		ignoredBuffNames = {}
-		for word in string.gmatch(UnitPlatesSettings.ignoredBuffNames, '([^,]+)') do
+		for word in string.gfind(UnitPlatesSettings.ignoredBuffNames, '([^,]+)') do
 			table.insert(ignoredBuffNames, UPCoreTrimString(word))
 		end
 		
 		ignoredDebuffNames = {}
-		for word in string.gmatch(UnitPlatesSettings.ignoredBuffNames, '([^,]+)') do
+		for word in string.gfind(UnitPlatesSettings.ignoredDebuffNames, '([^,]+)') do
 			table.insert(ignoredDebuffNames, UPCoreTrimString(word))
 		end
 		
@@ -912,7 +939,12 @@ local function InitFrame(originalPlateFrame)
 	-- local nameTextRegion = originalPlateFrame.name
 	-- local nameTextRegion = originalPlateFrame.name
 	
-	local borderRegion, glowRegion, highlightRegion, ureg1, bossIconRegion, ureg2, ureg3 = originalPlateFrame:GetRegions()
+	--local threatGlow, border, highlight, levelIcon, bossIcon, raidIcon, nameTextRegion, levelTextRegion, stateIcon, eliteBorder = originalPlateFrame:GetRegions()
+	
+	local borderRegion, glowRegion, highlightRegion, levelIconRegion, bossIconRegion, raidIconRegion1, nameTextRegion, levelTextRegion, stateIcon, eliteBorder = originalPlateFrame:GetRegions()
+	
+	-- originalPlateFrame.name = nameTextRegion	
+	-- originalPlateFrame.level = levelTextRegion
 	
 	--ureg2:SetTexture(nil)
 	
@@ -920,6 +952,20 @@ local function InitFrame(originalPlateFrame)
 	--raid icon
 	-- GetRegions returns a list of all textures and fontstrings on the frame
     local regions = {originalPlateFrame:GetRegions()}
+	local fontStrings = {}
+	-- Loop through all graphical components on the engine plate
+	for i = 1, table.getn(regions) do
+		if regions[i] and regions[i]:GetObjectType() == "FontString" then
+			table.insert(fontStrings, regions[i])
+		end
+	end	
+	-- The 1.12 engine always creates Name first, then Level second
+	if table.getn(fontStrings) >= 2 then
+		originalPlateFrame.name = fontStrings[1]
+		originalPlateFrame.level = fontStrings[2]
+	end
+	
+	
     for _, region in ipairs(regions) do
         -- Check if the region is a texture and has the raid icons path
         if region:IsObjectType("Texture") then
@@ -939,6 +985,7 @@ local function InitFrame(originalPlateFrame)
 		bossIconRegion:SetTexture(nil)
 		kuiPlateFrame.isBoss = true
 	end
+	originalPlateFrame.bossIconRegion = bossIconRegion
 	
 	-- print(tostring(borderRegion:GetTexture()))
 	-- print(tostring(glowRegion:GetTexture()))
@@ -978,33 +1025,126 @@ local function InitFrame(originalPlateFrame)
 	------------------------------------------------------------------ Layout --	
 	kuiPlateFrame:SetPoint("CENTER", originalPlateFrame, "CENTER")
 	kuiPlateFrame:SetFrameStrata("BACKGROUND")
-	kuiPlateFrame:SetFrameLevel(0)
+	--kuiPlateFrame:SetFrameLevel(0)
 	SetFrameCenter(kuiPlateFrame)
 	
-	-- self:CreateHealthBar(originalPlateFrame, kuiPlateFrame)
+	
+	
+	
+	
+	
+	-- -- self:CreateHealthBar(originalPlateFrame, kuiPlateFrame)
+	-- kuiPlateFrame.health = CreateFrame("StatusBar", nil, kuiPlateFrame)
+	-- kuiPlateFrame.health:SetFrameLevel(1)
+	-- kuiPlateFrame.health:SetStatusBarTexture("Interface\\AddOns\\UnitPlates\\img\\statusbar\\XPerl_StatusBar4")
+	-- kuiPlateFrame.health.percent = 100
+	-- kuiPlateFrame.health:GetStatusBarTexture():SetDrawLayer("ARTWORK", -8)
+	-- -- if self.SetValueSmooth then
+		-- -- kuiPlateFrame.health.OrigSetValue = kuiPlateFrame.health.SetValue
+		-- -- kuiPlateFrame.health.SetValue = self.SetValueSmooth
+	-- -- elseif self.CutawayBar then
+		-- -- self.CutawayBar(kuiPlateFrame.health)
+	-- -- end
+	-- kuiPlateFrame.health:SetBackdrop({
+		-- bgFile = "Interface\\AddOns\\UnitPlates\\img\\WHITE", -- A solid texture
+		-- edgeFile = "Interface\\AddOns\\UnitPlates\\img\\WHITE", 
+		-- edgeSize = 1, 
+		-- insets = { left = -UPConstants.minimalOnePixel, right = -UPConstants.minimalOnePixel, top = -UPConstants.minimalOnePixel, bottom = -UPConstants.minimalOnePixel }
+	-- })
+	-- kuiPlateFrame.health:SetBackdropColor(0, 0, 0, 1) -- Black Background
+	-- kuiPlateFrame.health:SetBackdropBorderColor(0, 0, 0, 1) -- Black Border
+	-- kuiPlateFrame.health:ClearAllPoints()
+	-- kuiPlateFrame.health:SetWidth(UPConstants.nameplateHealthBarWidth)
+	-- kuiPlateFrame.health:SetHeight(UPConstants.nameplateHealthBarHeight)
+	-- kuiPlateFrame.health:SetPoint("BOTTOMLEFT", kuiPlateFrame.x, kuiPlateFrame.y)
+	
+
+	
 	kuiPlateFrame.health = CreateFrame("StatusBar", nil, kuiPlateFrame)
-	kuiPlateFrame.health:SetFrameLevel(1)
+	kuiPlateFrame.health:SetFrameLevel(2) -- Bumped up slightly so it layers nicely
 	kuiPlateFrame.health:SetStatusBarTexture("Interface\\AddOns\\UnitPlates\\img\\statusbar\\XPerl_StatusBar4")
 	kuiPlateFrame.health.percent = 100
 	kuiPlateFrame.health:GetStatusBarTexture():SetDrawLayer("ARTWORK", -8)
-	-- if self.SetValueSmooth then
-		-- kuiPlateFrame.health.OrigSetValue = kuiPlateFrame.health.SetValue
-		-- kuiPlateFrame.health.SetValue = self.SetValueSmooth
-	-- elseif self.CutawayBar then
-		-- self.CutawayBar(kuiPlateFrame.health)
-	-- end
-	kuiPlateFrame.health:SetBackdrop({
-		bgFile = "Interface\\AddOns\\UnitPlates\\img\\WHITE", -- A solid texture
-		edgeFile = "Interface\\AddOns\\UnitPlates\\img\\WHITE", 
-		edgeSize = 1, 
-		insets = { left = -UPConstants.minimalOnePixel, right = -UPConstants.minimalOnePixel, top = -UPConstants.minimalOnePixel, bottom = -UPConstants.minimalOnePixel }
-	})
-	kuiPlateFrame.health:SetBackdropColor(0, 0, 0, 1) -- Black Background
-	kuiPlateFrame.health:SetBackdropBorderColor(0, 0, 0, 1) -- Black Border
+	
+	-- 1. CLEAN BACKDROP HANDLING: Create a distinct frame *behind* the health bar
+	-- This ensures your dark background background has nicely padded rounded edges.
+	if not kuiPlateFrame.health.bgOffsetFrame then
+		kuiPlateFrame.health.bgOffsetFrame = CreateFrame("Frame", nil, kuiPlateFrame)
+		kuiPlateFrame.health.bgOffsetFrame:SetFrameLevel(1) -- Below health bar
+		kuiPlateFrame.health.bgOffsetFrame:SetBackdrop({
+			bgFile = "Interface\\Buttons\\WHITE8X8", -- Crisp solid engine texture
+			edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", -- Built-in 2px rounded edge
+			tile = false, tileSize = 0, edgeSize = 10,
+			insets = { left = 2, right = 2, top = 2, bottom = 2 }
+		})
+		kuiPlateFrame.health.bgOffsetFrame:SetBackdropColor(0, 0, 0, 0.8) -- Dark backdrop fill
+		kuiPlateFrame.health.bgOffsetFrame:SetBackdropBorderColor(0.1, 0.1, 0.1, 1) -- Very dark grey subtle border
+	end
+
+	-- 2. THE CORNER MASKING OVERLAY: Create a frame *above* the health bar
+	-- This chops off the sharp moving edges of the status bar as health updates.
+	if not kuiPlateFrame.health.overlayMask then
+		kuiPlateFrame.health.overlayMask = CreateFrame("Frame", nil, kuiPlateFrame)
+		kuiPlateFrame.health.overlayMask:SetFrameLevel(3) -- Directly above the health bar
+		kuiPlateFrame.health.overlayMask:SetBackdrop({
+			edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", -- Slices off the 4 square corners
+			tile = false, tileSize = 0, edgeSize = 10,
+			insets = { left = 2, right = 2, top = 2, bottom = 2 }
+		})
+		kuiPlateFrame.health.overlayMask:SetBackdropBorderColor(0, 0, 0, 1) -- Black masking border
+	end
+
+	-- 3. POSITIONING LOGIC
 	kuiPlateFrame.health:ClearAllPoints()
 	kuiPlateFrame.health:SetWidth(UPConstants.nameplateHealthBarWidth)
 	kuiPlateFrame.health:SetHeight(UPConstants.nameplateHealthBarHeight)
 	kuiPlateFrame.health:SetPoint("BOTTOMLEFT", kuiPlateFrame.x, kuiPlateFrame.y)
+
+	-- Lock the background and foreground rounded layers tight to the bar dimensions plus padding
+	local padding = 2.5
+	kuiPlateFrame.health.bgOffsetFrame:ClearAllPoints()
+	kuiPlateFrame.health.bgOffsetFrame:SetPoint("TOPLEFT", kuiPlateFrame.health, "TOPLEFT", -padding, padding)
+	kuiPlateFrame.health.bgOffsetFrame:SetPoint("BOTTOMRIGHT", kuiPlateFrame.health, "BOTTOMRIGHT", padding, -padding)
+
+	kuiPlateFrame.health.overlayMask:ClearAllPoints()
+	kuiPlateFrame.health.overlayMask:SetPoint("TOPLEFT", kuiPlateFrame.health, "TOPLEFT", -padding, padding)
+	kuiPlateFrame.health.overlayMask:SetPoint("BOTTOMRIGHT", kuiPlateFrame.health, "BOTTOMRIGHT", padding, -padding)
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	-- 1. Create a dedicated High-Strata Frame to host all texts
+	if not kuiPlateFrame.textLayerHost then
+		kuiPlateFrame.textLayerHost = CreateFrame("Frame", nil, kuiPlateFrame)
+		-- Force this frame off the nameplate strata layer entirely
+		--kuiPlateFrame.textLayerHost:SetFrameStrata("LOW") 
+	end
+	-- Update the host frame level dynamically relative to your health bar
+	local currentHealthLevel = kuiPlateFrame.health:GetFrameLevel()
+	kuiPlateFrame.textLayerHost:SetFrameLevel(currentHealthLevel + 5)
+	
+	
 	
 	-- self:CreateHealthText(originalPlateFrame, kuiPlateFrame)
 	-- kuiPlateFrame.health.p = kuiPlateFrame:CreateFontString(kuiPlateFrame.overlay, {
@@ -1018,7 +1158,8 @@ local function InitFrame(originalPlateFrame)
 	-- kuiPlateFrame.health.p:SetJustifyV("MIDDLE")
 	-- kuiPlateFrame.health.p.osize = "health" -- original font size used to update/restore
 	--nameplate.health.text:SetAllPoints()
-	kuiPlateFrame.health.p = kuiPlateFrame.health:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	
+	kuiPlateFrame.health.p = kuiPlateFrame.textLayerHost:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 	kuiPlateFrame.health.p:SetFont(mainFontPath, UPConstants.healthBigFontSize, "OUTLINE")
 	kuiPlateFrame.health.p:SetJustifyH("RIGHT")
 	kuiPlateFrame.health.p:SetTextColor(1,1,1,1)
@@ -1047,25 +1188,94 @@ local function InitFrame(originalPlateFrame)
 	-- kuiPlateFrame.highlight:SetAlpha(.05)
 	-- kuiPlateFrame.highlight:Hide()
 	
+	-- kuiPlateFrame.typeIcon = CreateFrame("Frame", nil, kuiPlateFrame)
+	-- kuiPlateFrame.typeIcon:SetFrameLevel(1)
+	-- kuiPlateFrame.typeIcon:SetPoint("RIGHT", kuiPlateFrame.health, "LEFT", -1 * UPConstants.minimalOnePixel, 0)
+	-- kuiPlateFrame.typeIcon:SetHeight(UPConstants.nameplateTypeIconSize)
+	-- kuiPlateFrame.typeIcon:SetWidth(UPConstants.nameplateTypeIconSize)
+	-- kuiPlateFrame.typeIcon.icon = kuiPlateFrame.typeIcon:CreateTexture(nil, "OVERLAY")
+	-- kuiPlateFrame.typeIcon.icon:SetAllPoints()
+	-- --kuiPlateFrame.typeIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\creaturetypes\\UNKNOWN.tga")
+	-- kuiPlateFrame.typeIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\loading.tga")
+	-- --CreateBackdrop(nameplate.typeIcon, 1)
+	-- kuiPlateFrame.typeIcon:SetBackdrop({
+		-- bgFile = "Interface\\AddOns\\UnitPlates\\img\\WHITE", -- A solid texture
+		-- edgeFile = "Interface\\AddOns\\UnitPlates\\img\\WHITE", 
+		-- edgeSize = 1, 
+		-- insets = { left = -UPConstants.minimalOnePixel, right = -UPConstants.minimalOnePixel, top = -UPConstants.minimalOnePixel, bottom = -UPConstants.minimalOnePixel }
+	-- })
+	-- kuiPlateFrame.typeIcon:SetBackdropColor(0, 0, 0, 1) -- Black Background
+	-- kuiPlateFrame.typeIcon:SetBackdropBorderColor(0, 0, 0, 1) -- Black Border
+	-- kuiPlateFrame.typeIcon:Show()
+	
 	kuiPlateFrame.typeIcon = CreateFrame("Frame", nil, kuiPlateFrame)
-	kuiPlateFrame.typeIcon:SetFrameLevel(1)
+	kuiPlateFrame.typeIcon:SetFrameLevel(2) -- Bumped to match health bar level logic
 	kuiPlateFrame.typeIcon:SetPoint("RIGHT", kuiPlateFrame.health, "LEFT", -1 * UPConstants.minimalOnePixel, 0)
 	kuiPlateFrame.typeIcon:SetHeight(UPConstants.nameplateTypeIconSize)
 	kuiPlateFrame.typeIcon:SetWidth(UPConstants.nameplateTypeIconSize)
-	kuiPlateFrame.typeIcon.icon = kuiPlateFrame.typeIcon:CreateTexture(nil, "OVERLAY")
+	
+	kuiPlateFrame.typeIcon.icon = kuiPlateFrame.typeIcon:CreateTexture(nil, "ARTWORK") -- Changed to ARTWORK layer to stay under mask
 	kuiPlateFrame.typeIcon.icon:SetAllPoints()
-	--kuiPlateFrame.typeIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\creaturetypes\\UNKNOWN.tga")
 	kuiPlateFrame.typeIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\loading.tga")
-	--CreateBackdrop(nameplate.typeIcon, 1)
-	kuiPlateFrame.typeIcon:SetBackdrop({
-		bgFile = "Interface\\AddOns\\UnitPlates\\img\\WHITE", -- A solid texture
-		edgeFile = "Interface\\AddOns\\UnitPlates\\img\\WHITE", 
-		edgeSize = 1, 
-		insets = { left = -UPConstants.minimalOnePixel, right = -UPConstants.minimalOnePixel, top = -UPConstants.minimalOnePixel, bottom = -UPConstants.minimalOnePixel }
-	})
-	kuiPlateFrame.typeIcon:SetBackdropColor(0, 0, 0, 1) -- Black Background
-	kuiPlateFrame.typeIcon:SetBackdropBorderColor(0, 0, 0, 1) -- Black Border
+
+	-- 1. CLEAN BACKDROP HANDLING: Create a distinct frame *behind* the type icon
+	if not kuiPlateFrame.typeIcon.bgOffsetFrame then
+		kuiPlateFrame.typeIcon.bgOffsetFrame = CreateFrame("Frame", nil, kuiPlateFrame)
+		kuiPlateFrame.typeIcon.bgOffsetFrame:SetFrameLevel(1) -- Below icon frame
+		kuiPlateFrame.typeIcon.bgOffsetFrame:SetBackdrop({
+			bgFile = "Interface\\Buttons\\WHITE8X8", 
+			edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", -- Built-in rounded edge
+			tile = false, tileSize = 0, edgeSize = 10,
+			insets = { left = 2, right = 2, top = 2, bottom = 2 }
+		})
+		kuiPlateFrame.typeIcon.bgOffsetFrame:SetBackdropColor(0, 0, 0, 0.8) 
+		kuiPlateFrame.typeIcon.bgOffsetFrame:SetBackdropBorderColor(0.1, 0.1, 0.1, 1) 
+	end
+
+	-- 2. THE CORNER MASKING OVERLAY: Create a frame *above* the type icon
+	if not kuiPlateFrame.typeIcon.overlayMask then
+		kuiPlateFrame.typeIcon.overlayMask = CreateFrame("Frame", nil, kuiPlateFrame)
+		kuiPlateFrame.typeIcon.overlayMask:SetFrameLevel(3) -- Directly above the icon texture
+		kuiPlateFrame.typeIcon.overlayMask:SetBackdrop({
+			edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", -- Slices off the 4 square corners
+			tile = false, tileSize = 0, edgeSize = 10,
+			insets = { left = 2, right = 2, top = 2, bottom = 2 }
+		})
+		kuiPlateFrame.typeIcon.overlayMask:SetBackdropBorderColor(0, 0, 0, 1) -- Black masking border
+	end
+
+	-- Lock the background and foreground rounded layers tight to the icon dimensions plus padding
+	local padding = 2.5
+	kuiPlateFrame.typeIcon.bgOffsetFrame:ClearAllPoints()
+	kuiPlateFrame.typeIcon.bgOffsetFrame:SetPoint("TOPLEFT", kuiPlateFrame.typeIcon, "TOPLEFT", -padding, padding)
+	kuiPlateFrame.typeIcon.bgOffsetFrame:SetPoint("BOTTOMRIGHT", kuiPlateFrame.typeIcon, "BOTTOMRIGHT", padding, -padding)
+
+	kuiPlateFrame.typeIcon.overlayMask:ClearAllPoints()
+	kuiPlateFrame.typeIcon.overlayMask:SetPoint("TOPLEFT", kuiPlateFrame.typeIcon, "TOPLEFT", -padding, padding)
+	kuiPlateFrame.typeIcon.overlayMask:SetPoint("BOTTOMRIGHT", kuiPlateFrame.typeIcon, "BOTTOMRIGHT", padding, -padding)
+
 	kuiPlateFrame.typeIcon:Show()
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	kuiPlateFrame.threat = CreateFrame("Frame", nil, kuiPlateFrame)
@@ -1099,9 +1309,9 @@ local function InitFrame(originalPlateFrame)
 	-- kuiPlateFrame.level.osize = "level" -- original font size used to update/restore
 	
 	-- kuiPlateFrame.level:ClearAllPoints()
-	kuiPlateFrame.level = kuiPlateFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	kuiPlateFrame.level = kuiPlateFrame.textLayerHost:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 	kuiPlateFrame.level:SetFont(mainFontPath, UPConstants.levelFontSize, "OUTLINE")
-	kuiPlateFrame.level:SetParent(kuiPlateFrame.overlay)
+	--kuiPlateFrame.level:SetParent(kuiPlateFrame.health.overlayMask)
 	kuiPlateFrame.level:SetJustifyH("CENTER")
 	-- kuiPlateFrame.level:SetPoint("RIGHT", kuiPlateFrame.typeIcon, "RIGHT", -2, -4)
 	kuiPlateFrame.level:ClearAllPoints()
@@ -1117,7 +1327,7 @@ local function InitFrame(originalPlateFrame)
 	-- })
 	-- kuiPlateFrame.guild.osize = "name" -- original font size used to update/restore
 	-- kuiPlateFrame.guild:SetHeight(10)
-	kuiPlateFrame.guild = kuiPlateFrame:CreateFontString(nil, "OVERLAY")
+	kuiPlateFrame.guild = kuiPlateFrame.textLayerHost:CreateFontString(nil, "OVERLAY")
 	kuiPlateFrame.guild:SetFont(mainFontPath, UPConstants.nameFontSize, "OUTLINE")
 	kuiPlateFrame.guild:ClearAllPoints()
 	kuiPlateFrame.guild:SetWidth(0)
@@ -1130,7 +1340,7 @@ local function InitFrame(originalPlateFrame)
 	-- })
 	-- kuiPlateFrame.name.osize = "name" -- original font size used to update/restore
 	
-	kuiPlateFrame.name = kuiPlateFrame:CreateFontString(nil, "OVERLAY")
+	kuiPlateFrame.name = kuiPlateFrame.textLayerHost:CreateFontString(nil, "OVERLAY")
 	kuiPlateFrame.name:SetFont(mainFontPath, UPConstants.nameFontSize, "OUTLINE")
 	--kuiPlateFrame.name:SetHeight(10)
 	kuiPlateFrame.name:ClearAllPoints()
@@ -1399,24 +1609,80 @@ local function InitFrame(originalPlateFrame)
 	-- create combo points end
 	
 	--totem
-	originalPlateFrame.totem = CreateFrame("Frame", nil, originalPlateFrame)
-	originalPlateFrame.totem:SetPoint("TOP", originalPlateFrame, "TOP", 0, 0)
-	originalPlateFrame.totem:SetHeight(UPConstants.totemIconSize)
-	originalPlateFrame.totem:SetWidth(UPConstants.totemIconSize)
-	--originalPlateFrame.totem:SetFrameLevel(5)
-	originalPlateFrame.totem.icon = originalPlateFrame.totem:CreateTexture(nil, "OVERLAY")
-	originalPlateFrame.totem.icon:SetTexCoord(.078, .92, .079, .937)
-	originalPlateFrame.totem.icon:SetAllPoints()
-	originalPlateFrame.totem:SetBackdrop({
-		bgFile = "Interface\\AddOns\\UnitPlates\\img\\WHITE", -- A solid texture
-		edgeFile = "Interface\\AddOns\\UnitPlates\\img\\WHITE", 
-		edgeSize = 1, 
-		insets = { left = -(3 * UPConstants.minimalOnePixel), right = -(3 * UPConstants.minimalOnePixel), top = -(3 * UPConstants.minimalOnePixel), bottom = -(3 * UPConstants.minimalOnePixel) }
-	})
-	originalPlateFrame.totem:SetBackdropColor(0, 0, 0, 1) -- Black Background
-	originalPlateFrame.totem:SetBackdropBorderColor(0, 0, 0, 1) -- Black Border
-	--originalPlateFrame.totem:SetVertexColor(1, 1, 1, 1)
-	originalPlateFrame.totem:Hide()
+	-- originalPlateFrame.totem = CreateFrame("Frame", nil, originalPlateFrame)
+	-- originalPlateFrame.totem:SetPoint("TOP", originalPlateFrame, "TOP", 0, 0)
+	-- originalPlateFrame.totem:SetHeight(UPConstants.totemIconSize)
+	-- originalPlateFrame.totem:SetWidth(UPConstants.totemIconSize)
+	-- --originalPlateFrame.totem:SetFrameLevel(5)
+	-- originalPlateFrame.totem.icon = originalPlateFrame.totem:CreateTexture(nil, "OVERLAY")
+	-- originalPlateFrame.totem.icon:SetTexCoord(.078, .92, .079, .937)
+	-- originalPlateFrame.totem.icon:SetAllPoints()
+	-- originalPlateFrame.totem:SetBackdrop({
+		-- bgFile = "Interface\\AddOns\\UnitPlates\\img\\WHITE", -- A solid texture
+		-- edgeFile = "Interface\\AddOns\\UnitPlates\\img\\WHITE", 
+		-- edgeSize = 1, 
+		-- insets = { left = -(3 * UPConstants.minimalOnePixel), right = -(3 * UPConstants.minimalOnePixel), top = -(3 * UPConstants.minimalOnePixel), bottom = -(3 * UPConstants.minimalOnePixel) }
+	-- })
+	-- originalPlateFrame.totem:SetBackdropColor(0, 0, 0, 1) -- Black Background
+	-- originalPlateFrame.totem:SetBackdropBorderColor(0, 0, 0, 1) -- Black Border
+	-- --originalPlateFrame.totem:SetVertexColor(1, 1, 1, 1)
+	-- originalPlateFrame.totem:Hide()
+	
+	-- Initialize the Totem container frame
+	kuiPlateFrame.originalPlateFrame.totem = CreateFrame("Frame", nil, originalPlateFrame)
+	kuiPlateFrame.originalPlateFrame.totem:SetFrameLevel(3) -- Middle layer for the icon
+	kuiPlateFrame.originalPlateFrame.totem:SetPoint("TOP", kuiPlateFrame.health, "TOP", 0, 0)
+	kuiPlateFrame.originalPlateFrame.totem:SetHeight(UPConstants.totemIconSize)
+	kuiPlateFrame.originalPlateFrame.totem:SetWidth(UPConstants.totemIconSize)
+	
+	-- Create the icon texture asset inside the frame
+	kuiPlateFrame.originalPlateFrame.totem.icon = originalPlateFrame.totem:CreateTexture(nil, "ARTWORK") -- Changed to ARTWORK layer to stay under the mask frame
+	kuiPlateFrame.originalPlateFrame.totem.icon:SetAllPoints()
+	kuiPlateFrame.originalPlateFrame.totem.icon:SetTexture("Interface\\Icons\\Spell_Nature_ thereIsNoIcon")
+	
+	-- 1. CLEAN BACKDROP HANDLING: Create a distinct background frame *behind* the totem icon
+	if not kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame then
+		kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame = CreateFrame("Frame", nil, originalPlateFrame.totem)
+		kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame:SetFrameLevel(2) -- Safely layers behind the texture
+		kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame:SetBackdrop({
+			bgFile = "Interface\\Buttons\\WHITE8X8", -- Crisp solid engine texture
+			edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", -- Built-in rounded edge asset
+			tile = false, tileSize = 0, edgeSize = 10,
+			insets = { left = 2, right = 2, top = 2, bottom = 2 }
+		})
+		kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame:SetBackdropColor(0, 0, 0, 0.8) -- Dark backdrop fill
+		kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame:SetBackdropBorderColor(0.1, 0.1, 0.1, 1) -- Matte grey border rim
+	end
+
+	-- 2. THE CORNER MASKING OVERLAY: Create a matte-black masking frame *above* the totem icon
+	if not kuiPlateFrame.originalPlateFrame.totem.overlayMask then
+		kuiPlateFrame.originalPlateFrame.totem.overlayMask = CreateFrame("Frame", nil, originalPlateFrame.totem)
+		kuiPlateFrame.originalPlateFrame.totem.overlayMask:SetFrameLevel(4) -- Directly above the icon texture to clip it
+		kuiPlateFrame.originalPlateFrame.totem.overlayMask:SetBackdrop({
+			edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", -- Slices off the 4 square corners
+			tile = false, tileSize = 0, edgeSize = 10,
+			insets = { left = 2, right = 2, top = 2, bottom = 2 }
+		})
+		kuiPlateFrame.originalPlateFrame.totem.overlayMask:SetBackdropBorderColor(0, 0, 0, 1) -- Pure black mask to match layouts
+	end
+
+	-- 3. POSITIONING LOGIC
+	-- Anchor the background and foreground overlay frames perfectly to the main icon frame
+	local padding = 4
+	kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame:ClearAllPoints()
+	kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame:SetPoint("TOPLEFT", kuiPlateFrame.originalPlateFrame.totem, "TOPLEFT", -padding, padding)
+	kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame:SetPoint("BOTTOMRIGHT", kuiPlateFrame.originalPlateFrame.totem, "BOTTOMRIGHT", padding, -padding)
+
+	kuiPlateFrame.originalPlateFrame.totem.overlayMask:ClearAllPoints()
+	kuiPlateFrame.originalPlateFrame.totem.overlayMask:SetPoint("TOPLEFT", kuiPlateFrame.originalPlateFrame.totem, "TOPLEFT", -padding, padding)
+	kuiPlateFrame.originalPlateFrame.totem.overlayMask:SetPoint("BOTTOMRIGHT", kuiPlateFrame.originalPlateFrame.totem, "BOTTOMRIGHT", padding, -padding)
+
+	kuiPlateFrame.originalPlateFrame.totem:Hide()
+	
+	
+	
+	
+	
 	
 	originalPlateFrame.totem.glow = originalPlateFrame.totem:CreateTexture(nil, "BACKGROUND")
 	originalPlateFrame.totem.glow:SetPoint("LEFT", originalPlateFrame.totem, "LEFT", -UPConstants.nameplateArrowSize * 1.1, 0)
@@ -2016,6 +2282,80 @@ UnitPlatesMainFrame:SetScript("OnUpdate", function()
 	for _, v in pairs(frames) do
 		if UPCoreIsBalloon(v) then
 			UPCoreStyleBalloon(v)
+		end
+	end
+	
+	
+	
+	-- FRAME LEVEL SORTING!
+	local activePlates = {}
+	
+	-- 1. Gather all currently visible nameplates
+	for i = 1, framesCount do
+		local f = frames[i]
+		if UPCoreIsNameplate(f) and f:IsShown() and f.kui then
+			table.insert(activePlates, f)
+		end
+	end
+	
+	-- 2. Sort them cleanly by their Y position on the screen 
+	-- (Highest Y is near the top of the monitor, so it should be in the background)
+	table.sort(activePlates, function(a, b)
+		local _, yA = a:GetCenter()
+		local _, yB = b:GetCenter()
+		return (yA or 0) > (yB or 0)
+	end)
+	
+	-- 3. Apply strict, non-overlapping frame level sandboxes based on their sorted order
+	for i = 1, table.getn(activePlates) do
+		local f = activePlates[i]
+		local kuiPlateFrame = f.kui
+		
+		-- Each plate gets an exclusive block of 7 levels.
+		-- Plate 1 gets 7-13. Plate 2 gets 14-20. Plate 3 gets 21-27, etc.
+		local targetLevel = i * 7 
+		
+		-- Target priority: If this is your current target, force it to the absolute top safely
+		if f.isTarget or (UnitName("target") == kuiPlateFrame.nameTextVariable) then
+			targetLevel = 120 -- Safe ceiling just below the Vanilla engine cap of 128
+		end
+		
+		-- 4. Apply the stack without any fear of interleaving
+		f:SetFrameLevel(targetLevel)
+		kuiPlateFrame:SetFrameLevel(targetLevel + 1)
+		
+		if kuiPlateFrame.health then
+			if kuiPlateFrame.health.bgOffsetFrame then
+				kuiPlateFrame.health.bgOffsetFrame:SetFrameLevel(targetLevel + 2)
+			end
+			kuiPlateFrame.health:SetFrameLevel(targetLevel + 3)
+			if kuiPlateFrame.health.overlayMask then
+				kuiPlateFrame.health.overlayMask:SetFrameLevel(targetLevel + 4)
+			end
+		end
+		
+		if kuiPlateFrame.typeIcon then
+			if kuiPlateFrame.typeIcon.bgOffsetFrame then
+				kuiPlateFrame.typeIcon.bgOffsetFrame:SetFrameLevel(targetLevel + 2)
+			end
+			kuiPlateFrame.typeIcon:SetFrameLevel(targetLevel + 3)
+			if kuiPlateFrame.typeIcon.overlayMask then
+				kuiPlateFrame.typeIcon.overlayMask:SetFrameLevel(targetLevel + 4)
+			end
+		end
+		
+		if kuiPlateFrame.textLayerHost then
+			kuiPlateFrame.textLayerHost:SetFrameLevel(targetLevel + 5)
+		end
+		
+		if kuiPlateFrame.originalPlateFrame.totem then
+			if kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame then
+				kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame:SetFrameLevel(targetLevel + 2)
+			end
+			kuiPlateFrame.originalPlateFrame.totem:SetFrameLevel(targetLevel + 3)
+			if kuiPlateFrame.originalPlateFrame.totem.overlayMask then
+				kuiPlateFrame.originalPlateFrame.totem.overlayMask:SetFrameLevel(targetLevel + 4)
+			end
 		end
 	end
 	

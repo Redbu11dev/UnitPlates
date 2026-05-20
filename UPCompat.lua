@@ -43,6 +43,23 @@ function UPCompatGetHealthFromMobHealth(guid)
 	return current, max
 end
 
+function UPCompatGetHealthFromShaguTweaks(guid)
+	local current, max
+	
+	if guid and ShaguTweaks and ShaguTweaks.libhealth then
+		local name = UnitName(guid)
+		local level = UnitLevel(guid)
+		local curPct = UnitHealth(guid)
+		local cur, maxHp, isReal = ShaguTweaks.libhealth:GetUnitHealthByName(name, level, curPct, 100)
+		if isReal then
+			current = cur
+			max = maxHp
+		end
+	end
+	
+	return current, max
+end
+
 
 ------------------------------------------------------------------------------------
 

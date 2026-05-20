@@ -1,9 +1,3 @@
--- UnitPlatesScanTool = CreateFrame( "GameTooltip", "ScanTooltip", nil, "GameTooltipTemplate" )
--- UnitPlatesScanTool:SetOwner( WorldFrame, "ANCHOR_NONE" )
--- UnitPlatesScanTextLine2 = _G["ScanTooltipTextLeft2"] -- This is the line with <[Player]'s Pet>
-
-
-
 function UPCoreTrimString(s)
   local l = 1
   while strsub(s,l,l) == ' ' do

@@ -144,7 +144,7 @@ UPLibAuraDurationsByRank = {
   ['Chemical Peel']={[0]=10.0,},
   ['Chill']={[0]=30.0,},
   ['Chill Nova']={[0]=10.0,},
-  ['Chilled']={[0]=1.5,},--there are 2 spells named "chilled?" --if I receive no rank in combat log, then it's probably not cast by player?
+  ['Chilled']={[0]=1.5,[1]=5,[2]=5,[3]=5,[4]=5,[5]=5,},--there are 2 spells named "chilled?" --if I receive no rank in combat log, then it's probably not cast by player?
   ['Chilling Breath']={[0]=12.0,},
   ['Chilling Touch']={[0]=8.0,},
   ['Chromatic Mutation']={[0]=300.0,},

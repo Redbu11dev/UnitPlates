@@ -1,7 +1,9 @@
-_G.SLASH_UNITPLATES1 = "/unitplates"
-_G.SLASH_UNITPLATES2 = "/up"
+local _G = getfenv(0)
 
-function SlashCmdList.UNITPLATES()
+SLASH_UNITPLATES1 = "/unitplates"
+SLASH_UNITPLATES2 = "/up"
+
+SlashCmdList["UNITPLATES"] = function(msg)
 	--print("UnitPlates config is not available yet")
 	UnitPlatesOptionsFrame:Show()
 end

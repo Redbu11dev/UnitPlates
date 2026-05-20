@@ -1,3 +1,5 @@
+local _G = getfenv(0)
+
 UPApiScanTool = CreateFrame( "GameTooltip", "UPApiScanTool", nil, "GameTooltipTemplate" )
 UPApiScanTool:SetOwner( WorldFrame, "ANCHOR_NONE" )
 UPApiScanToolTextLine2 = _G["UPApiScanToolTextLeft2"] -- This is the line with <[Player]'s Pet>
@@ -284,7 +286,9 @@ local function UPApiCacheInAuraIfValid(guid, auraName, isDebuff)
 			rank = "Rank 0"
 		end
 		--parse rank into number
-		local rankNumber = tonumber(string.match(rank, "(%d+)"))
+		--local rankNumber = tonumber(string.match(rank, "(%d+)"))
+		local _, _, rankNumberStr = string.find(rank, "(%d+)")
+		local rankNumber = tonumber(rankNumberStr)
 		
 		if auraName == name then
 			--rank can be empty string (then use 0)
