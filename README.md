@@ -39,6 +39,7 @@ Features:
 - 
 - pfquest integration (shows icons for quest mobs)
 - MobHealth integration https://github.com/kc8pnd/MobHealth
+- ShaguTweaks health estimation integration
 - and more
 
 
