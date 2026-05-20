@@ -51,4 +51,5 @@ Features:
 - and more
 
 
-![image](https://github.com/user-attachments/assets/8842a386-0df2-40db-864f-4d4fbe3c20b2)
+<img width="1195" height="423" alt="image" src="https://github.com/user-attachments/assets/365ef01f-8e43-4d26-8e99-15b2220c8d85" />
+
