@@ -2344,6 +2344,10 @@ UnitPlatesMainFrame:SetScript("OnUpdate", function()
 			end
 		end
 		
+		if kuiPlateFrame.classIcon then
+			kuiPlateFrame.classIcon:SetFrameLevel(targetLevel + 5)
+		end
+		
 		if kuiPlateFrame.textLayerHost then
 			kuiPlateFrame.textLayerHost:SetFrameLevel(targetLevel + 5)
 		end
@@ -2354,6 +2358,14 @@ UnitPlatesMainFrame:SetScript("OnUpdate", function()
 		
 		if kuiPlateFrame.combopoints then
 			kuiPlateFrame.combopoints:SetFrameLevel(targetLevel + 5)
+		end
+		
+		if kuiPlateFrame.questIcon then
+			kuiPlateFrame.questIcon:SetFrameLevel(targetLevel + 5)
+		end
+		
+		if kuiPlateFrame.combatIcon then
+			kuiPlateFrame.combatIcon:SetFrameLevel(targetLevel + 5)
 		end
 		
 		if kuiPlateFrame.originalPlateFrame.totem then
