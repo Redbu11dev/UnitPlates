@@ -53,4 +53,6 @@ Features:
 
 <img width="851" height="435" alt="image" src="https://github.com/user-attachments/assets/dfe94b52-5dfe-4cd7-9e4f-2af2b01ce172" />
 
+<img width="1386" height="432" alt="image" src="https://github.com/user-attachments/assets/3737733b-c134-4691-a403-4f5f3ddb4f8e" />
+
 
