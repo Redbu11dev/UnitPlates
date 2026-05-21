@@ -510,6 +510,17 @@ function UPApiUnitCastingInfo(guid)
 end
 --CASTING END
 
+function UPApiIsUnitTargetingMe(guid)
+    local targetToken = guid.."target" --dark magic
+    if UnitExists(targetToken) then
+        -- Compare the GUIDs
+        if UnitName(targetToken) == UnitName("player") then
+            return true
+        end
+    end
+    return false
+end
+
 
 
 ------------------------------ApiFrame

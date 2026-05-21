@@ -808,25 +808,34 @@ local function UpdatePlate(kuiPlateFrame)
 	--cast warning bar simulation end
 	
 	--THREAT
-	-- if (guid and (not kuiPlateFrame.friend)) then
-		-- local isTanking, status, threatpct, rawthreatpct, threatvalue = UnitDetailedThreatSituation("player", guid)
-		-- if threatpct then
-			-- local p = threatpct / 100
+	--if (guid and (not kuiPlateFrame.friend)) then
+	-- if (kuiPlateFrame.guid) then
+		-- -- local isTanking, status, threatpct, rawthreatpct, threatvalue = UnitDetailedThreatSituation("player", guid)
+		-- -- if threatpct then
+			-- -- local p = threatpct / 100
         
-			-- -- Interpolate: StartValue + (EndValue - StartValue) * Ratio
-			-- local r = 0.2 + (0.7 - 0.2) * p
-			-- local g = 0.6 + (0.2 - 0.6) * p
-			-- local b = 0.1 -- Both start and end at 0.1		
+			-- -- -- Interpolate: StartValue + (EndValue - StartValue) * Ratio
+			-- -- local r = 0.2 + (0.7 - 0.2) * p
+			-- -- local g = 0.6 + (0.2 - 0.6) * p
+			-- -- local b = 0.1 -- Both start and end at 0.1		
 		
-			-- kuiPlateFrame.threat.text:SetTextColor(r, g, b, 1)
-			-- kuiPlateFrame.threat.text:SetText(string.format("%d", threatpct).."%")
-			-- kuiPlateFrame.threat.text:Show()
-		-- else
-			-- kuiPlateFrame.threat.text:Hide()
-		-- end
+			-- -- kuiPlateFrame.threat.text:SetTextColor(r, g, b, 1)
+			-- -- kuiPlateFrame.threat.text:SetText(string.format("%d", threatpct).."%")
+			-- -- kuiPlateFrame.threat.text:Show()
+		-- -- else
+			-- -- kuiPlateFrame.threat.text:Hide()
+		-- -- end
+		-- local threatPercentage = UPThreatLibGetMyThreatPercentage(kuiPlateFrame.guid)
+		-- kuiPlateFrame.threat:SetText(string.format("%d", threatPercentage).."%")
+		-- kuiPlateFrame.threat:Show()
 	-- else
-		-- kuiPlateFrame.threat.text:Hide()
+		-- kuiPlateFrame.threat:Hide()
 	-- end
+	
+	if (not kuiPlateFrame.isPlayer) and kuiPlateFrame.isInCombat and (not UnitIsFriend("player", kuiPlateFrame.guid)) and UPApiIsUnitTargetingMe(kuiPlateFrame.guid) then
+		kuiPlateFrame.name:SetTextColor(0.9,0,0,1)
+	end
+	
 	--THREAT END
 	
 	--AURA POLLING
@@ -1303,20 +1312,20 @@ local function InitFrame(originalPlateFrame)
 	
 	
 	
-	kuiPlateFrame.threat = CreateFrame("Frame", nil, kuiPlateFrame)
-	kuiPlateFrame.threat:SetFrameLevel(1)
-	kuiPlateFrame.threat:SetPoint("TOP", kuiPlateFrame.typeIcon, "BOTTOM", 0, -1 * UPConstants.minimalOnePixel)
-	kuiPlateFrame.threat:SetHeight(UPConstants.threatFrameSize)
-	kuiPlateFrame.threat:SetWidth(UPConstants.threatFrameSize)
+	-- kuiPlateFrame.threat = CreateFrame("Frame", nil, kuiPlateFrame)
+	-- kuiPlateFrame.threat:SetFrameLevel(1)
+	-- kuiPlateFrame.threat:SetPoint("TOP", kuiPlateFrame.typeIcon, "BOTTOM", 0, -1 * UPConstants.minimalOnePixel)
+	-- kuiPlateFrame.threat:SetHeight(UPConstants.threatFrameSize)
+	-- kuiPlateFrame.threat:SetWidth(UPConstants.threatFrameSize)
 	
-	kuiPlateFrame.threat.text = kuiPlateFrame.threat:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-	kuiPlateFrame.threat.text:SetFont(mainFontPath, UPConstants.threatFontSize, "OUTLINE")
-	kuiPlateFrame.threat.text:SetJustifyH("RIGHT")
-	kuiPlateFrame.threat.text:SetTextColor(1,1,1,1)
-	kuiPlateFrame.threat.text:ClearAllPoints()
-	kuiPlateFrame.threat.text:SetPoint("TOPRIGHT", kuiPlateFrame.threat, "TOPRIGHT", 0, -1 * UPConstants.minimalOnePixel)
-	kuiPlateFrame.threat.text:SetText("100%")
-	kuiPlateFrame.threat.text:Hide()
+	kuiPlateFrame.threat = kuiPlateFrame.textLayerHost:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	kuiPlateFrame.threat:SetFont(mainFontPath, UPConstants.threatFontSize, "OUTLINE")
+	kuiPlateFrame.threat:SetJustifyH("RIGHT")
+	kuiPlateFrame.threat:SetTextColor(1,1,1,1)
+	kuiPlateFrame.threat:ClearAllPoints()
+	kuiPlateFrame.threat:SetPoint("TOPRIGHT", kuiPlateFrame.typeIcon, "BOTTOMRIGHT", 0, -1 * UPConstants.minimalOnePixel)
+	kuiPlateFrame.threat:SetText("100%")
+	kuiPlateFrame.threat:Hide()
 
 	-- self:CreateLevel(originalPlateFrame, kuiPlateFrame)
 	-- kuiPlateFrame.level = kuiPlateFrame:CreateFontString(kuiPlateFrame.level, {
@@ -2360,7 +2369,8 @@ UnitPlatesMainFrame:SetScript("OnUpdate", function()
 		local targetLevel = i * 7 
 		
 		-- Target priority: If this is your current target, force it to the absolute top safely
-		if f.isTarget or (UnitName("target") == kuiPlateFrame.nameTextVariable) then
+		--if f.isTarget or (UnitName("target") == kuiPlateFrame.nameTextVariable) then
+		if f.isTarget then
 			targetLevel = 120 -- Safe ceiling just below the Vanilla engine cap of 128
 		end
 		
