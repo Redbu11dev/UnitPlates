@@ -84,6 +84,10 @@ local function UPCompatPfQuestScanQuestObjectives()
         if questTitle and complete ~= 1 then
             activeQuests[questTitle] = {}
             local numObjectives = GetNumQuestLeaderBoards(qid)
+			
+			if (numObjectives == nil) or numObjectives < 1 then
+				break
+			end
 
             for i = 1, numObjectives do
                 local text, objType, finished = GetQuestLogLeaderBoard(i, qid)
