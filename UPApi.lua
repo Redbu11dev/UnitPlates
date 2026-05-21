@@ -280,83 +280,85 @@ local function UPApiSyncAurasCacheWithActual(guid)
 end
 
 local function UPApiCacheInAuraIfValid(guid, auraName, isDebuff)
-	--check for unit debuffs with same name
-	for i = 1, 16 do
-		local texture, count, debuffType, spellId, add1, add2, add3, add4 = UnitDebuff(guid, i)
-		local name, rank, icon, spellMinRange, spellMaxRange = SpellInfo(spellId)
-		if rank == nil or rank == '' then
-			rank = "Rank 0"
-		end
-		--parse rank into number
-		--local rankNumber = tonumber(string.match(rank, "(%d+)"))
-		local _, _, rankNumberStr = string.find(rank, "(%d+)")
-		local rankNumber = tonumber(rankNumberStr)
-		
-		-- print("auraName: "..tostring(auraName))
-		-- print("name: "..tostring(name))
-		-- print("rank: "..tostring(rank))
-		-- print("texture: "..tostring(texture))
-		-- print("count: "..tostring(count))
-		
-		if auraName == name then
-			--rank can be empty string (then use 0)
+	if isDebuff then
+		--check for unit debuffs with same name
+		for i = 1, 16 do
+			local texture, count, debuffType, spellId, add1, add2, add3, add4 = UnitDebuff(guid, i)
+			local name, rank, icon, spellMinRange, spellMaxRange = SpellInfo(spellId)
+			if rank == nil or rank == '' then
+				rank = "Rank 0"
+			end
+			--parse rank into number
+			--local rankNumber = tonumber(string.match(rank, "(%d+)"))
+			local _, _, rankNumberStr = string.find(rank, "(%d+)")
+			local rankNumber = tonumber(rankNumberStr)
+			
+			-- print("auraName: "..tostring(auraName))
+			-- print("name: "..tostring(name))
 			-- print("rank: "..tostring(rank))
 			-- print("texture: "..tostring(texture))
 			-- print("count: "..tostring(count))
 			
-			local duration = UPLibAuraDurationsGetAuraDuration(name, rankNumber)
-			if duration == nil then
-				--exit early
+			if auraName == name then
+				--rank can be empty string (then use 0)
+				-- print("rank: "..tostring(rank))
+				-- print("texture: "..tostring(texture))
+				-- print("count: "..tostring(count))
+				
+				local duration = UPLibAuraDurationsGetAuraDuration(name, rankNumber)
+				if duration == nil then
+					--exit early
+					break
+				end			
+				--duration is in seconds, GetTime() is also in seconds, floating (like 9.53 seconds)
+				--put into cache
+				local startTime = GetTime()
+				local expirationTime = startTime+duration
+				UPApiPutIntoAurasCache(guid, spellId, name, texture, count, debuffType, duration, startTime, expirationTime, isDebuff)
+				
+				--break loop (found it)
 				break
-			end			
-			--duration is in seconds, GetTime() is also in seconds, floating (like 9.53 seconds)
-			--put into cache
-			local startTime = GetTime()
-			local expirationTime = startTime+duration
-			UPApiPutIntoAurasCache(guid, spellId, name, texture, count, debuffType, duration, startTime, expirationTime, isDebuff)
+			end
+		end
+	else
+		--check for unit buffs with same name
+		for i = 1, 16 do
+			local texture, count, spellId, add1, add2, add3, add4 = UnitBuff(guid, i)
+			local name, rank, icon, spellMinRange, spellMaxRange = SpellInfo(spellId)
+			if rank == nil or rank == '' then
+				rank = "Rank 0"
+			end
+			--parse rank into number
+			--local rankNumber = tonumber(string.match(rank, "(%d+)"))
+			local _, _, rankNumberStr = string.find(rank, "(%d+)")
+			local rankNumber = tonumber(rankNumberStr)
 			
-			--break loop (found it)
-			break
-		end
-	end
-	
-	--check for unit buffs with same name
-	for i = 1, 16 do
-		local texture, count, spellId, add1, add2, add3, add4 = UnitBuff(guid, i)
-		local name, rank, icon, spellMinRange, spellMaxRange = SpellInfo(spellId)
-		if rank == nil or rank == '' then
-			rank = "Rank 0"
-		end
-		--parse rank into number
-		--local rankNumber = tonumber(string.match(rank, "(%d+)"))
-		local _, _, rankNumberStr = string.find(rank, "(%d+)")
-		local rankNumber = tonumber(rankNumberStr)
-		
-		-- print("auraName: "..tostring(auraName))
-		-- print("name: "..tostring(name))
-		-- print("rank: "..tostring(rank))
-		-- print("texture: "..tostring(texture))
-		-- print("count: "..tostring(count))
-		
-		if auraName == name then
-			--rank can be empty string (then use 0)
+			-- print("auraName: "..tostring(auraName))
+			-- print("name: "..tostring(name))
 			-- print("rank: "..tostring(rank))
 			-- print("texture: "..tostring(texture))
 			-- print("count: "..tostring(count))
 			
-			local duration = UPLibAuraDurationsGetAuraDuration(name, rankNumber)
-			if duration == nil then
-				--exit early
+			if auraName == name then
+				--rank can be empty string (then use 0)
+				-- print("rank: "..tostring(rank))
+				-- print("texture: "..tostring(texture))
+				-- print("count: "..tostring(count))
+				
+				local duration = UPLibAuraDurationsGetAuraDuration(name, rankNumber)
+				if duration == nil then
+					--exit early
+					break
+				end			
+				--duration is in seconds, GetTime() is also in seconds, floating (like 9.53 seconds)
+				--put into cache
+				local startTime = GetTime()
+				local expirationTime = startTime+duration
+				UPApiPutIntoAurasCache(guid, spellId, name, texture, count, debuffType, duration, startTime, expirationTime, isDebuff)
+				
+				--break loop (found it)
 				break
-			end			
-			--duration is in seconds, GetTime() is also in seconds, floating (like 9.53 seconds)
-			--put into cache
-			local startTime = GetTime()
-			local expirationTime = startTime+duration
-			UPApiPutIntoAurasCache(guid, spellId, name, texture, count, debuffType, duration, startTime, expirationTime, isDebuff)
-			
-			--break loop (found it)
-			break
+			end
 		end
 	end
 	
