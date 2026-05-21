@@ -399,6 +399,8 @@ local function UpdatePlate(kuiPlateFrame)
 			-- kuiPlateFrame.petHappiness:Show()
 			kuiPlateFrame.petHappiness:Hide()
 		end
+	else
+		kuiPlateFrame.petHappiness:Hide()
 	end
 	--pet happiness end
 	
