@@ -208,6 +208,7 @@ local function UPApiSyncAurasCacheWithActual(guid)
 		end
 		
 		local name, rank, icon, spellMinRange, spellMaxRange = SpellInfo(spellId)
+		--print("aura name1: "..tostring(name))
 		
 		actualUnitAuras[name] = { 
 			spellId = spellId,
@@ -227,6 +228,7 @@ local function UPApiSyncAurasCacheWithActual(guid)
 		end
 		
 		local name, rank, icon, spellMinRange, spellMaxRange = SpellInfo(spellId)
+		--print("aura name1: "..tostring(name))
 		
 		actualUnitAuras[name] = { 
 			spellId = spellId,
@@ -260,6 +262,7 @@ local function UPApiSyncAurasCacheWithActual(guid)
 		if not cache[actualName] and (UPLibAuraDurationsGetAuraDuration(actualName, 0) == -1) then
 			--guid, spellId, name, texture, count, debuffType, duration, startTime, expirationTime, isDebuff
 			--print("adding "..actualName.." as infinite aura")
+			
             UPApiPutIntoAurasCache(
                 guid, 
                 actualData.spellId, 
@@ -277,7 +280,6 @@ local function UPApiSyncAurasCacheWithActual(guid)
 end
 
 local function UPApiCacheInAuraIfValid(guid, auraName, isDebuff)
-	--get spell info
 	--check for unit debuffs with same name
 	for i = 1, 16 do
 		local texture, count, debuffType, spellId, add1, add2, add3, add4 = UnitDebuff(guid, i)
@@ -289,6 +291,52 @@ local function UPApiCacheInAuraIfValid(guid, auraName, isDebuff)
 		--local rankNumber = tonumber(string.match(rank, "(%d+)"))
 		local _, _, rankNumberStr = string.find(rank, "(%d+)")
 		local rankNumber = tonumber(rankNumberStr)
+		
+		-- print("auraName: "..tostring(auraName))
+		-- print("name: "..tostring(name))
+		-- print("rank: "..tostring(rank))
+		-- print("texture: "..tostring(texture))
+		-- print("count: "..tostring(count))
+		
+		if auraName == name then
+			--rank can be empty string (then use 0)
+			-- print("rank: "..tostring(rank))
+			-- print("texture: "..tostring(texture))
+			-- print("count: "..tostring(count))
+			
+			local duration = UPLibAuraDurationsGetAuraDuration(name, rankNumber)
+			if duration == nil then
+				--exit early
+				break
+			end			
+			--duration is in seconds, GetTime() is also in seconds, floating (like 9.53 seconds)
+			--put into cache
+			local startTime = GetTime()
+			local expirationTime = startTime+duration
+			UPApiPutIntoAurasCache(guid, spellId, name, texture, count, debuffType, duration, startTime, expirationTime, isDebuff)
+			
+			--break loop (found it)
+			break
+		end
+	end
+	
+	--check for unit buffs with same name
+	for i = 1, 16 do
+		local texture, count, spellId, add1, add2, add3, add4 = UnitBuff(guid, i)
+		local name, rank, icon, spellMinRange, spellMaxRange = SpellInfo(spellId)
+		if rank == nil or rank == '' then
+			rank = "Rank 0"
+		end
+		--parse rank into number
+		--local rankNumber = tonumber(string.match(rank, "(%d+)"))
+		local _, _, rankNumberStr = string.find(rank, "(%d+)")
+		local rankNumber = tonumber(rankNumberStr)
+		
+		-- print("auraName: "..tostring(auraName))
+		-- print("name: "..tostring(name))
+		-- print("rank: "..tostring(rank))
+		-- print("texture: "..tostring(texture))
+		-- print("count: "..tostring(count))
 		
 		if auraName == name then
 			--rank can be empty string (then use 0)
@@ -340,6 +388,8 @@ function UpApiGetUnitAuras(guid, getBuffs, onlyMineBuffs, getDebuffs, onlyMineDe
 		local startTime = cachedData.startTime
 		local expirationTime = cachedData.expirationTime
 		local isDebuff = cachedData.isDebuff
+		
+		--print("aura name1: "..tostring(name))
 		
 		if getBuffs and (not isDebuff) then
 			local nameIsIgnored = false
@@ -471,6 +521,11 @@ UPApiFrame:RegisterEvent("UNIT_CASTEVENT")
 
 UPApiFrame:SetScript("OnEvent", function()
 	if event == "RAW_COMBATLOG" then
+	
+		-- if string.find(arg2, "Feed Pet") then
+			-- print(arg1)
+			-- print(arg2)
+		-- end
 		--arg1 is event name
 		--if string.find(arg2, "Rend") then
 		--if string.find(arg2, "fades") then
@@ -486,12 +541,22 @@ UPApiFrame:SetScript("OnEvent", function()
 		if arg1 == "CHAT_MSG_SPELL_PERIODIC_CREATURE_BUFFS" 
 		or arg1 == "CHAT_MSG_SPELL_PERIODIC_HOSTILEPLAYER_BUFFS" 
 		or arg1 == "CHAT_MSG_SPELL_PERIODIC_FRIENDLYPLAYER_BUFFS"
+		or arg1 == "CHAT_MSG_SPELL_PERIODIC_SELF_BUFFS" --for pet
 		then
+			-- if string.find(arg2, "Feed Pet") then
+				-- print(arg2)
+			-- end
+		
+		
 			local _, _, guid, auraName = string.find(arg2, "^(0x%x+)%sgains%s([^%d].-)%.$")
 			if guid and auraName then
 				-- print("assumed buff gain: ")
 				-- print("guid: "..tostring(guid))
 				-- print("auraName: "..tostring(auraName))
+				
+				-- if string.find(arg2, "Feed Pet") then
+					-- print(arg2)
+				-- end
 				
 				--put it into cache here
 				UPApiCacheInAuraIfValid(guid, auraName, false)	
@@ -501,7 +566,12 @@ UPApiFrame:SetScript("OnEvent", function()
 		if arg1 == "CHAT_MSG_SPELL_PERIODIC_CREATURE_DAMAGE" 
 		or arg1 == "CHAT_MSG_SPELL_PERIODIC_HOSTILEPLAYER_DAMAGE" 
 		or arg1 == "CHAT_MSG_SPELL_PERIODIC_FRIENDLYPLAYER_DAMAGE"
+		or arg1 == "CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE" --for pet
 		then
+			-- if string.find(arg2, "Feed Pet") then
+				-- print(arg2)
+			-- end
+		
 			local _, _, guid, auraName = string.find(arg2, "^(0x%x+)%sis%safflicted%sby%s(.-)%.$")
 			if guid and auraName then
 				-- print("assumed debuff gain: ")

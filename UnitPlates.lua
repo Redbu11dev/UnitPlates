@@ -53,6 +53,8 @@ UPConstants.nameplateRarityW = UPConstants.nameplateHealthBarHeight * 2.625
 
 UPConstants.questIconSize = UPConstants.nameplateHealthBarHeight * 1.1
 
+UPConstants.petHappinessIconSize = UPConstants.nameplateHealthBarHeight * 1.4
+
 UPConstants.combatIconSize = UPConstants.nameplateHealthBarHeight * 1.4
 
 UPConstants.shootingIconSize = UPConstants.nameplateHealthBarHeight * 0.9
@@ -378,6 +380,27 @@ local function UpdatePlate(kuiPlateFrame)
 		kuiPlateFrame.combatIcon:Hide()
 	end
 	--
+	
+	--pet happiness
+	if (myPlayerHasPetUI and myPlayerPetIsHunterPet and kuiPlateFrame.guildTextVariable and string.find(kuiPlateFrame.guildTextVariable, UnitName("player").."'s Pet")) then
+		local petHappiness, petDamagePercentage, petLoyaltyRate = GetPetHappiness()
+		
+		if (petHappiness == 1) then
+			kuiPlateFrame.petHappiness.icon:SetTexCoord(0.375, 0.5625, 0, 0.359375)
+			kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.petHappiness, "RIGHT", -0, -0)
+			kuiPlateFrame.petHappiness:Show()
+		elseif (petHappiness == 2) then
+			kuiPlateFrame.petHappiness.icon:SetTexCoord(0.1875, 0.375, 0, 0.359375)
+			kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.petHappiness, "RIGHT", -0, -0)
+			kuiPlateFrame.petHappiness:Show()
+		elseif (petHappiness == 3) then
+			-- kuiPlateFrame.petHappiness.icon:SetTexCoord(0, 0.1875, 0, 0.359375)
+			-- kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.petHappiness, "RIGHT", -0, -0)
+			-- kuiPlateFrame.petHappiness:Show()
+			kuiPlateFrame.petHappiness:Hide()
+		end
+	end
+	--pet happiness end
 	
 	--healthbar with
 	if kuiPlateFrame.isTrivial then
@@ -1361,6 +1384,18 @@ local function InitFrame(originalPlateFrame)
 	kuiPlateFrame.questIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\combat\\swords_combat_2")
 	kuiPlateFrame.questIcon:Hide()	
 	
+	kuiPlateFrame.petHappiness = CreateFrame("Frame", nil, kuiPlateFrame)
+	kuiPlateFrame.petHappiness:SetFrameLevel(0)
+	kuiPlateFrame.petHappiness:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", -0, 0)
+	kuiPlateFrame.petHappiness:SetHeight(20)
+	kuiPlateFrame.petHappiness:SetWidth(20)
+	kuiPlateFrame.petHappiness.icon = kuiPlateFrame.petHappiness:CreateTexture(nil, "OVERLAY")
+	--kuiPlateFrame.rarityIconR.icon:SetTexCoord(1, 0, 0, 1)
+	--kuiPlateFrame.combatIcon.icon:SetVertexColor(1, 1, 0, 1)
+	kuiPlateFrame.petHappiness.icon:SetAllPoints()
+	kuiPlateFrame.petHappiness.icon:SetTexture("Interface\\PetPaperDollFrame\\UI-PetHappiness")
+	kuiPlateFrame.petHappiness:Hide()
+	
 	kuiPlateFrame.combatIcon = CreateFrame("Frame", nil, kuiPlateFrame)
 	kuiPlateFrame.combatIcon:SetFrameLevel(0)
 	kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", -0, -0)
@@ -1734,6 +1769,7 @@ local function InitFrame(originalPlateFrame)
 		for i = table.getn(kuiPlateFrame.unitAuras), 1, -1 do
 			local aura = kuiPlateFrame.unitAuras[i]
 			-- Check if it has an expiration time and if that time has passed
+			--print("aura name1: "..tostring(aura.name))
 			if not (aura.duration == -1) then
 				local timeLeftSeconds = aura.expirationTime - currentTime
 				if timeLeftSeconds <= 0 then
@@ -1971,7 +2007,13 @@ local function InitFrame(originalPlateFrame)
 				else
 					self.cdText:SetText("0")--show
 					if timeLeftSeconds < 0 then
-						self.cdText:SetText("??")--show
+						--probably negative values are more informative than questions
+						local cooldownText = ""..timeLeftSeconds
+						local s = string.format("%.1f", timeLeftSeconds)
+						cooldownText = string.sub(s, 2)
+						self.cdText:SetTextColor(0.99,0,0,1)
+						
+						--self.cdText:SetText("??")--show
 						--print("aura duration seems to be incorrect for: "..auraName)
 					end
 				end
@@ -2362,6 +2404,10 @@ UnitPlatesMainFrame:SetScript("OnUpdate", function()
 		
 		if kuiPlateFrame.questIcon then
 			kuiPlateFrame.questIcon:SetFrameLevel(targetLevel + 5)
+		end
+		
+		if kuiPlateFrame.petHappiness then
+			kuiPlateFrame.petHappiness:SetFrameLevel(targetLevel + 5)
 		end
 		
 		if kuiPlateFrame.combatIcon then
