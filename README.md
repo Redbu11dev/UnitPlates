@@ -46,4 +46,7 @@ Features:
 
 <img width="1386" height="432" alt="image" src="https://github.com/user-attachments/assets/3737733b-c134-4691-a403-4f5f3ddb4f8e" />
 
+<img width="485" height="327" alt="image" src="https://github.com/user-attachments/assets/976a0bc5-a31f-400e-90f3-4b6bf80329de" />
+
+
 
