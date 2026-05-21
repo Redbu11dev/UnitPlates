@@ -86,32 +86,32 @@ local function UPCompatPfQuestScanQuestObjectives()
             local numObjectives = GetNumQuestLeaderBoards(qid)
 			
 			if (numObjectives == nil) or numObjectives < 1 then
-				break
+				--do nothing
+			else
+				for i = 1, numObjectives do
+					local text, objType, finished = GetQuestLogLeaderBoard(i, qid)
+					if text and not finished then
+						-- 1.12 regex is picky; we match the name and the numbers
+						local _, _, objName, current, total = string.find(text, "(.*):%s*(%d+)%s*/%s*(%d+)")
+						
+						if objName then
+							objName = string.gsub(objName, "^%s*(.-)%s*$", "%1") -- Trim whitespace
+							table.insert(activeQuests[questTitle], {
+								objective = objName,
+								current = tonumber(current) or 0,
+								total = tonumber(total) or 1
+							})
+						else
+							-- FALLBACK: If it's a "Talk to" or "Special" objective without 0/1 numbers
+							table.insert(activeQuests[questTitle], {
+								objective = text,
+								current = 0,
+								total = 1
+							})
+						end
+					end
+				end
 			end
-
-            for i = 1, numObjectives do
-                local text, objType, finished = GetQuestLogLeaderBoard(i, qid)
-                if text and not finished then
-                    -- 1.12 regex is picky; we match the name and the numbers
-                    local _, _, objName, current, total = string.find(text, "(.*):%s*(%d+)%s*/%s*(%d+)")
-                    
-                    if objName then
-                        objName = string.gsub(objName, "^%s*(.-)%s*$", "%1") -- Trim whitespace
-                        table.insert(activeQuests[questTitle], {
-                            objective = objName,
-                            current = tonumber(current) or 0,
-                            total = tonumber(total) or 1
-                        })
-                    else
-                        -- FALLBACK: If it's a "Talk to" or "Special" objective without 0/1 numbers
-                        table.insert(activeQuests[questTitle], {
-                            objective = text,
-                            current = 0,
-                            total = 1
-                        })
-                    end
-                end
-            end
         end
     end
 
