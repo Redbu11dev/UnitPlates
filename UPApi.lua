@@ -559,6 +559,8 @@ function UPApiIsUnitTargetingMe(guid)
     return false
 end
 
+local UPApiPendingAuraRefreshes = {}
+local UPApiPlayerGUIDPlaceholder = "You"
 
 
 ------------------------------ApiFrame
@@ -570,12 +572,101 @@ UPApiFrame.numFrames = 0
 UPApiFrame:RegisterEvent("RAW_COMBATLOG")
 UPApiFrame:RegisterEvent("UNIT_CASTEVENT")
 
+UPApiFrame:SetScript("OnUpdate", function()
+    local currentTime = GetTime()
+    
+    for casterGUID, spells in pairs(UPApiPendingAuraRefreshes) do
+        for spellName, data in pairs(spells) do
+            
+            -- If 0.2 seconds pass without a failure combat log, commit it!
+            if (currentTime - data.time) > 0.2 then
+                UPApiCacheInAuraIfValid(data.targetGUID, spellName, data.isDebuff)
+                spells[spellName] = nil
+            end
+        end
+        
+        -- Memory cleanup: Delete empty caster tables
+        if next(spells) == nil then
+            UPApiPendingAuraRefreshes[casterGUID] = nil
+        end
+    end
+end)
+
 UPApiFrame:SetScript("OnEvent", function()
 	if event == "RAW_COMBATLOG" then
 	
-	-- if arg2 and string.find(arg2, "Rend") then
-		-- print(arg2)
-	-- end
+	--if arg2 and (string.find(arg2, "missed") or string.find(arg2, "dodged") or string.find(arg2, "parried") or string.find(arg2, "resisted") or string.find(arg2, "failed")) then
+	-- if arg2 and (string.find(arg2, "missed") or string.find(arg2, "dodged") or string.find(arg2, "parried") or string.find(arg2, "resisted")) then
+	if arg2 and (
+			string.find(arg2, "dodged") or 
+            string.find(arg2, "parried") or 
+            string.find(arg2, "resisted") or 
+            (string.find(arg2, "blocked") and (not string.find(arg2, "blocked)"))) or
+            string.find(arg2, "evaded") or 
+            string.find(arg2, "deflected") or 
+			 
+			string.find(arg2, "missed") or
+			string.find(arg2, "immune")
+			)
+             --string.find(arg2, "fail")) 
+			 then
+		--print(arg1)
+		--print(arg2)
+		
+		local failedSpellName = nil
+		local failedTargetGUID = nil
+		local failedCasterGUID = nil
+		
+		-- 2. Pattern A: MY failures ("Your Rend is/was parried by 0x...")
+		local _, _, spell, target = string.find(arg2, "^Your (.-) is .- (0x%x+)")
+		if not spell then
+			_, _, spell, target = string.find(arg2, "^Your (.-) was .- (0x%x+)")
+		end
+		if not spell then
+			_, _, spell, target = string.find(arg2, "^Your (.-) missed (0x%x+)")
+		end
+		if not spell then
+			_, _, spell, target = string.find(arg2, "^Your (.-) failed%. .- (0x%x+)")
+		end
+		if spell and target then
+			failedSpellName = spell
+			failedTargetGUID = target
+			--failedCasterGUID = UPApiPlayerGUID -- Mapped from our UNIT_CASTEVENT catch
+			failedCasterGUID = UPApiPlayerGUIDPlaceholder
+		else
+			-- 3. Pattern B: OTHERS' failures ("0xABC...'s Rend was/is parried by 0xDEF...")
+			local _, _, caster, spell, target = string.find(arg2, "^(0x%x+)'s (.-) was .- (0x%x+)")
+			if not caster then
+				_, _, caster, spell, target = string.find(arg2, "^(0x%x+)'s (.-) is .- (0x%x+)")
+			end
+			if not caster then
+				_, _, caster, spell, target = string.find(arg2, "^(0x%x+)'s (.-) missed (0x%x+)")
+			end
+			if not caster then
+				_, _, caster, spell, target = string.find(arg2, "^(0x%x+)'s (.-) failed%. .- (0x%x+)")
+			end
+			if caster and spell and target then
+				failedCasterGUID = caster
+				failedSpellName = spell
+				failedTargetGUID = target
+			else
+			--print out or report failed case
+			--print("UPApiPendingAuraRefreshes unparsed event:")
+			--print(arg1)
+			--print(arg2)
+			end
+		end
+		
+		-- 4. If we parsed a failure, delete it from the waiting room!
+		if failedCasterGUID and failedSpellName and UPApiPendingAuraRefreshes[failedCasterGUID] then
+			if UPApiPendingAuraRefreshes[failedCasterGUID][failedSpellName] then
+				-- Verify the target GUID matches just to be bulletproof
+				if UPApiPendingAuraRefreshes[failedCasterGUID][failedSpellName].targetGUID == failedTargetGUID then
+					UPApiPendingAuraRefreshes[failedCasterGUID][failedSpellName] = nil
+				end
+			end
+		end
+	end
 	
 		-- if string.find(arg2, "Feed Pet") then
 			-- print(arg1)
@@ -634,6 +725,13 @@ UPApiFrame:SetScript("OnEvent", function()
 			-- if string.find(arg2, "Rend") then
 				-- print(arg2)
 			-- end
+			
+			-- -- 1. PARSE OTHER PLAYERS / PETS ("Thrall's Rend missed...")
+			-- local _, _, cName, sName = string.find(msg, "^(0x%x+)'s%s(.-)%swas%sdodged%sby(.-) missed")
+			-- if not cName then _, _, cName, sName = string.find(msg, "([^']+)'s (.-) was dodged") end
+			-- if not cName then _, _, cName, sName = string.find(msg, "([^']+)'s (.-) was parried") end
+			-- if not cName then _, _, cName, sName = string.find(msg, "([^']+)'s (.-) was resisted") end
+			-- if not cName then _, _, cName, sName = string.find(msg, "([^']+)'s (.-) failed") end
 		
 			local _, _, guid, auraName = string.find(arg2, "^(0x%x+)%sis%safflicted%sby%s(.-)%.$")
 			if guid and auraName then
@@ -652,8 +750,8 @@ UPApiFrame:SetScript("OnEvent", function()
 	
 		if eventType == "MAINHAND" or eventType == "OFFHAND" then return nil end
 		
-		local casterName = UnitName(casterGUID)
-		local targetName = UnitName(casterGUID)
+		--local casterName = UnitName(casterGUID)
+		--local targetName = UnitName(targetGUID)
 		
 		local spellName, spellRank, spellTexture, spellMinRange, spellMaxRange = SpellInfo(spellId)
 		
@@ -686,15 +784,34 @@ UPApiFrame:SetScript("OnEvent", function()
 			--entry.name = nil
 			--entry.endTime = 0
 			if targetGUID and spellId then
+				-- Capture our own GUID dynamically so we can map "Your" logs later
+				if UnitName(casterGUID) == UnitName("player") then
+					casterGUID = UPApiPlayerGUIDPlaceholder
+				end
+			
 				local auraType = UPApiGetAuraTypeOnUnit(targetGUID, spellId)
 			
-				if auraType == "BUFF" then
-					UPApiCacheInAuraIfValid(targetGUID, spellName, false)
-				elseif auraType == "DEBUFF" then
-					UPApiCacheInAuraIfValid(targetGUID, spellName, true)
+				-- if auraType == "BUFF" then
+					-- UPApiCacheInAuraIfValid(targetGUID, spellName, false)
+				-- elseif auraType == "DEBUFF" then
+					-- UPApiCacheInAuraIfValid(targetGUID, spellName, true)
+				-- end
+				
+				if auraType == "BUFF" or auraType == "DEBUFF" then
+					if not UPApiPendingAuraRefreshes[casterGUID] then
+						UPApiPendingAuraRefreshes[casterGUID] = {}
+					end
+					
+					-- Put the cast in the waiting room
+					UPApiPendingAuraRefreshes[casterGUID][spellName] = {
+						targetGUID = targetGUID,
+						time = GetTime(),
+						isDebuff = (auraType == "DEBUFF")
+					}
 				end
 			end
 		elseif eventType == "FAIL" then
+			--print(""..spellName.." ".."FAIL")
 			-- Clear the cast
 			entry.name = nil
 			entry.endTime = 0
