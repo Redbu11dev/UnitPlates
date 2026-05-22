@@ -197,6 +197,38 @@ local function UPApiPutIntoAurasCache(guid, spellId, name, texture, count, debuf
     }
 end
 
+-- Returns "BUFF", "DEBUFF", or nil if it exists on the unit
+local function UPApiGetAuraTypeOnUnit(unitGUID, targetSpellId)
+    if not unitGUID or not targetSpellId then return nil end
+
+    -- 1. Scan Debuffs first (usually what we care about for hostile mobs)
+    local i = 1
+    while true do
+        -- SuperWoW: UnitDebuff returns (texture, count, debuffType, spellId)
+        local texture, count, debuffType, spellId = UnitDebuff(unitGUID, i)
+        if not texture then break end -- No more debuffs
+        
+        if spellId == targetSpellId then
+            return "DEBUFF"
+        end
+        i = i + 1
+    end
+
+    -- 2. Scan Buffs
+    i = 1
+    while true do
+        local texture, count, spellId = UnitBuff(unitGUID, i)
+        if not texture then break end -- No more buffs
+        
+        if spellId == targetSpellId then
+            return "BUFF"
+        end
+        i = i + 1
+    end
+
+    return nil
+end
+
 local function UPApiSyncAurasCacheWithActual(guid)
 	local actualUnitAuras = {} --both debuffs and buffs in case buff/debuff gets assigned wrong
 	for i = 1, 16 do
@@ -280,6 +312,8 @@ local function UPApiSyncAurasCacheWithActual(guid)
 end
 
 local function UPApiCacheInAuraIfValid(guid, auraName, isDebuff)
+	--print("new aura cache data0: "..tostring(guid).." "..tostring(auraName).." "..tostring(isDebuff))
+
 	if isDebuff then
 		--check for unit debuffs with same name
 		for i = 1, 16 do
@@ -315,6 +349,8 @@ local function UPApiCacheInAuraIfValid(guid, auraName, isDebuff)
 				local startTime = GetTime()
 				local expirationTime = startTime+duration
 				UPApiPutIntoAurasCache(guid, spellId, name, texture, count, debuffType, duration, startTime, expirationTime, isDebuff)
+				
+				--print("new aura cache data: "..tostring(name).." "..tostring(startTime).." "..tostring(expirationTime).." "..tostring(duration))
 				
 				--break loop (found it)
 				break
@@ -371,7 +407,7 @@ end
 function UpApiGetUnitAuras(guid, getBuffs, onlyMineBuffs, getDebuffs, onlyMineDebuffs, ignoredBuffNames, ignoredDebuffNames)	
 	UPApiSyncAurasCacheWithActual(guid)
 
-	local maxAuras = 80 -- who knows, maybe it could be more than 16 now
+	local maxAuras = 80 -- maybe it could be more than 16, whatever
 	local unitBuffs = {}
 	local unitDebuffs = {}
 	
@@ -438,6 +474,8 @@ function UpApiGetUnitAuras(guid, getBuffs, onlyMineBuffs, getDebuffs, onlyMineDe
 					expirationTime = expirationTime,
 					isDebuff = true
 				})
+				
+				--print("new aura poll: "..tostring(name).." "..tostring(startTime).." "..tostring(expirationTime).." "..tostring(duration))
 			end
 		end
 	end
@@ -535,6 +573,10 @@ UPApiFrame:RegisterEvent("UNIT_CASTEVENT")
 UPApiFrame:SetScript("OnEvent", function()
 	if event == "RAW_COMBATLOG" then
 	
+	-- if arg2 and string.find(arg2, "Rend") then
+		-- print(arg2)
+	-- end
+	
 		-- if string.find(arg2, "Feed Pet") then
 			-- print(arg1)
 			-- print(arg2)
@@ -557,6 +599,10 @@ UPApiFrame:SetScript("OnEvent", function()
 		or arg1 == "CHAT_MSG_SPELL_PERIODIC_SELF_BUFFS" --for pet
 		then
 			-- if string.find(arg2, "Feed Pet") then
+				-- print(arg2)
+			-- end
+			
+			-- if string.find(arg2, "Rend") then
 				-- print(arg2)
 			-- end
 		
@@ -584,6 +630,10 @@ UPApiFrame:SetScript("OnEvent", function()
 			-- if string.find(arg2, "Feed Pet") then
 				-- print(arg2)
 			-- end
+			
+			-- if string.find(arg2, "Rend") then
+				-- print(arg2)
+			-- end
 		
 			local _, _, guid, auraName = string.find(arg2, "^(0x%x+)%sis%safflicted%sby%s(.-)%.$")
 			if guid and auraName then
@@ -606,6 +656,10 @@ UPApiFrame:SetScript("OnEvent", function()
 		local targetName = UnitName(casterGUID)
 		
 		local spellName, spellRank, spellTexture, spellMinRange, spellMaxRange = SpellInfo(spellId)
+		
+		-- if string.find(spellName, "Rend") then
+			-- print(eventType)
+		-- end
 		
 		-- print("OnUnitCastEvent")
 		-- print("casterName: ".. casterName)
@@ -631,6 +685,15 @@ UPApiFrame:SetScript("OnEvent", function()
 		elseif eventType == "CAST" then
 			--entry.name = nil
 			--entry.endTime = 0
+			if targetGUID and spellId then
+				local auraType = UPApiGetAuraTypeOnUnit(targetGUID, spellId)
+			
+				if auraType == "BUFF" then
+					UPApiCacheInAuraIfValid(targetGUID, spellName, false)
+				elseif auraType == "DEBUFF" then
+					UPApiCacheInAuraIfValid(targetGUID, spellName, true)
+				end
+			end
 		elseif eventType == "FAIL" then
 			-- Clear the cast
 			entry.name = nil

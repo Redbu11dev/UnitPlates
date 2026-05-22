@@ -1206,7 +1206,7 @@ local function InitFrame(originalPlateFrame)
 	kuiPlateFrame.health.p:Show()
 	
 	kuiPlateFrame.health.percentage = kuiPlateFrame.health:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-	kuiPlateFrame.health.percentage:SetFont("Fonts\\FRIZQT__.TTF", UPConstants.healthPercentageFontSize)
+	kuiPlateFrame.health.percentage:SetFont(mainFontPath, UPConstants.healthPercentageFontSize)
 	kuiPlateFrame.health.percentage:SetJustifyH("CENTER")
 	kuiPlateFrame.health.percentage:SetPoint("CENTER", kuiPlateFrame.health, "CENTER", 0, 0)
 	kuiPlateFrame.health.percentage:SetTextColor(1,1,1,1)
@@ -1902,9 +1902,9 @@ local function InitFrame(originalPlateFrame)
 			icon:SetHeight(iconSize)
 			local timeLeftSeconds = aura.expirationTime - currentTime
 			if timeLeftSeconds >= 60 then
-				icon.cdText:SetFont("Fonts\\FRIZQT__.TTF", iconSize/2.6, "OUTLINE")
+				icon.cdText:SetFont(mainFontPath, iconSize/2.6, "OUTLINE")
 			else
-				icon.cdText:SetFont("Fonts\\FRIZQT__.TTF", iconSize/2, "OUTLINE")
+				icon.cdText:SetFont(mainFontPath, iconSize/2, "OUTLINE")
 			end
 			icon.countText:SetFont(mainFontPath, iconSize/3, "OUTLINE")
 			
