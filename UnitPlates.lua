@@ -2402,6 +2402,10 @@ UnitPlatesMainFrame:SetScript("OnUpdate", function()
 			end
 		end
 		
+		if kuiPlateFrame.power then
+			kuiPlateFrame.power:SetFrameLevel(targetLevel + 1)
+		end
+		
 		if kuiPlateFrame.classIcon then
 			kuiPlateFrame.classIcon:SetFrameLevel(targetLevel + 5)
 		end

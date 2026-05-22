@@ -12,7 +12,6 @@
 UPDebug.lua
 
 UPLibAuraDurations.lua
-UPThreatLib.lua
 
 UPCompat.lua
 
