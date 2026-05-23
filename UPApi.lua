@@ -57,7 +57,7 @@ function UPApiIsTargetInShootingDistance()
 		-- In 1.12, the first line of the tooltip is the name of the spell/item
         local text = UPApiActionSlotScannerTextLeft1:GetText()
         
-        if text == "Auto Shot" then
+        if (text == "Auto Shot") or (text == "Throw") or (text == "Shoot Bow") or (text == "Shoot Gun") or (text == "Shoot Crossbow") or (text == "Shoot") then
             --print("Found Auto Shot at slot " .. i)
 			--return IsUsableAction(i) and IsActionInRange(i)
 			return IsActionInRange(i) == 1
@@ -68,6 +68,53 @@ function UPApiIsTargetInShootingDistance()
 end
 
 ---------------------------------UNSORTED
+
+function UPApiIsPartyLeader(guid)
+	if not guid or not UnitExists(guid) then return false end
+	
+	-- 2. Check Party Group State
+    if GetNumPartyMembers() > 0 then
+       -- Check if the unit matches the designated party leader index
+		local leaderIndex = GetPartyLeaderIndex()
+		if leaderIndex > 0 and UnitIsUnit(guid, "party"..leaderIndex) then
+			return true
+		end
+    end
+	
+	return false
+end
+
+function UPApiIsRaidLeader(guid)
+	if not guid or not UnitExists(guid) then return false end
+	
+	if GetNumRaidMembers() > 0 then
+        local targetName = UnitName(guid)
+        for i = 1, GetNumRaidMembers() do
+            local name, rank, subgroup, level, class, fileName, zone, online, isDead = GetRaidRosterInfo(i)
+            if name == targetName and rank == 2 then
+                return true
+            end
+        end
+    end
+	
+	return false
+end
+
+function UPApiIsRaidAssistant(guid)
+	if not guid or not UnitExists(guid) then return false end
+	
+	if GetNumRaidMembers() > 0 then
+        local targetName = UnitName(guid)
+        for i = 1, GetNumRaidMembers() do
+            local name, rank, subgroup, level, class, fileName, zone, online, isDead = GetRaidRosterInfo(i)
+            if name == targetName and rank == 1 then
+                return true
+            end
+        end
+    end
+	
+	return false
+end
 
 function UPApiIsTarget(guid)
 	local unitExists, unitExistsGuid = UnitExists("target")	

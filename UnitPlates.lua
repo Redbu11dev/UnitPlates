@@ -299,7 +299,8 @@ local function UpdatePlate(kuiPlateFrame)
 	if kuiPlateFrame.guildTextVariable then
 		kuiPlateFrame.guild:SetText("<"..kuiPlateFrame.guildTextVariable..">")
 	end
-	if (myGuildName and kuiPlateFrame.isPlayer and (kuiPlateFrame.guildTextVariable == myGuildName)) then
+	--coloring
+	if (kuiPlateFrame.isPlayer and myGuildName and (kuiPlateFrame.guildTextVariable == myGuildName)) then
 		kuiPlateFrame.guild:SetTextColor(0,0.999,0,1)
 	else
 		kuiPlateFrame.guild:SetTextColor(1,1,1,1)
@@ -841,6 +842,41 @@ local function UpdatePlate(kuiPlateFrame)
 	end
 	
 	--THREAT END
+	
+	--PARTY/RAID
+	if kuiPlateFrame.isPlayer then
+		if UnitInParty(kuiPlateFrame.guid) then
+		--if true then
+			--is in party
+			kuiPlateFrame.name:SetTextColor(0.4, 0.6, 1, 0.99999779462814)
+			if not (kuiPlateFrame.guildTextVariable == myGuildName) then
+				kuiPlateFrame.guild:SetTextColor(0.4, 0.6, 1, 0.99999779462814)
+			end
+			kuiPlateFrame.health:SetStatusBarColor(0.4, 0.6, 1, 0.99999779462814)
+			--kuiPlateFrame.health:SetStatusBarTexture("Interface\\AddOns\\UnitPlates\\img\\statusbar\\XPerl_StatusBar8")
+			
+			--UPApiIsPartyLeader(guid)
+		elseif UnitInRaid(kuiPlateFrame.guid) then
+		--elseif true then
+			--not in party but in raid
+			--0.85, 0.55, 0.25 --another option
+			kuiPlateFrame.name:SetTextColor(0.85, 0.45, 0.15, 0.99999779462814)
+			if not (kuiPlateFrame.guildTextVariable == myGuildName) then
+				kuiPlateFrame.guild:SetTextColor(0.85, 0.45, 0.15, 0.99999779462814)
+			end
+			kuiPlateFrame.health:SetStatusBarColor(0.85, 0.45, 0.15, 0.99999779462814)
+			
+			--UPApiIsRaidLeader(guid)
+			--UPApiIsRaidAssistant(guid)
+		else
+			--defaults
+		end
+	end
+	--PARTY/RAID END
+	
+	--PVP SITUATION
+		--add faction icon
+	--PVP SITUATION END
 	
 	--AURA POLLING
 	if kuiPlateFrame.aurasUpdateElapsed <= 0 then
