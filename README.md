@@ -9,7 +9,7 @@ REQUIRES SUPERWOW https://github.com/balakethelock/SuperWoW (and preferably Unit
 
 (!) I do not and do not plan to support non-english locales (!)
 
-Configuration window - /up or /unitplates
+Configuration window - /up or /unitplates (or click the minimap button)
 - (NOTE: I do not wish to clutter the addon logic with many config options, I will only be keeping minimal amount of options)
 
 TODO list:
