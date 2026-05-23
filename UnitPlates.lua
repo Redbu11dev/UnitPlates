@@ -1492,7 +1492,7 @@ local function InitFrame(originalPlateFrame)
 	kuiPlateFrame.power.text = kuiPlateFrame.power:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 	kuiPlateFrame.power.text:SetFont(mainFontPath, UPConstants.powerFontSize, "OUTLINE")
 	kuiPlateFrame.power.text:SetJustifyH("RIGHT")
-	kuiPlateFrame.power.text:SetPoint("BOTTOMRIGHT", kuiPlateFrame.power, "BOTTOMRIGHT", -1 * UPConstants.minimalOnePixel, -(UPConstants.powerFontSize * 0.5))
+	kuiPlateFrame.power.text:SetPoint("BOTTOMRIGHT", kuiPlateFrame.power, "BOTTOMRIGHT", -1 * UPConstants.minimalOnePixel, -(UPConstants.powerFontSize * 0.6))
 	kuiPlateFrame.power.text:SetText("69")
 	kuiPlateFrame.power.text:SetTextColor(1,1,1,1)
 	
