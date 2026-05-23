@@ -23,6 +23,47 @@ UPLibAuraDurationsByRank = {
   ['Aspect of the Wolf']={[0]=-1,},
   
   --finite auras
+  --paladin
+  ['Blessing of Freedom']={[0]=10.0,},
+  ['Blessing of Sacrifice']={[0]=30.0,},
+  ['Blessing of Protection']={[0]=6.0,},
+  
+  ['Blessing of Kings']={[0]=300.0,[1]=300.0,[2]=300.0,[3]=300.0,[4]=300.0,[5]=300.0,[6]=300.0,[7]=300.0},
+  ['Blessing of Light']={[0]=300.0,[1]=300.0,[2]=300.0,[3]=300.0,[4]=300.0,[5]=300.0,[6]=300.0,[7]=300.0},
+  ['Blessing of Might']={[0]=300.0,[1]=300.0,[2]=300.0,[3]=300.0,[4]=300.0,[5]=300.0,[6]=300.0,[7]=300.0},
+  ['Blessing of Salvation']={[0]=300.0,[1]=300.0,[2]=300.0,[3]=300.0,[4]=300.0,[5]=300.0,[6]=300.0,[7]=300.0},
+  ['Blessing of Sanctuary']={[0]=300.0,[1]=300.0,[2]=300.0,[3]=300.0,[4]=300.0,[5]=300.0,[6]=300.0,[7]=300.0},
+  ['Blessing of Wisdom']={[0]=300.0,[1]=300.0,[2]=300.0,[3]=300.0,[4]=300.0,[5]=300.0,[6]=300.0,[7]=300.0},
+  
+  ['Greater Blessing of Kings']={[0]=900.0,[1]=900.0,[2]=900.0},
+  ['Greater Blessing of Light']={[0]=900.0,[1]=900.0,[2]=900.0},
+  ['Greater Blessing of Might']={[0]=900.0,[1]=900.0,[2]=900.0},
+  ['Greater Blessing of Salvation']={[0]=900.0,[1]=900.0,[2]=900.0},
+  ['Greater Blessing of Sanctuary']={[0]=900.0,[1]=900.0,[2]=900.0},
+  ['Greater Blessing of Wisdom']={[0]=900.0,[1]=900.0,[2]=900.0},
+  
+  --warrior
+  
+  
+  --hunter
+  
+  
+  --warlock
+  
+  
+  --mage
+  ['Chilled']={[0]=1.5,[1]=5,[2]=5,[3]=5,[4]=5,[5]=5,},--there are 2 spells named "chilled?" --if I receive no rank in combat log, then it's probably not cast by player?  
+  
+  --priest
+  
+  
+  --rogue
+  
+  
+  --shaman
+  
+  
+  --unsorted finite auras
   ['AE Charm']={[0]=300.0,},
   ['Abomination Spit']={[0]=10.0,},
   ['Acid Slime']={[0]=30.0,},
@@ -95,7 +136,6 @@ UPLibAuraDurationsByRank = {
   ['Blast Wave']={[0]=6.0,},
   ['Blaze']={[0]=30.0,},
   ['Bleakwood Curse']={[0]=60.0,},
-  ['Blessing of Might']={[0]=300.0,},
   ['Blessing of Nordrassil']={[0]=10.0,},
   ['Blight']={[0]=60.0,},
   ['Blind']={[0]=10.0,},
@@ -144,7 +184,6 @@ UPLibAuraDurationsByRank = {
   ['Chemical Peel']={[0]=10.0,},
   ['Chill']={[0]=30.0,},
   ['Chill Nova']={[0]=10.0,},
-  ['Chilled']={[0]=5,[1]=5,[2]=5,[3]=5,[4]=5,[5]=5,},--there are 2 spells named "chilled?" --if I receive no rank in combat log, then it's probably not cast by player?
   ['Chilling Breath']={[0]=12.0,},
   ['Chilling Touch']={[0]=8.0,},
   ['Chromatic Mutation']={[0]=300.0,},
