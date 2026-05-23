@@ -1,3 +1,62 @@
+--WoWTranslate
+local UPCompatWoWTranslateNameCachePrefix = "\1wt_name:"
+local UPCompatWoWTranslateGuildCachePrefix = "\1wt_name:guild:"
+
+function UPCompatWoWTranslateGetCachedNameTranslation(text)
+	local cachedTranslation = nil
+	if UnitPlatesSettings.enableWoWTranslateSupport and WoWTranslate_API.IsAvailable() and text and (text ~= '') then
+		cachedTranslation = WoWTranslate_CacheGet(UPCompatWoWTranslateNameCachePrefix..text)
+		if not cachedTranslation then
+			--try raw cache, why not?
+			cachedTranslation = WoWTranslate_CacheGet(text)
+		end
+		if not cachedTranslation then
+			--try from glossary, why not?
+			cachedTranslation = WoWTranslateGlossary[text]
+		end
+	end
+	return cachedTranslation
+end
+
+function UPCompatWoWTranslateGetCachedGuildTranslation(text)
+	local cachedTranslation = nil
+	if UnitPlatesSettings.enableWoWTranslateSupport and WoWTranslate_API.IsAvailable() and text and (text ~= '') then		
+		if (string.find(text, "'s Pet") or string.find(text, "'s Minion")) then
+			local _, _, name, suffix = string.find(text, "^(.-)('s .+)")
+			if name and suffix then
+				--print(name)   -- Outputs: Blabla
+				--print(suffix) -- Outputs: 's Pet
+				
+				local cachedNameTranslation = WoWTranslate_CacheGet(UPCompatWoWTranslateNameCachePrefix..name)
+				if not cachedNameTranslation then
+					--try raw cache, why not?
+					cachedNameTranslation = WoWTranslate_CacheGet(name)
+				end
+				if not cachedNameTranslation then
+					--try from glossary, why not?
+					cachedNameTranslation = WoWTranslateGlossary[name]
+				end
+				
+				if cachedNameTranslation then
+					cachedTranslation = cachedNameTranslation..suffix
+				end
+			end
+		else
+			cachedTranslation = WoWTranslate_CacheGet(UPCompatWoWTranslateGuildCachePrefix..text)
+			if not cachedTranslation then
+				--try raw cache, why not?
+				cachedTranslation = WoWTranslate_CacheGet(text)
+			end
+			if not cachedTranslation then
+				--try from glossary, why not?
+				cachedTranslation = WoWTranslateGlossary[text]
+			end
+		end
+	end
+	return cachedTranslation
+end
+--WoWTranslate END
+
 function UPCompatGetHealthFromMobHealth(guid)
 	local current, max
 	

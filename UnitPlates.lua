@@ -252,6 +252,8 @@ local function UpdatePlate(kuiPlateFrame)
 	--init data
 	kuiPlateFrame.guid = kuiPlateFrame.originalPlateFrame:GetName(1)
 	
+	local isWoWTranslateAvailable = WoWTranslate_API.IsAvailable()
+	
 	if kuiPlateFrame.bossIconRegion and kuiPlateFrame.bossIconRegion:IsVisible() then
 		-- This unit is a Boss (it has the skull icon active)
 		bossIconRegion:SetTexture(nil)
@@ -297,7 +299,12 @@ local function UpdatePlate(kuiPlateFrame)
 	
 	--setGuild
 	if kuiPlateFrame.guildTextVariable then
-		kuiPlateFrame.guild:SetText("<"..kuiPlateFrame.guildTextVariable..">")
+		local guildTranslation = UPCompatWoWTranslateGetCachedGuildTranslation(kuiPlateFrame.guildTextVariable)
+		if guildTranslation then
+			kuiPlateFrame.guild:SetText("<"..guildTranslation.."*"..">")
+		else
+			kuiPlateFrame.guild:SetText("<"..kuiPlateFrame.guildTextVariable..">")
+		end
 	end
 	--coloring
 	if (kuiPlateFrame.isPlayer and myGuildName and (kuiPlateFrame.guildTextVariable == myGuildName)) then
@@ -308,7 +315,13 @@ local function UpdatePlate(kuiPlateFrame)
 	--setGuild end
 	
 	--setName
-	kuiPlateFrame.name:SetText(kuiPlateFrame.nameTextVariable)
+	local nameTranslation = UPCompatWoWTranslateGetCachedNameTranslation(kuiPlateFrame.nameTextVariable)
+	if nameTranslation then
+		kuiPlateFrame.name:SetText(nameTranslation.."*")
+	else
+		kuiPlateFrame.name:SetText(kuiPlateFrame.nameTextVariable)
+	end
+	
 	kuiPlateFrame.name:SetTextColor(1,1,1,1)
 	if (kuiPlateFrame.guild:GetText() == nil or kuiPlateFrame.guild:GetText() == '') then
 		kuiPlateFrame.name:SetPoint("BOTTOM", kuiPlateFrame.health, "TOP", 0, 2 * UPConstants.minimalOnePixel)

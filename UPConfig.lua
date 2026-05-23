@@ -107,6 +107,7 @@ function UPConfigLoadUnitPlatesDefaultSettings()
 		showDebuffs=true,
 		onlyYourDebuffs=false,
 		ignoredDebuffNames = "name1,name2",
+		enableWoWTranslateSupport = true
 	}
 end
 
@@ -138,6 +139,9 @@ function UPConfigLoadUnitPlatesSettings()
 		end
 		if UnitPlatesSettings.ignoredDebuffNames == nil then
 			UnitPlatesSettings.ignoredDebuffNames="name1,name2"
+		end
+		if UnitPlatesSettings.enableWoWTranslateSupport == nil then
+			UnitPlatesSettings.enableWoWTranslateSupport=true
 		end
 		print("UnitPlates saved data loaded")
 	end
@@ -350,6 +354,16 @@ function UPConfigInitUnitPlatesSettings()
 			ignoredDebuffnamesInput:SetText(""..UnitPlatesSettings.ignoredDebuffNames)
 			--applyAllSettings()
 		end
+	end)
+	
+	local enableWoWTranslateSupportCheckbox = CreateFrame("CheckButton", "enableWoWTranslateSupportCheckbox", scrollChild, "UICheckButtonTemplate")
+	enableWoWTranslateSupportCheckbox:SetPoint("TOPLEFT", ignoredDebuffnamesTitle, "BOTTOMLEFT", 0, -16)
+	getglobal(enableWoWTranslateSupportCheckbox:GetName() .. 'Text'):SetText("Enable WoWTranslate support")
+	enableWoWTranslateSupportCheckbox:SetChecked(UnitPlatesSettings.enableWoWTranslateSupport)
+	enableWoWTranslateSupportCheckbox.tooltip = "Enable WoWTranslate support"
+	enableWoWTranslateSupportCheckbox:SetScript("OnClick", function()
+		UnitPlatesSettings.enableWoWTranslateSupport=not UnitPlatesSettings.enableWoWTranslateSupport
+		--applyAllSettings()
 	end)
 	
 	
