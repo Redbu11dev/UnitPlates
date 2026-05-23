@@ -36,7 +36,7 @@ Features:
 - "Tapped" state indicator - when an NPC is tapped by another player (when the kill would not be yours - when you get no loot or xp for killing it)
 - Hunter pet happines indicator (only for your own pet, and only if not happy)
 - Indicates if a mob is attacking you (the mob name becomes red, the health statusbar changes color to brighter red and changes texture)
-- Party raid color - party and raid members will have different healthbar and name/guild text colors
+- Party raid colors - party and raid members will have different healthbar and name/guild text colors
 - 
 - pfquest integration (shows icons for quest mobs)
 - MobHealth integration https://github.com/kc8pnd/MobHealth
