@@ -6,11 +6,11 @@ function UPCompatWoWTranslateGetCachedNameTranslation(text)
 	local cachedTranslation = nil
 	if UnitPlatesSettings.enableWoWTranslateSupport and WoWTranslate_API.IsAvailable() and text and (text ~= '') then
 		cachedTranslation = WoWTranslate_CacheGet(UPCompatWoWTranslateNameCachePrefix..text)
-		if not cachedTranslation then
+		if (not cachedTranslation) or (cachedTranslation == '') then
 			--try raw cache, why not?
 			cachedTranslation = WoWTranslate_CacheGet(text)
 		end
-		if not cachedTranslation then
+		if (not cachedTranslation) or (cachedTranslation == '') then
 			--try from glossary, why not?
 			cachedTranslation = WoWTranslateGlossary[text]
 		end
@@ -28,26 +28,26 @@ function UPCompatWoWTranslateGetCachedGuildTranslation(text)
 				--print(suffix) -- Outputs: 's Pet
 				
 				local cachedNameTranslation = WoWTranslate_CacheGet(UPCompatWoWTranslateNameCachePrefix..name)
-				if not cachedNameTranslation then
+				if (not cachedNameTranslation) or (cachedNameTranslation == '') then
 					--try raw cache, why not?
 					cachedNameTranslation = WoWTranslate_CacheGet(name)
 				end
-				if not cachedNameTranslation then
+				if (not cachedNameTranslation) or (cachedNameTranslation == '') then
 					--try from glossary, why not?
 					cachedNameTranslation = WoWTranslateGlossary[name]
 				end
 				
-				if cachedNameTranslation then
+				if (cachedNameTranslation) and (cachedNameTranslation ~= '') then
 					cachedTranslation = cachedNameTranslation..suffix
 				end
 			end
 		else
 			cachedTranslation = WoWTranslate_CacheGet(UPCompatWoWTranslateGuildCachePrefix..text)
-			if not cachedTranslation then
+			if (not cachedTranslation) or (cachedTranslation == '') then
 				--try raw cache, why not?
 				cachedTranslation = WoWTranslate_CacheGet(text)
 			end
-			if not cachedTranslation then
+			if (not cachedTranslation) or (cachedTranslation == '') then
 				--try from glossary, why not?
 				cachedTranslation = WoWTranslateGlossary[text]
 			end
