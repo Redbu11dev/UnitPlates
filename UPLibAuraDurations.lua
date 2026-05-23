@@ -43,7 +43,8 @@ UPLibAuraDurationsByRank = {
   ['Greater Blessing of Wisdom']={[0]=900.0,[1]=900.0,[2]=900.0},
   
   --warrior
-  
+  ['Battle Shout']={[0]=120.0,},
+  ['Demoralizing Shout']={[0]=30.0,},
   
   --hunter
   
@@ -121,7 +122,6 @@ UPLibAuraDurationsByRank = {
   ['Bash']={[1]=2.0,[2]=3.0,[3]=4.0,[0]=4.0,},
   ['Battle Command']={[0]=6.0,},
   ['Battle Net']={[0]=10.0,},
-  ['Battle Shout']={[0]=900.0,},
   ['Battle Standard']={[0]=3.0,},
   ['Battlegear of Might']={[0]=6.0,},
   ['Befuddlement']={[0]=15.0,},
@@ -305,7 +305,6 @@ UPLibAuraDurationsByRank = {
   ['Demonfork']={[0]=25.0,},
   ['Demoralize']={[0]=30.0,},
   ['Demoralizing Roar']={[0]=30.0,},
-  ['Demoralizing Shout']={[0]=30.0,},
   ['Detect Greater Invisibility']={[0]=600.0,},
   ['Detect Magic']={[0]=120.0,},
   ['Detonate Mana']={[0]=5.0,},
