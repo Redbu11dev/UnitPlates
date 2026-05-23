@@ -27,7 +27,7 @@ local function getClassPos(class)
 	return 0.25, 0.5, 0.5, 0.75	-- Returns empty next one, so blank
 end
 
-local slowUpdateTime, critUpdateTime, aurasUnitUpdateTime = 0.1, 0.01, 0.1
+local slowUpdateTime, critUpdateTime, aurasUnitUpdateTime = 0.1, 0.01, 0.2
 
 --SIZES
 --make all sizes relative to UPConstants.nameplateHealthBarHeight

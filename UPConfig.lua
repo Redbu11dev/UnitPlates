@@ -164,7 +164,7 @@ function UPConfigInitUnitPlatesSettings()
 		UnitPlatesSettings.onlyYourBuffs=not UnitPlatesSettings.onlyYourBuffs
 		--applyAllSettings()
 	end)
-	showOnlyYourBuffsCheckbox:Hide()
+	--showOnlyYourBuffsCheckbox:Hide()
 	
 	local ignoredBuffnamesTitle = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 	ignoredBuffnamesTitle:SetPoint("TOPLEFT", showOnlyYourBuffsCheckbox, "BOTTOMLEFT", 0, -4)
@@ -219,7 +219,7 @@ function UPConfigInitUnitPlatesSettings()
 		UnitPlatesSettings.onlyYourDebuffs=not UnitPlatesSettings.onlyYourDebuffs
 		--applyAllSettings()
 	end)
-	showOnlyYourDebuffsCheckbox:Hide()
+	--showOnlyYourDebuffsCheckbox:Hide()
 	
 	local ignoredDebuffnamesTitle = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 	ignoredDebuffnamesTitle:SetPoint("TOPLEFT", showOnlyYourDebuffsCheckbox, "BOTTOMLEFT", 0, -4)

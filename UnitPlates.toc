@@ -9,13 +9,13 @@
 ## SavedVariablesPerCharacter: UnitPlatesSettings
 ## X-Website: https://github.com/Redbu11dev
 
+UPConfig.lua
 UPDebug.lua
+UPCore.lua
 
 UPLibAuraDurations.lua
 
 UPCompat.lua
 
 UPApi.lua
-UPCore.lua
-UPConfig.lua
 UnitPlates.lua
