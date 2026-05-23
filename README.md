@@ -32,7 +32,7 @@ Features:
 - Combo points
 - Cast bar
 - Buffs/Debuffs (auras)
-- Shooting range indicator (works only if you have "Auto Shot" or "Throw" or "Shoot Bow" or "Shoot Gun" or "Shoot Crossbow" or "Shoot" somewhere on the action bars), will check agains first found action on the action bars, in that order
+- Shooting range indicator (works only if you have "Auto Shot" or "Throw" or "Shoot Bow" or "Shoot Gun" or "Shoot Crossbow" or "Shoot" somewhere on the action bars), will check against first found action on the action bars, in that order
 - "Tapped" state indicator - when an NPC is tapped by another player (when the kill would not be yours - when you get no loot or xp for killing it)
 - Hunter pet happines indicator (only for your own pet, and only if not happy)
 - Indicates if a mob is attacking you (the mob name becomes red, the health statusbar changes color to brighter red and changes texture)
