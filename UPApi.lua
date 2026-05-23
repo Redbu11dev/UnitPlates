@@ -194,11 +194,11 @@ local function UPApiPutIntoAurasCache(guid, spellId, name, texture, count, debuf
 		localIsMyAura = isMyAura
 	end
 	
-	if isMyAura then
-		print("UPApiPutIntoAurasCache: name: "..tostring(name))
-		print("UPApiPutIntoAurasCache: ismyaura p: "..tostring(isMyAura))
-		print("UPApiPutIntoAurasCache: ismyaura local: "..tostring(localIsMyAura))
-	end
+	-- if isMyAura then
+		-- print("UPApiPutIntoAurasCache: name: "..tostring(name))
+		-- print("UPApiPutIntoAurasCache: ismyaura p: "..tostring(isMyAura))
+		-- print("UPApiPutIntoAurasCache: ismyaura local: "..tostring(localIsMyAura))
+	-- end
     
     cache[name] = {
         spellId = spellId,
@@ -332,10 +332,10 @@ end
 
 local function UPApiCacheInAuraIfValid(guid, auraName, isDebuff, isMyAura)
 
-	if isMyAura then
-		print("UPApiCacheInAuraIfValid: name: "..tostring(auraName))
-		print("UPApiCacheInAuraIfValid: ismyaura p: "..tostring(isMyAura))
-	end
+	-- if isMyAura then
+		-- print("UPApiCacheInAuraIfValid: name: "..tostring(auraName))
+		-- print("UPApiCacheInAuraIfValid: ismyaura p: "..tostring(isMyAura))
+	-- end
 
 	--print("new aura cache data0: "..tostring(guid).." "..tostring(auraName).." "..tostring(isDebuff))
 
@@ -645,9 +645,9 @@ UPApiFrame:SetScript("OnUpdate", function()
 			
 				local auraType = UPApiGetAuraTypeOnUnit(data.targetGUID, data.spellId)
 				
-				if data.isMyAura then
-					print("UPApiPendingAuraRefreshes release for "..spellName.." auraType: "..tostring(auraType))
-				end
+				-- if data.isMyAura then
+					-- print("UPApiPendingAuraRefreshes release for "..spellName.." auraType: "..tostring(auraType))
+				-- end
 				
 				UPCoreDelayCall(
 					UPApiAuraPollingAdditionalDelay + UPCoreGetCurrentPingSeconds(), 
@@ -916,9 +916,9 @@ UPApiFrame:SetScript("OnEvent", function()
 			
 				--local auraType = UPApiGetAuraTypeOnUnit(targetGUID, spellId)
 				
-				if isMyAura then
-					print("cast event for: "..spellName.." auraType: "..tostring(auraType))
-				end
+				-- if isMyAura then
+					-- print("cast event for: "..spellName.." auraType: "..tostring(auraType))
+				-- end
 			
 				-- if auraType == "BUFF" then
 					-- UPApiCacheInAuraIfValid(targetGUID, spellName, false)
@@ -932,9 +932,9 @@ UPApiFrame:SetScript("OnEvent", function()
 						UPApiPendingAuraRefreshes[casterGUID] = {}
 					end
 					
-					if isMyAura then
-						print("cast waiting room for: "..spellName.." isMyAura: "..tostring(isMyAura))
-					end
+					-- if isMyAura then
+						-- print("cast waiting room for: "..spellName.." isMyAura: "..tostring(isMyAura))
+					-- end
 					
 					-- Put the cast in the waiting room
 					UPApiPendingAuraRefreshes[casterGUID][spellName] = {
