@@ -41,6 +41,7 @@ Features:
 - pfquest integration (shows icons for quest mobs)
 - MobHealth integration https://github.com/kc8pnd/MobHealth
 - ShaguTweaks health estimation integration
+- WoWTranslate support https://github.com/paokkerkir/wow-translate
 - and more
 
 
