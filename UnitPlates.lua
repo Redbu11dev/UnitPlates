@@ -300,7 +300,7 @@ local function UpdatePlate(kuiPlateFrame)
 	--setGuild
 	if kuiPlateFrame.guildTextVariable then
 		local guildTranslation = UPCompatWoWTranslateGetCachedGuildTranslation(kuiPlateFrame.guildTextVariable)
-		if guildTranslation then
+		if guildTranslation and (guildTranslation ~= '') then
 			kuiPlateFrame.guild:SetText("<"..guildTranslation.."*"..">")
 		else
 			kuiPlateFrame.guild:SetText("<"..kuiPlateFrame.guildTextVariable..">")
@@ -316,7 +316,7 @@ local function UpdatePlate(kuiPlateFrame)
 	
 	--setName
 	local nameTranslation = UPCompatWoWTranslateGetCachedNameTranslation(kuiPlateFrame.nameTextVariable)
-	if nameTranslation then
+	if nameTranslation and (nameTranslation ~= '') then
 		kuiPlateFrame.name:SetText(nameTranslation.."*")
 	else
 		kuiPlateFrame.name:SetText(kuiPlateFrame.nameTextVariable)
