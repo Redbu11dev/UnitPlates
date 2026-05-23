@@ -1,5 +1,5 @@
 # UnitPlates
-Nameplates for twow/octowow (or vanilla 1.12)
+Nameplates for twow/octowow/capycraft
 
 Continuation of https://github.com/Redbu11dev/ShaguPlates-extra (Complete rewrite based on kui nameplates, no more shaguplates dependencies, no kui dependencies either, no third party libraries, much better code, etc.)
 
