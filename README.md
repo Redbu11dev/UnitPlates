@@ -15,8 +15,8 @@ Configuration window - /up or /unitplates (or click the minimap button)
 TODO list:
 - Did not bother with critter nameplates yet (just turn them off in UnitXP-SP3 for now, and it will be preferable mostly anyways)
 - Did not test it in party/raid yet, will probably have to adjust for these cases
-- More range indicators - melee / throwing / shooting , maybe spells as well
 - More buffs/debuffs (can only show as much as there are in local library, but the library is based on shaguplates - so at the very least no less than shaguplates can show)
+- More range indicators?
 - Maybe add something complex with threat, like showing threat percentage, but it would be super difficult to do, not sure if I will be able to (I could brobably do TWThreat, but beyound that - there is no accurate data)
 
 Features:
@@ -32,7 +32,7 @@ Features:
 - Combo points
 - Cast bar
 - Buffs/Debuffs (auras)
-- Shooting range indicator (works only if you have "Auto Shot" somewhere on the action bars)
+- Shooting range indicator (works only if you have "Auto Shot" or "Throw" or "Shoot Bow" or "Shoot Gun" or "Shoot Crossbow" or "Shoot" somewhere on the action bars), will check agains first found action on the action bars, in that order
 - "Tapped" state indicator - when an NPC is tapped by another player (when the kill would not be yours - when you get no loot or xp for killing it)
 - Hunter pet happines indicator (only for your own pet, and only if not happy)
 - Indicates if a mob is attacking you (the mob name becomes red, the health statusbar changes color to brighter red and changes texture)
