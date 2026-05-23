@@ -35,7 +35,7 @@ Features:
 - Shooting range indicator (works only if you have "Auto Shot" somewhere on the action bars)
 - "Tapped" state indicator - when an NPC is tapped by another player (when the kill would not be yours - when you get no loot or xp for killing it)
 - Hunter pet happines indicator (only for your own pet, and only if not happy)
-- Indicates if a mob is attacking you (the mob name becomes red)
+- Indicates if a mob is attacking you (the mob name becomes red, the health statusbar changes color to brighter red and changes texture)
 - 
 - pfquest integration (shows icons for quest mobs)
 - MobHealth integration https://github.com/kc8pnd/MobHealth
