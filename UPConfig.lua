@@ -10,6 +10,93 @@ end
 
 UnitPlatesOptionsFrame = CreateFrame("Frame", "UnitPlatesOptionsFrame", UIParent)
 
+local UPMinimapButton = CreateFrame('Button', "UPMainMenuBarToggler", Minimap)
+function LoadUPMinimapButton()
+    UPMinimapButton:SetFrameStrata('MEDIUM')
+    UPMinimapButton:SetWidth(31)
+    UPMinimapButton:SetHeight(31)
+    UPMinimapButton:SetFrameLevel(8)
+    --UPMinimapButton:RegisterForClicks('anyUp')
+    UPMinimapButton:SetHighlightTexture('Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight')
+	UPMinimapButton:SetMovable(true)
+	UPMinimapButton:EnableMouse(true)
+
+    local UPMinimapButtonOverlay = UPMinimapButton:CreateTexture(nil, 'OVERLAY')
+    UPMinimapButtonOverlay:SetWidth(53)
+    UPMinimapButtonOverlay:SetHeight(53)
+    UPMinimapButtonOverlay:SetTexture('Interface\\Minimap\\MiniMap-TrackingBorder')
+    UPMinimapButtonOverlay:SetPoint('TOPLEFT', 0, 0)
+
+    local icon = UPMinimapButton:CreateTexture(nil, 'BACKGROUND')
+    icon:SetWidth(20)
+    icon:SetHeight(20)
+    --icon:SetTexture('Interface\\Icons\\Spell_ChargeNegative')
+	icon:SetTexture('Interface\\AddOns\\UnitPlates\\img\\minimap\\minimap_icon')
+    icon:SetTexCoord(0.05, 0.95, 0.05, 0.95)
+    icon:SetPoint('TOPLEFT', 7, -5)
+    UPMinimapButton.icon = icon
+
+    UPMinimapButton:SetScript("OnClick", function()
+		if arg1 == "LeftButton" then
+			if not UnitPlatesOptionsFrame:IsShown() then
+				UnitPlatesOptionsFrame:Show()
+			else
+				UnitPlatesOptionsFrame:Hide()
+			end
+		elseif arg1 == "RightButton" then
+			-- nothing
+		end
+	end)
+	
+	UPMinimapButton:RegisterForDrag("RightButton")
+	UPMinimapButton:SetScript("OnDragStart", function()
+		UPMinimapButton:StartMoving()
+		UPMinimapButton:SetScript("OnUpdate", function()
+			local Xpoa, Ypoa = GetCursorPosition()
+			local Xmin, Ymin = Minimap:GetLeft(), Minimap:GetBottom()
+			Xpoa = Xmin - Xpoa / Minimap:GetEffectiveScale() + 70
+			Ypoa = Ypoa / Minimap:GetEffectiveScale() - Ymin - 70
+			UnitPlatesSettings.minimapIconPos = math.deg(math.atan2(Ypoa, Xpoa))
+			UPMinimapButton:ClearAllPoints()
+			UPMinimapButton:SetPoint("TOPLEFT", Minimap, "TOPLEFT", 52 - (80 * cos(UnitPlatesSettings.minimapIconPos)), (80 * sin(UnitPlatesSettings.minimapIconPos)) - 52)
+		end)
+	end)
+	 
+	UPMinimapButton:SetScript("OnDragStop", function()
+		UPMinimapButton:StopMovingOrSizing()
+		UPMinimapButton:SetScript("OnUpdate", nil)
+		--CHBUpdateMapBtn()
+	end)
+	
+	UPMinimapButton:SetScript("OnEnter", function()			
+		GameTooltip_SetDefaultAnchor(GameTooltip, UIParent)
+		local scale = GameTooltip:GetEffectiveScale()
+		local x, y = GetCursorPosition()
+		GameTooltip:ClearAllPoints()
+		GameTooltip:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMLEFT", x / scale, y / scale)
+		GameTooltip:SetText("UnitPlates")
+		GameTooltip:AddLine("\n")
+		GameTooltip:AddLine("Left-click to show options", 1, 1, 1)
+		GameTooltip:AddLine("Right-click and drag to move the button", 1, 1, 1)
+		GameTooltip:Show()
+	end)
+	
+	UPMinimapButton:SetScript("OnLeave", function()
+		GameTooltip:Hide()
+	end)
+
+    
+	if UnitPlatesSettings.minimapIconPos ~= 0 then
+		UPMinimapButton:SetPoint("TOPLEFT", Minimap, "TOPLEFT", 52 - (80 * cos(UnitPlatesSettings.minimapIconPos)), (80 * sin(UnitPlatesSettings.minimapIconPos)) - 52)
+	else
+		UPMinimapButton:SetPoint("BOTTOMRIGHT", Minimap, "BOTTOMRIGHT", -2, 2)
+	end
+end
+
+
+
+
+
 function UPConfigLoadUnitPlatesDefaultSettings()
 	UnitPlatesSettings = {
 		minimapIconPos = 0,
@@ -111,12 +198,22 @@ function UPConfigInitUnitPlatesSettings()
 	end)
 	
 	local setDefaultsButton = CreateFrame("Button", nil, UnitPlatesOptionsFrame, "UIPanelButtonTemplate")
-	setDefaultsButton:SetPoint("BOTTOM",0,0)
+	setDefaultsButton:SetPoint("BOTTOMLEFT",UnitPlatesOptionsFrame,"BOTTOMLEFT",0,0)
 	setDefaultsButton:SetWidth(200)
 	setDefaultsButton:SetHeight(40)
 	setDefaultsButton:SetText("Set defaults & Reload")
 	setDefaultsButton:SetScript("OnClick", function()
 		UPConfigLoadUnitPlatesDefaultSettings()
+		ReloadUI()
+	end)
+	
+	local saveButton = CreateFrame("Button", nil, UnitPlatesOptionsFrame, "UIPanelButtonTemplate")
+	saveButton:SetPoint("BOTTOMRIGHT",UnitPlatesOptionsFrame,"BOTTOMRIGHT",0,0)
+	saveButton:SetWidth(200)
+	saveButton:SetHeight(40)
+	saveButton:SetText("Save & Reload")
+	saveButton:SetScript("OnClick", function()
+		--no need to additionally save anything, but calling it "Save & Reload" is supposed to reassure the user 
 		ReloadUI()
 	end)
 	
@@ -257,4 +354,6 @@ function UPConfigInitUnitPlatesSettings()
 	
 	
 	UnitPlatesOptionsFrame:Hide()
+	
+	LoadUPMinimapButton()
 end
