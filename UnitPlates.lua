@@ -2410,6 +2410,15 @@ UnitPlatesMainFrame:SetScript("OnUpdate", function()
 			kuiPlateFrame.classIcon:SetFrameLevel(targetLevel + 5)
 		end
 		
+		if kuiPlateFrame.aurasContainer then
+			kuiPlateFrame.aurasContainer:SetFrameLevel(targetLevel + 5)
+			for i = 1, UPConstants.maxAuras do
+				if kuiPlateFrame.aurasContainer.auraIcons[i] then
+					kuiPlateFrame.aurasContainer.auraIcons[i]:SetFrameLevel(targetLevel + 5)
+				end
+			end
+		end
+		
 		if kuiPlateFrame.textLayerHost then
 			kuiPlateFrame.textLayerHost:SetFrameLevel(targetLevel + 5)
 		end
