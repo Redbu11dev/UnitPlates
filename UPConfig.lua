@@ -255,7 +255,7 @@ function UPConfigInitUnitPlatesSettings()
 	additionalAuraPollingDelaySecondsTitle:SetPoint("TOPLEFT", smallerAurasCheckbox, "BOTTOMLEFT", 0, -4)
 	additionalAuraPollingDelaySecondsTitle:SetTextColor(0.999,0.819,0,barAlpha)
 	additionalAuraPollingDelaySecondsTitle:SetJustifyH("LEFT")
-	additionalAuraPollingDelaySecondsTitle:SetText("Additional aura polling delay (seconds, e.g. 2 or 0.2) 0.2 is optimal\nTry setting above 0.2 if auras are not appearing at all sometimes\nSetting it to 0 will make it more responsive\nbut may also cause auras to not appear in some weird cases\nGenerally best to be kept between 0 and 0.5: ")
+	additionalAuraPollingDelaySecondsTitle:SetText("Additional aura polling delay (seconds, e.g. 2 or 0.2) 0.2 is optimal\nTry setting above 0.2 if auras are not appearing at all sometimes\nSetting it to 0 will make it more responsive\nbut may also cause auras to not appear in some weird cases\nGenerally best to be kept between 0 and 0.3: ")
 	
 	local additionalAuraPollingDelaySecondsInput = CreateFrame("EditBox", nil, scrollChild)
 	additionalAuraPollingDelaySecondsInput:SetBackdrop({
