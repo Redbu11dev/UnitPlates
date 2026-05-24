@@ -252,7 +252,7 @@ local function UpdatePlate(kuiPlateFrame)
 	--init data
 	kuiPlateFrame.guid = kuiPlateFrame.originalPlateFrame:GetName(1)
 	
-	local isWoWTranslateAvailable = WoWTranslate_API.IsAvailable()
+	--local isWoWTranslateAvailable = WoWTranslate_API and WoWTranslate_API.IsAvailable()
 	
 	if kuiPlateFrame.bossIconRegion and kuiPlateFrame.bossIconRegion:IsVisible() then
 		-- This unit is a Boss (it has the skull icon active)

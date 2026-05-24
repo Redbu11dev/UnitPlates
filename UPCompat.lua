@@ -4,7 +4,7 @@ local UPCompatWoWTranslateGuildCachePrefix = "\1wt_name:guild:"
 
 function UPCompatWoWTranslateGetCachedNameTranslation(text)
 	local cachedTranslation = nil
-	if UnitPlatesSettings.enableWoWTranslateSupport and WoWTranslate_API.IsAvailable() and text and (text ~= '') then
+	if UnitPlatesSettings and UnitPlatesSettings.enableWoWTranslateSupport and WoWTranslate_API and WoWTranslate_API.IsAvailable() and text and (text ~= '') then
 		cachedTranslation = WoWTranslate_CacheGet(UPCompatWoWTranslateNameCachePrefix..text)
 		if (not cachedTranslation) or (cachedTranslation == '') then
 			--try raw cache, why not?
@@ -20,7 +20,7 @@ end
 
 function UPCompatWoWTranslateGetCachedGuildTranslation(text)
 	local cachedTranslation = nil
-	if UnitPlatesSettings.enableWoWTranslateSupport and WoWTranslate_API.IsAvailable() and text and (text ~= '') then		
+	if UnitPlatesSettings and UnitPlatesSettings.enableWoWTranslateSupport and WoWTranslate_API and WoWTranslate_API.IsAvailable() and text and (text ~= '') then		
 		if (string.find(text, "'s Pet") or string.find(text, "'s Minion")) then
 			local _, _, name, suffix = string.find(text, "^(.-)('s .+)")
 			if name and suffix then
