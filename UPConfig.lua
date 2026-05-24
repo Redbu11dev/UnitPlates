@@ -101,6 +101,7 @@ function UPConfigLoadUnitPlatesDefaultSettings()
 	UnitPlatesSettings = {
 		minimapIconPos = 0,
 		smallerAuras = true,
+		additionalAuraPollingDelaySeconds = "0.2",
 		showBuffs=true,
 		onlyYourBuffs=false,
 		ignoredBuffNames = "name1,name2",
@@ -121,6 +122,9 @@ function UPConfigLoadUnitPlatesSettings()
 		end
 		if UnitPlatesSettings.smallerAuras == nil then
 			UnitPlatesSettings.smallerAuras=true
+		end
+		if UnitPlatesSettings.additionalAuraPollingDelaySeconds == nil then
+			UnitPlatesSettings.additionalAuraPollingDelaySeconds="0.2"
 		end
 		if UnitPlatesSettings.showBuffs == nil then
 			UnitPlatesSettings.showBuffs=true
@@ -246,8 +250,47 @@ function UPConfigInitUnitPlatesSettings()
 		--applyAllSettings()
 	end)
 	
+	
+	local additionalAuraPollingDelaySecondsTitle = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	additionalAuraPollingDelaySecondsTitle:SetPoint("TOPLEFT", smallerAurasCheckbox, "BOTTOMLEFT", 0, -4)
+	additionalAuraPollingDelaySecondsTitle:SetTextColor(0.999,0.819,0,barAlpha)
+	additionalAuraPollingDelaySecondsTitle:SetJustifyH("LEFT")
+	additionalAuraPollingDelaySecondsTitle:SetText("Additional aura polling delay (seconds, e.g. 2 or 0.2) 0.2 is optimal\nTry setting above 0.2 if auras are not appearing at all sometimes\nSetting to 0 will make it more responsive\nbut may also cause auras to not appear in some weird cases\nGenerally best to be kept between 0 and 0.5: ")
+	
+	local additionalAuraPollingDelaySecondsInput = CreateFrame("EditBox", nil, scrollChild)
+	additionalAuraPollingDelaySecondsInput:SetBackdrop({
+		bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+		edgeFile = "Interface/DialogFrame/UI-DialogBox-Border",
+		edgeSize = 12,
+		insets = { left = 2, right = 2, top = 2, bottom = 2 },
+	})
+	additionalAuraPollingDelaySecondsInput:SetBackdropColor(0,0,0,.5)
+	additionalAuraPollingDelaySecondsInput:SetTextInsets(5, 5, 5, 5)
+	additionalAuraPollingDelaySecondsInput:SetTextColor(1,1,1,1)
+	additionalAuraPollingDelaySecondsInput:SetJustifyH("LEFT")
+	additionalAuraPollingDelaySecondsInput:SetWidth(280)
+	additionalAuraPollingDelaySecondsInput:SetHeight(26)
+	additionalAuraPollingDelaySecondsInput:SetPoint("TOPLEFT", additionalAuraPollingDelaySecondsTitle, "BOTTOMLEFT", 0, 0)
+	additionalAuraPollingDelaySecondsInput:SetFontObject("GameFontNormal")
+	additionalAuraPollingDelaySecondsInput:SetAutoFocus(false)
+	additionalAuraPollingDelaySecondsInput:SetText(""..UnitPlatesSettings.additionalAuraPollingDelaySeconds)
+	additionalAuraPollingDelaySecondsInput:SetScript("OnTextChanged", function(self)
+		local inputValue = additionalAuraPollingDelaySecondsInput:GetText()
+		if not inputValue then
+			additionalAuraPollingDelaySecondsInput:SetText(""..UnitPlatesSettings.additionalAuraPollingDelaySeconds)
+		else
+			UnitPlatesSettings.additionalAuraPollingDelaySeconds = inputValue
+			additionalAuraPollingDelaySecondsInput:SetText(""..UnitPlatesSettings.additionalAuraPollingDelaySeconds)
+			--applyAllSettings()
+		end
+	end)
+	
+	
+	
+	
+	
 	local showBuffsCheckbox = CreateFrame("CheckButton", "showBuffsCheckbox", scrollChild, "UICheckButtonTemplate")
-	showBuffsCheckbox:SetPoint("TOP", smallerAurasCheckbox, "BOTTOM", 0, -0)
+	showBuffsCheckbox:SetPoint("TOPLEFT", additionalAuraPollingDelaySecondsTitle, "BOTTOMLEFT", 0, -32)
 	getglobal(showBuffsCheckbox:GetName() .. 'Text'):SetText("Show buffs")
 	showBuffsCheckbox:SetChecked(UnitPlatesSettings.showBuffs)
 	showBuffsCheckbox.tooltip = "Show buffs"

@@ -1,6 +1,27 @@
 local _G = getfenv(0)
 
-local UPApiAuraPollingAdditionalDelay = 0.2
+local function UPApiGetAdditionalAuraPollingDelaySeconds()
+	local fallbackDelay = 0.2 --0.2 default fallback
+    
+    -- 1. Grab the raw setting
+    local rawValue = UnitPlatesSettings.additionalAuraPollingDelaySeconds
+    
+    -- 2. If it's a string, swap any commas to periods so EU players don't break the parser
+    if type(rawValue) == "string" then
+        rawValue = string.gsub(rawValue, ",", ".")
+    end
+    
+    -- 3. Attempt to convert to a mathematical number
+    local delay = tonumber(rawValue)
+    
+    -- 4. If the conversion failed (nil) OR the number is negative, force the fallback
+    if not delay or delay < 0 then
+        return fallbackDelay
+    end
+    
+    -- 5. If it passed all checks, return the valid, positive number
+    return delay
+end
 
 UPApiScanTool = CreateFrame( "GameTooltip", "UPApiScanTool", nil, "GameTooltipTemplate" )
 UPApiScanTool:SetOwner( WorldFrame, "ANCHOR_NONE" )
@@ -497,8 +518,21 @@ local function UPApiCacheInAuraIfValid(guid, auraName, isDebuff, isMyAura)
 	
 	--now also compare actual auras with this, and remove if it is not in actual auras
 	--UPApiSyncAurasCacheWithActual(guid)
+	-- if overrideSyncDelay then
+		-- UPCoreDelayCall(
+			-- overrideSyncDelay,
+			-- UPApiSyncAurasCacheWithActual,
+			-- guid
+		-- )
+	-- else
+		-- UPCoreDelayCall(
+			-- UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(),
+			-- UPApiSyncAurasCacheWithActual,
+			-- guid
+		-- )
+	-- end
 	UPCoreDelayCall(
-		UPApiAuraPollingAdditionalDelay + UPCoreGetCurrentPingSeconds(),
+		UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(),
 		UPApiSyncAurasCacheWithActual,
 		guid
 	)
@@ -509,7 +543,7 @@ end
 function UpApiGetUnitAuras(guid, getBuffs, onlyMineBuffs, getDebuffs, onlyMineDebuffs, ignoredBuffNames, ignoredDebuffNames)	
 	--UPApiSyncAurasCacheWithActual(guid)
 	UPCoreDelayCall(
-		UPApiAuraPollingAdditionalDelay + UPCoreGetCurrentPingSeconds(),
+		UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(),
 		UPApiSyncAurasCacheWithActual,
 		guid
 	)
@@ -685,6 +719,17 @@ UPApiFrame:SetScript("OnUpdate", function()
     
     for casterGUID, spells in pairs(UPApiPendingAuraRefreshes) do
         for spellName, data in pairs(spells) do
+		
+			--cache in once early (it will be removed if wrong anyways)
+			-- if (currentTime - data.time) > (math.max(0.2 + UPCoreGetCurrentPingSeconds())) then
+				-- UPApiCacheInAuraIfValid(
+					-- data.targetGUID,
+					-- spellName,
+					-- data.isDebuff or auraType,
+					-- data.isMyAura,
+					-- 0.01
+				-- )
+			-- end
             
             -- If 0.2 seconds pass without a failure combat log, commit it!
 			-- need a higher delay, it may not be in the ACTUAL buff/debuff list YET!!!
@@ -697,7 +742,7 @@ UPApiFrame:SetScript("OnUpdate", function()
 				-- end
 				
 				UPCoreDelayCall(
-					UPApiAuraPollingAdditionalDelay + UPCoreGetCurrentPingSeconds(), 
+					UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(), 
 					UPApiCacheInAuraIfValid, 
 					data.targetGUID, 
 					spellName, 
@@ -852,7 +897,7 @@ UPApiFrame:SetScript("OnEvent", function()
 				-- )
 				
 				UPCoreDelayCall(
-					UPApiAuraPollingAdditionalDelay + UPCoreGetCurrentPingSeconds(), 
+					UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(), 
 					UPApiCacheInAuraIfValid, 
 					guid,
 					auraName,
@@ -902,7 +947,7 @@ UPApiFrame:SetScript("OnEvent", function()
 				-- )				
 				
 				UPCoreDelayCall(
-					UPApiAuraPollingAdditionalDelay + UPCoreGetCurrentPingSeconds(), 
+					UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(), 
 					UPApiCacheInAuraIfValid, 
 					guid,
 					auraName,
