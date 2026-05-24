@@ -848,6 +848,7 @@ local function UpdatePlate(kuiPlateFrame)
 	
 	if (not kuiPlateFrame.isPlayer) and kuiPlateFrame.isInCombat and (not UnitIsFriend("player", kuiPlateFrame.guid)) and UPApiIsUnitTargetingMe(kuiPlateFrame.guid) then
 		kuiPlateFrame.name:SetTextColor(0.9,0,0,1)
+		kuiPlateFrame.guild:SetTextColor(0.9,0,0,1)
 		kuiPlateFrame.health:SetStatusBarColor(0.85,0,0,1)
 		kuiPlateFrame.health:SetStatusBarTexture("Interface\\AddOns\\UnitPlates\\img\\statusbar\\XPerl_StatusBar")
 	else
