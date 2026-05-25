@@ -108,7 +108,8 @@ function UPConfigLoadUnitPlatesDefaultSettings()
 		showDebuffs=true,
 		onlyYourDebuffs=false,
 		ignoredDebuffNames = "name1,name2",
-		enableWoWTranslateSupport = true
+		enableWoWTranslateSupport = true,
+		enableChatBubbleHandling = true
 	}
 end
 
@@ -146,6 +147,9 @@ function UPConfigLoadUnitPlatesSettings()
 		end
 		if UnitPlatesSettings.enableWoWTranslateSupport == nil then
 			UnitPlatesSettings.enableWoWTranslateSupport=true
+		end
+		if UnitPlatesSettings.enableChatBubbleHandling == nil then
+			UnitPlatesSettings.enableChatBubbleHandling=true
 		end
 		print("UnitPlates saved data loaded")
 	end
@@ -406,6 +410,16 @@ function UPConfigInitUnitPlatesSettings()
 	enableWoWTranslateSupportCheckbox.tooltip = "Enable WoWTranslate support"
 	enableWoWTranslateSupportCheckbox:SetScript("OnClick", function()
 		UnitPlatesSettings.enableWoWTranslateSupport=not UnitPlatesSettings.enableWoWTranslateSupport
+		--applyAllSettings()
+	end)
+	
+	local enableChatBubbleHandlingCheckbox = CreateFrame("CheckButton", "enableChatBubbleHandlingCheckbox", scrollChild, "UICheckButtonTemplate")
+	enableChatBubbleHandlingCheckbox:SetPoint("TOP", enableWoWTranslateSupportCheckbox, "BOTTOM", 0, -0)
+	getglobal(enableChatBubbleHandlingCheckbox:GetName() .. 'Text'):SetText("Enable chat bubble handling (may conflict with other addons)")
+	enableChatBubbleHandlingCheckbox:SetChecked(UnitPlatesSettings.enableChatBubbleHandling)
+	enableChatBubbleHandlingCheckbox.tooltip = "Enable chat bubble handling (may conflict with other addons)"
+	enableChatBubbleHandlingCheckbox:SetScript("OnClick", function()
+		UnitPlatesSettings.enableChatBubbleHandling=not UnitPlatesSettings.enableChatBubbleHandling
 		--applyAllSettings()
 	end)
 	

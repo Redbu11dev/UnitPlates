@@ -2385,10 +2385,12 @@ UnitPlatesMainFrame:SetScript("OnUpdate", function()
 		self.numFrames = framesCount
 	end
 	
-	-- update chat bubbles	
-	for _, v in pairs(frames) do
-		if UPCoreIsBalloon(v) then
-			UPCoreStyleBalloon(v)
+	-- update chat bubbles
+	if UnitPlatesSettings and UnitPlatesSettings.enableChatBubbleHandling then
+		for _, v in pairs(frames) do
+			if UPCoreIsBalloon(v) then
+				UPCoreStyleBalloon(v)
+			end
 		end
 	end
 	
