@@ -123,7 +123,7 @@ end
 ------------------------------------------------------------------------------------
 
 --pfquest compatibility
-local UPCompatIsFirstPfQuestLoad = true
+-- local UPCompatIsFirstPfQuestLoad = true
 
 local UPComapt_PFQUEST_SWORD_ICON = "Interface\\AddOns\\UnitPlates\\img\\quest\\slay"
 local UPComapt_PFQUEST_BAG_ICON = "Interface\\AddOns\\UnitPlates\\img\\quest\\loot"
@@ -243,7 +243,7 @@ local function UPCompatPfQuestScanQuestObjectives()
         end
     end
 	
-	UPCompatIsFirstPfQuestLoad = false
+	-- UPCompatIsFirstPfQuestLoad = false
 end
 --pfquest compatibility END
 
@@ -259,38 +259,43 @@ UPCompatFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 UPCompatFrame:RegisterEvent("ZONE_CHANGED")
 UPCompatFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 
-UPCompatFrame:RegisterEvent("ADDON_LOADED")
+--UPCompatFrame:RegisterEvent("ADDON_LOADED")
 
--- local UPCompatIsPfQuestLoaded = false
+
+-- Variables for debouncing
+UPCompatPendingScan = false
+UPCompatDebounceTimer = 0
+
+UPCompatFrame:SetScript("OnUpdate", function()
+	-- 1. Do nothing if no scan has been requested
+	if not UPCompatPendingScan then return end
+	
+	-- 2. Ensure pfQuest has finished building its localization caches
+	if not (pfDatabase and pfDatabase.localized) then return end
+
+	-- 3. Run the debounce timer (arg1 in Vanilla WoW is elapsed time in seconds)
+	UPCompatDebounceTimer = UPCompatDebounceTimer + arg1
+	
+	-- 4. If 0.2 seconds have passed since the LAST event fired, execute the scan
+	if UPCompatDebounceTimer > 0.2 then
+		UPCompatPendingScan = false
+		UPCompatDebounceTimer = 0
+		
+		UPCompatPfQuestScanQuestObjectives()
+	end
+end)
 
 UPCompatFrame:SetScript("OnEvent", function()
-	-- if event == "QUEST_LOG_UPDATE" or event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED" or event == "ZONE_CHANGED_NEW_AREA" then
-		-- UPCompatPfQuestScanQuestObjectives()
-	-- end
-	
-	-- if event == "ADDON_LOADED" then
-		-- if arg1 == "pfQuest" then
-			-- UPCompatIsPfQuestLoaded = true
-			-- UPCompatPfQuestScanQuestObjectives()
-		-- end
-	-- end
-	
 	if event == "QUEST_LOG_UPDATE" or event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED" or event == "ZONE_CHANGED_NEW_AREA" then
-		-- UPCompatPfQuestScanQuestObjectives()
 		
-		--should check for UPCompatIsPfQuestLoaded or the game may freeze
-		-- if (UnitPlatesAddonIsLoaded) and (UnitPlatesPlayerEnteredWorld) and UPCompatIsPfQuestLoaded then
-			-- UPCompatPfQuestScanQuestObjectives()
-		-- end
-		
-		--delay first time execution (NO IDEA WHAT TO BASE THE DELAY DEURATION UPON OR IF THERE IS A CALLBACK, I COULDN'T FIND A CALLBACK THAT WOULD WORK)
-		if UPCompatIsFirstPfQuestLoad then
-			UPCoreDelayCall(
-				5, 
-				UPCompatPfQuestScanQuestObjectives
-			)
-		else		
-			UPCompatPfQuestScanQuestObjectives()
+		-- Assuming you track these variables elsewhere as intended
+		if UnitPlatesAddonIsLoaded and UnitPlatesPlayerEnteredWorld then
+			
+			-- Instead of running the heavy scan directly, we queue it and reset the timer.
+			-- This safely merges 15 simultaneous login events into 1 single scan.
+			UPCompatPendingScan = true
+			UPCompatDebounceTimer = 0 
+			
 		end
 	end
 end)
