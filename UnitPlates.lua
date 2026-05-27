@@ -1,5 +1,7 @@
-local addonIsLoaded = false
-local playerEnteredWorld = false
+UnitPlatesAddonIsLoaded = false
+UnitPlatesPlayerEnteredWorld = false
+UnitPlatesElapsedTimeSinceFullyLoaded = 0
+UnitPlatesLoadDelay = 0
 
 ---------------------------CONSTANTS
 
@@ -2320,25 +2322,25 @@ UnitPlatesMainFrame.numFrames = 0
 
 UnitPlatesMainFrame:SetScript("OnEvent", function()
 	--print("here11111111")
-	addonIsLoaded = true
+	UnitPlatesAddonIsLoaded = true
 
 	if event == "ADDON_LOADED" and arg1 == "UnitPlates" then
-		addonIsLoaded = true
+		UnitPlatesAddonIsLoaded = true
 		--print("----------ADDON_LOADED: "..tostring(arg1))
 		UnitPlatesMainFrame:UnregisterEvent("ADDON_LOADED")
 		
-		if (addonIsLoaded and playerEnteredWorld) then
+		if (UnitPlatesAddonIsLoaded and UnitPlatesPlayerEnteredWorld) then
 			--UnitPlatesMainFrame:UnregisterEvent("PLAYER_ENTERING_WORLD")
 			--CoolHealthBar_OnLoad()
 			UPConfigInitUnitPlatesSettings()
 		end
 	end
 	if event == "PLAYER_ENTERING_WORLD" then
-		playerEnteredWorld = true
+		UnitPlatesPlayerEnteredWorld = true
 		--print("----------ADDON_LOADED: "..tostring(arg1))
 		UnitPlatesMainFrame:UnregisterEvent("PLAYER_ENTERING_WORLD")
 		
-		if (addonIsLoaded and playerEnteredWorld) then
+		if (UnitPlatesAddonIsLoaded and UnitPlatesPlayerEnteredWorld) then
 			--UnitPlatesMainFrame:UnregisterEvent("ADDON_LOADED")
 			--CoolHealthBar_OnLoad()
 			UPConfigInitUnitPlatesSettings()
@@ -2361,150 +2363,171 @@ UnitPlatesMainFrame:RegisterEvent("RAID_ROSTER_UPDATE")
 
 --MAIN LOOP
 UnitPlatesMainFrame:SetScript("OnUpdate", function()
-	local self = UnitPlatesMainFrame
-	local elapsed = arg1
-    self.TimeToCheck = self.TimeToCheck - elapsed
-    if self.TimeToCheck > 0 then 
-        return -- We haven't counted down to zero yet so do nothing
-    end
-    self.TimeToCheck = 0.01 -- We've waited a second so reset the timer
-	
-	-- find new nameplates
-	local frames = {WorldFrame:GetChildren()} -- Pack them into a table
-	
-	local framesCount = table.getn(frames)
-	if framesCount ~= self.numFrames then
-		for i = 1, framesCount do
-			local f = frames[i]
-			--print("x1")
-			if UPCoreIsNameplate(f) and not f.kui then
-				--print("x2")
-				InitFrame(f)
-			end
-		end
-		self.numFrames = framesCount
+
+	--print("here0")
+	if (UnitPlatesAddonIsLoaded) and (UnitPlatesPlayerEnteredWorld) then
+		UnitPlatesElapsedTimeSinceFullyLoaded = UnitPlatesElapsedTimeSinceFullyLoaded + arg1
 	end
-	
-	-- update chat bubbles
-	if UnitPlatesSettings and UnitPlatesSettings.enableChatBubbleHandling then
-		for _, v in pairs(frames) do
-			if UPCoreIsBalloon(v) then
-				UPCoreStyleBalloon(v)
+
+	if (UnitPlatesAddonIsLoaded) and (UnitPlatesPlayerEnteredWorld) and (UnitPlatesElapsedTimeSinceFullyLoaded > UnitPlatesLoadDelay) then	
+		--print("here2")
+
+		local self = UnitPlatesMainFrame
+		local elapsed = arg1
+		self.TimeToCheck = self.TimeToCheck - elapsed
+		if self.TimeToCheck > 0 then 
+			return -- We haven't counted down to zero yet so do nothing
+		end
+		self.TimeToCheck = 0.01 -- We've waited a second so reset the timer
+		
+		-- find new nameplates
+		local frames = {WorldFrame:GetChildren()} -- Pack them into a table
+		local activePlates = {}
+		
+		local framesCount = table.getn(frames)
+		if framesCount ~= self.numFrames then
+			for i = 1, framesCount do
+				local f = frames[i]
+				--print("x1")
+				-- if UPCoreIsNameplate(f) and not f.kui then
+					-- --print("x2")
+					-- InitFrame(f)
+				-- end
+				-- if UPCoreIsNameplate(f) and f:IsShown() and f.kui then
+					-- table.insert(activePlates, f)
+				-- end
+				if UPCoreIsNameplate(f) then
+					if not f.kui then
+						--print("x2")
+						InitFrame(f)
+					elseif f.kui and f:IsShown() then
+						--Gather all currently visible nameplates
+						table.insert(activePlates, f)
+					end
+				end
 			end
-		end
-	end
-	
-	
-	
-	-- FRAME LEVEL SORTING!
-	local activePlates = {}
-	
-	-- 1. Gather all currently visible nameplates
-	for i = 1, framesCount do
-		local f = frames[i]
-		if UPCoreIsNameplate(f) and f:IsShown() and f.kui then
-			table.insert(activePlates, f)
-		end
-	end
-	
-	-- 2. Sort them cleanly by their Y position on the screen 
-	-- (Highest Y is near the top of the monitor, so it should be in the background)
-	table.sort(activePlates, function(a, b)
-		local _, yA = a:GetCenter()
-		local _, yB = b:GetCenter()
-		return (yA or 0) > (yB or 0)
-	end)
-	
-	-- 3. Apply strict, non-overlapping frame level sandboxes based on their sorted order
-	for i = 1, table.getn(activePlates) do
-		local f = activePlates[i]
-		local kuiPlateFrame = f.kui
-		
-		-- Each plate gets an exclusive block of 7 levels.
-		-- Plate 1 gets 7-13. Plate 2 gets 14-20. Plate 3 gets 21-27, etc.
-		local targetLevel = i * 7 
-		
-		-- Target priority: If this is your current target, force it to the absolute top safely
-		--if f.isTarget or (UnitName("target") == kuiPlateFrame.nameTextVariable) then
-		if f.isTarget then
-			targetLevel = 120 -- Safe ceiling just below the Vanilla engine cap of 128
+			self.numFrames = framesCount
 		end
 		
-		-- 4. Apply the stack without any fear of interleaving
-		f:SetFrameLevel(targetLevel)
-		kuiPlateFrame:SetFrameLevel(targetLevel + 1)
-		
-		if kuiPlateFrame.health then
-			if kuiPlateFrame.health.bgOffsetFrame then
-				kuiPlateFrame.health.bgOffsetFrame:SetFrameLevel(targetLevel + 2)
-			end
-			kuiPlateFrame.health:SetFrameLevel(targetLevel + 3)
-			if kuiPlateFrame.health.overlayMask then
-				kuiPlateFrame.health.overlayMask:SetFrameLevel(targetLevel + 4)
-			end
-		end
-		
-		if kuiPlateFrame.typeIcon then
-			if kuiPlateFrame.typeIcon.bgOffsetFrame then
-				kuiPlateFrame.typeIcon.bgOffsetFrame:SetFrameLevel(targetLevel + 2)
-			end
-			kuiPlateFrame.typeIcon:SetFrameLevel(targetLevel + 3)
-			if kuiPlateFrame.typeIcon.overlayMask then
-				kuiPlateFrame.typeIcon.overlayMask:SetFrameLevel(targetLevel + 4)
-			end
-		end
-		
-		if kuiPlateFrame.power then
-			kuiPlateFrame.power:SetFrameLevel(targetLevel + 1)
-		end
-		
-		if kuiPlateFrame.classIcon then
-			kuiPlateFrame.classIcon:SetFrameLevel(targetLevel + 5)
-		end
-		
-		if kuiPlateFrame.aurasContainer then
-			kuiPlateFrame.aurasContainer:SetFrameLevel(targetLevel + 5)
-			for i = 1, UPConstants.maxAuras do
-				if kuiPlateFrame.aurasContainer.auraIcons[i] then
-					kuiPlateFrame.aurasContainer.auraIcons[i]:SetFrameLevel(targetLevel + 5)
+		-- update chat bubbles
+		if UnitPlatesSettings and UnitPlatesSettings.enableChatBubbleHandling then
+			for _, v in pairs(frames) do
+				if UPCoreIsBalloon(v) then
+					UPCoreStyleBalloon(v)
 				end
 			end
 		end
 		
-		if kuiPlateFrame.textLayerHost then
-			kuiPlateFrame.textLayerHost:SetFrameLevel(targetLevel + 5)
-		end
 		
-		if kuiPlateFrame.shootingIcon then
-			kuiPlateFrame.shootingIcon:SetFrameLevel(targetLevel + 5)
-		end
 		
-		if kuiPlateFrame.combopoints then
-			kuiPlateFrame.combopoints:SetFrameLevel(targetLevel + 5)
-		end
+		-- FRAME LEVEL SORTING!
+		-- local activePlates = {}		
+		-- 1. Gather all currently visible nameplates
+		-- for i = 1, framesCount do
+			-- local f = frames[i]
+			-- if UPCoreIsNameplate(f) and f:IsShown() and f.kui then
+				-- table.insert(activePlates, f)
+			-- end
+		-- end
 		
-		if kuiPlateFrame.questIcon then
-			kuiPlateFrame.questIcon:SetFrameLevel(targetLevel + 5)
-		end
+		-- 2. Sort them cleanly by their Y position on the screen 
+		-- (Highest Y is near the top of the monitor, so it should be in the background)
+		table.sort(activePlates, function(a, b)
+			local _, yA = a:GetCenter()
+			local _, yB = b:GetCenter()
+			return (yA or 0) > (yB or 0)
+		end)
 		
-		if kuiPlateFrame.petHappiness then
-			kuiPlateFrame.petHappiness:SetFrameLevel(targetLevel + 5)
-		end
-		
-		if kuiPlateFrame.combatIcon then
-			kuiPlateFrame.combatIcon:SetFrameLevel(targetLevel + 5)
-		end
-		
-		if kuiPlateFrame.originalPlateFrame.totem then
-			if kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame then
-				kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame:SetFrameLevel(targetLevel + 2)
+		-- 3. Apply strict, non-overlapping frame level sandboxes based on their sorted order
+		for i = 1, table.getn(activePlates) do
+			local f = activePlates[i]
+			local kuiPlateFrame = f.kui
+			
+			-- Each plate gets an exclusive block of 7 levels.
+			-- Plate 1 gets 7-13. Plate 2 gets 14-20. Plate 3 gets 21-27, etc.
+			local targetLevel = i * 7 
+			
+			-- Target priority: If this is your current target, force it to the absolute top safely
+			--if f.isTarget or (UnitName("target") == kuiPlateFrame.nameTextVariable) then
+			if f.isTarget then
+				targetLevel = 120 -- Safe ceiling just below the Vanilla engine cap of 128
 			end
-			kuiPlateFrame.originalPlateFrame.totem:SetFrameLevel(targetLevel + 3)
-			if kuiPlateFrame.originalPlateFrame.totem.overlayMask then
-				kuiPlateFrame.originalPlateFrame.totem.overlayMask:SetFrameLevel(targetLevel + 4)
+			
+			-- 4. Apply the stack without any fear of interleaving
+			f:SetFrameLevel(targetLevel)
+			kuiPlateFrame:SetFrameLevel(targetLevel + 1)
+			
+			if kuiPlateFrame.health then
+				if kuiPlateFrame.health.bgOffsetFrame then
+					kuiPlateFrame.health.bgOffsetFrame:SetFrameLevel(targetLevel + 2)
+				end
+				kuiPlateFrame.health:SetFrameLevel(targetLevel + 3)
+				if kuiPlateFrame.health.overlayMask then
+					kuiPlateFrame.health.overlayMask:SetFrameLevel(targetLevel + 4)
+				end
+			end
+			
+			if kuiPlateFrame.typeIcon then
+				if kuiPlateFrame.typeIcon.bgOffsetFrame then
+					kuiPlateFrame.typeIcon.bgOffsetFrame:SetFrameLevel(targetLevel + 2)
+				end
+				kuiPlateFrame.typeIcon:SetFrameLevel(targetLevel + 3)
+				if kuiPlateFrame.typeIcon.overlayMask then
+					kuiPlateFrame.typeIcon.overlayMask:SetFrameLevel(targetLevel + 4)
+				end
+			end
+			
+			if kuiPlateFrame.power then
+				kuiPlateFrame.power:SetFrameLevel(targetLevel + 1)
+			end
+			
+			if kuiPlateFrame.classIcon then
+				kuiPlateFrame.classIcon:SetFrameLevel(targetLevel + 5)
+			end
+			
+			if kuiPlateFrame.aurasContainer then
+				kuiPlateFrame.aurasContainer:SetFrameLevel(targetLevel + 5)
+				for i = 1, UPConstants.maxAuras do
+					if kuiPlateFrame.aurasContainer.auraIcons[i] then
+						kuiPlateFrame.aurasContainer.auraIcons[i]:SetFrameLevel(targetLevel + 5)
+					end
+				end
+			end
+			
+			if kuiPlateFrame.textLayerHost then
+				kuiPlateFrame.textLayerHost:SetFrameLevel(targetLevel + 5)
+			end
+			
+			if kuiPlateFrame.shootingIcon then
+				kuiPlateFrame.shootingIcon:SetFrameLevel(targetLevel + 5)
+			end
+			
+			if kuiPlateFrame.combopoints then
+				kuiPlateFrame.combopoints:SetFrameLevel(targetLevel + 5)
+			end
+			
+			if kuiPlateFrame.questIcon then
+				kuiPlateFrame.questIcon:SetFrameLevel(targetLevel + 5)
+			end
+			
+			if kuiPlateFrame.petHappiness then
+				kuiPlateFrame.petHappiness:SetFrameLevel(targetLevel + 5)
+			end
+			
+			if kuiPlateFrame.combatIcon then
+				kuiPlateFrame.combatIcon:SetFrameLevel(targetLevel + 5)
+			end
+			
+			if kuiPlateFrame.originalPlateFrame.totem then
+				if kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame then
+					kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame:SetFrameLevel(targetLevel + 2)
+				end
+				kuiPlateFrame.originalPlateFrame.totem:SetFrameLevel(targetLevel + 3)
+				if kuiPlateFrame.originalPlateFrame.totem.overlayMask then
+					kuiPlateFrame.originalPlateFrame.totem.overlayMask:SetFrameLevel(targetLevel + 4)
+				end
 			end
 		end
 	end
-	
 end)
 --MAIN LOOP END

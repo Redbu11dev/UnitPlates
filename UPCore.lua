@@ -2,27 +2,29 @@ local UPCoreTimerQueue = {}
 local UPCoreTimerFrame = CreateFrame("Frame", "UPCoreTimerFrame", UIParent)
 
 UPCoreTimerFrame:SetScript("OnUpdate", function()
-    local currentTime = GetTime()
-    local i = 1
-    
-    -- Iterate through the queue. We use a while loop because table.remove shifts indexes.
-    while i <= table.getn(UPCoreTimerQueue) do
-        local task = UPCoreTimerQueue[i]
-        if currentTime >= task.executionTime then
-            -- Time is up! Remove the task from the queue first to prevent double-execution
-            table.remove(UPCoreTimerQueue, i)
-            
-            -- Execute the stored function with its original arguments
-            if task.args then
-                task.func(unpack(task.args))
-            else
-                task.func()
-            end
-        else
-            -- Not ready yet, check the next one
-            i = i + 1
-        end
-    end
+	if UnitPlatesAddonIsLoaded and UnitPlatesPlayerEnteredWorld and (UnitPlatesElapsedTimeSinceFullyLoaded > UnitPlatesLoadDelay) then
+		local currentTime = GetTime()
+		local i = 1
+		
+		-- Iterate through the queue. We use a while loop because table.remove shifts indexes.
+		while i <= table.getn(UPCoreTimerQueue) do
+			local task = UPCoreTimerQueue[i]
+			if currentTime >= task.executionTime then
+				-- Time is up! Remove the task from the queue first to prevent double-execution
+				table.remove(UPCoreTimerQueue, i)
+				
+				-- Execute the stored function with its original arguments
+				if task.args then
+					task.func(unpack(task.args))
+				else
+					task.func()
+				end
+			else
+				-- Not ready yet, check the next one
+				i = i + 1
+			end
+		end
+	end
 end)
 
 -- PUBLIC API: Call this to delay any function

@@ -123,6 +123,8 @@ end
 ------------------------------------------------------------------------------------
 
 --pfquest compatibility
+local UPCompatIsFirstPfQuestLoad = true
+
 local UPComapt_PFQUEST_SWORD_ICON = "Interface\\AddOns\\UnitPlates\\img\\quest\\slay"
 local UPComapt_PFQUEST_BAG_ICON = "Interface\\AddOns\\UnitPlates\\img\\quest\\loot"
 
@@ -240,6 +242,8 @@ local function UPCompatPfQuestScanQuestObjectives()
             end
         end
     end
+	
+	UPCompatIsFirstPfQuestLoad = false
 end
 --pfquest compatibility END
 
@@ -255,9 +259,39 @@ UPCompatFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 UPCompatFrame:RegisterEvent("ZONE_CHANGED")
 UPCompatFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 
+UPCompatFrame:RegisterEvent("ADDON_LOADED")
+
+-- local UPCompatIsPfQuestLoaded = false
+
 UPCompatFrame:SetScript("OnEvent", function()
+	-- if event == "QUEST_LOG_UPDATE" or event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED" or event == "ZONE_CHANGED_NEW_AREA" then
+		-- UPCompatPfQuestScanQuestObjectives()
+	-- end
+	
+	-- if event == "ADDON_LOADED" then
+		-- if arg1 == "pfQuest" then
+			-- UPCompatIsPfQuestLoaded = true
+			-- UPCompatPfQuestScanQuestObjectives()
+		-- end
+	-- end
+	
 	if event == "QUEST_LOG_UPDATE" or event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED" or event == "ZONE_CHANGED_NEW_AREA" then
-		UPCompatPfQuestScanQuestObjectives()
+		-- UPCompatPfQuestScanQuestObjectives()
+		
+		--should check for UPCompatIsPfQuestLoaded or the game may freeze
+		-- if (UnitPlatesAddonIsLoaded) and (UnitPlatesPlayerEnteredWorld) and UPCompatIsPfQuestLoaded then
+			-- UPCompatPfQuestScanQuestObjectives()
+		-- end
+		
+		--delay first time execution (NO IDEA WHAT TO BASE THE DELAY DEURATION UPON OR IF THERE IS A CALLBACK, I COULDN'T FIND A CALLBACK THAT WOULD WORK)
+		if UPCompatIsFirstPfQuestLoad then
+			UPCoreDelayCall(
+				5, 
+				UPCompatPfQuestScanQuestObjectives
+			)
+		else		
+			UPCompatPfQuestScanQuestObjectives()
+		end
 	end
 end)
 --UPCompatFrame END

@@ -715,56 +715,58 @@ UPApiFrame:RegisterEvent("RAW_COMBATLOG")
 UPApiFrame:RegisterEvent("UNIT_CASTEVENT")
 
 UPApiFrame:SetScript("OnUpdate", function()
-    local currentTime = GetTime()
-    
-    for casterGUID, spells in pairs(UPApiPendingAuraRefreshes) do
-        for spellName, data in pairs(spells) do
+	if UnitPlatesAddonIsLoaded and UnitPlatesPlayerEnteredWorld and (UnitPlatesElapsedTimeSinceFullyLoaded > UnitPlatesLoadDelay) then
+		local currentTime = GetTime()
 		
-			--cache in once early (it will be removed if wrong anyways)
-			-- if (currentTime - data.time) > (math.max(0.2 + UPCoreGetCurrentPingSeconds())) then
-				-- UPApiCacheInAuraIfValid(
-					-- data.targetGUID,
-					-- spellName,
-					-- data.isDebuff or auraType,
-					-- data.isMyAura,
-					-- 0.01
-				-- )
-			-- end
-            
-            -- If 0.2 seconds pass without a failure combat log, commit it!
-			-- need a higher delay, it may not be in the ACTUAL buff/debuff list YET!!!
-            if (currentTime - data.time) > (0.5) then
+		for casterGUID, spells in pairs(UPApiPendingAuraRefreshes) do
+			for spellName, data in pairs(spells) do
 			
-				local auraType = UPApiGetAuraTypeOnUnit(data.targetGUID, data.spellId)
-				
-				-- if data.isMyAura then
-					-- print("UPApiPendingAuraRefreshes release for "..spellName.." auraType: "..tostring(auraType))
+				--cache in once early (it will be removed if wrong anyways)
+				-- if (currentTime - data.time) > (math.max(0.2 + UPCoreGetCurrentPingSeconds())) then
+					-- UPApiCacheInAuraIfValid(
+						-- data.targetGUID,
+						-- spellName,
+						-- data.isDebuff or auraType,
+						-- data.isMyAura,
+						-- 0.01
+					-- )
 				-- end
 				
-				UPCoreDelayCall(
-					UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(), 
-					UPApiCacheInAuraIfValid, 
-					data.targetGUID, 
-					spellName, 
-					data.isDebuff or auraType, 
-					data.isMyAura
-				)
+				-- If 0.2 seconds pass without a failure combat log, commit it!
+				-- need a higher delay, it may not be in the ACTUAL buff/debuff list YET!!!
+				if (currentTime - data.time) > (0.5) then
+				
+					local auraType = UPApiGetAuraTypeOnUnit(data.targetGUID, data.spellId)
+					
+					-- if data.isMyAura then
+						-- print("UPApiPendingAuraRefreshes release for "..spellName.." auraType: "..tostring(auraType))
+					-- end
+					
+					UPCoreDelayCall(
+						UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(), 
+						UPApiCacheInAuraIfValid, 
+						data.targetGUID, 
+						spellName, 
+						data.isDebuff or auraType, 
+						data.isMyAura
+					)
+				
+					-- UPApiCacheInAuraIfValid(
+						-- data.targetGUID,
+						-- spellName,
+						-- data.isDebuff or auraType,
+						-- data.isMyAura
+					-- )
+					spells[spellName] = nil
+				end
+			end
 			
-                -- UPApiCacheInAuraIfValid(
-					-- data.targetGUID,
-					-- spellName,
-					-- data.isDebuff or auraType,
-					-- data.isMyAura
-				-- )
-                spells[spellName] = nil
-            end
-        end
-        
-        -- Memory cleanup: Delete empty caster tables
-        if next(spells) == nil then
-            UPApiPendingAuraRefreshes[casterGUID] = nil
-        end
-    end
+			-- Memory cleanup: Delete empty caster tables
+			if next(spells) == nil then
+				UPApiPendingAuraRefreshes[casterGUID] = nil
+			end
+		end
+	end
 end)
 
 UPApiFrame:SetScript("OnEvent", function()
