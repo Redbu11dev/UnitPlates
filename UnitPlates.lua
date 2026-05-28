@@ -101,7 +101,8 @@ local castBarColor = {.43, 0.47, 0.55, 1}
 local castBarShieldColor = {.8, 0.1, 0.1, 1}
 
 local combopointsColors = {
-	full = {1, 0.224, 0.027}
+	-- full = {1, 0.224, 0.027}
+	full = {0, 0.9, 1} --Electric Cyan
 }
 
 local powerBarColors = {
@@ -1690,6 +1691,11 @@ local function InitFrame(originalPlateFrame)
 		local cp = kuiPlateFrame.combopoints:CreateTexture(nil, "ARTWORK")
 		cp:SetDrawLayer("ARTWORK", 2)
 		cp:SetTexture("Interface\\AddOns\\UnitPlates\\Media\\combopoint-round")
+		
+		-- cp:SetTexture("Interface\\ComboFrame\\ComboPoint")
+		-- -- Crop out just the red orb from Blizzard's combo point sprite sheet
+		-- -- (Left, Right, Top, Bottom)
+		-- cp:SetTexCoord(0, 0.375, 0, 0.75)
 
 		if i > 0 then
 			cp:SetPoint("LEFT", pcp, "RIGHT", combopointsSizes.spacing, 0)

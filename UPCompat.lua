@@ -245,6 +245,45 @@ local function UPCompatPfQuestScanQuestObjectives()
 	
 	-- UPCompatIsFirstPfQuestLoad = false
 end
+
+-- Variables for pfquest debouncing
+local UPCompatPfQuestPendingScan = false
+local UPCompatPfQuestDebounceTimer = 0
+
+local function UPCompatPfQuestScanWithDebounce()
+	-- 1. Do nothing if no scan has been requested
+	if not UPCompatPfQuestPendingScan then return end
+	
+	-- 2. Ensure pfQuest has finished building its localization caches
+	if not (pfDatabase and pfDatabase.localized) then return end
+
+	-- 3. Run the debounce timer (arg1 in Vanilla WoW is elapsed time in seconds)
+	UPCompatPfQuestDebounceTimer = UPCompatPfQuestDebounceTimer + arg1
+	
+	-- 4. If 0.2 seconds have passed since the LAST event fired, execute the scan
+	if UPCompatPfQuestDebounceTimer > 0.2 then
+		UPCompatPfQuestPendingScan = false
+		UPCompatPfQuestDebounceTimer = 0
+		
+		UPCompatPfQuestScanQuestObjectives()
+	end
+end
+
+local function UPCompatPfQuestOnEvent(event)
+	if event == "QUEST_LOG_UPDATE" or event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED" or event == "ZONE_CHANGED_NEW_AREA" then
+		
+		-- Assuming you track these variables elsewhere as intended
+		if UnitPlatesAddonIsLoaded and UnitPlatesPlayerEnteredWorld then
+			
+			-- Instead of running the heavy scan directly, we queue it and reset the timer.
+			-- This safely merges 15 simultaneous login events into 1 single scan.
+			UPCompatPfQuestPendingScan = true
+			UPCompatPfQuestDebounceTimer = 0 
+			
+		end
+	end
+end
+
 --pfquest compatibility END
 
 
@@ -261,42 +300,11 @@ UPCompatFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 
 --UPCompatFrame:RegisterEvent("ADDON_LOADED")
 
-
--- Variables for debouncing
-UPCompatPendingScan = false
-UPCompatDebounceTimer = 0
-
 UPCompatFrame:SetScript("OnUpdate", function()
-	-- 1. Do nothing if no scan has been requested
-	if not UPCompatPendingScan then return end
-	
-	-- 2. Ensure pfQuest has finished building its localization caches
-	if not (pfDatabase and pfDatabase.localized) then return end
-
-	-- 3. Run the debounce timer (arg1 in Vanilla WoW is elapsed time in seconds)
-	UPCompatDebounceTimer = UPCompatDebounceTimer + arg1
-	
-	-- 4. If 0.2 seconds have passed since the LAST event fired, execute the scan
-	if UPCompatDebounceTimer > 0.2 then
-		UPCompatPendingScan = false
-		UPCompatDebounceTimer = 0
-		
-		UPCompatPfQuestScanQuestObjectives()
-	end
+	UPCompatPfQuestScanWithDebounce()
 end)
 
 UPCompatFrame:SetScript("OnEvent", function()
-	if event == "QUEST_LOG_UPDATE" or event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED" or event == "ZONE_CHANGED_NEW_AREA" then
-		
-		-- Assuming you track these variables elsewhere as intended
-		if UnitPlatesAddonIsLoaded and UnitPlatesPlayerEnteredWorld then
-			
-			-- Instead of running the heavy scan directly, we queue it and reset the timer.
-			-- This safely merges 15 simultaneous login events into 1 single scan.
-			UPCompatPendingScan = true
-			UPCompatDebounceTimer = 0 
-			
-		end
-	end
+	UPCompatPfQuestOnEvent(event)
 end)
 --UPCompatFrame END
