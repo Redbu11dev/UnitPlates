@@ -2,6 +2,7 @@ UnitPlatesAddonIsLoaded = false
 UnitPlatesPlayerEnteredWorld = false
 UnitPlatesElapsedTimeSinceFullyLoaded = 0
 UnitPlatesLoadDelay = 0
+UnitPlatesConstantsInitialized = false
 
 ---------------------------CONSTANTS
 
@@ -34,60 +35,65 @@ local slowUpdateTime, critUpdateTime, aurasUnitUpdateTime = 0.1, 0.01, 0.2
 --SIZES
 --make all sizes relative to UPConstants.nameplateHealthBarHeight
 local UPConstants = {}
-UPConstants.nameplateHealthBarHeight = 14 --all other sizes are based upon nameplateHealthBarHeight
-UPConstants.minimalOnePixel = UPConstants.nameplateHealthBarHeight / 16
 
-UPConstants.nameplateHealthBarWidth = UPConstants.nameplateHealthBarHeight * 6.5
-UPConstants.nameplateWidthGrayLevel = UPConstants.nameplateHealthBarHeight * 4.1
-UPConstants.nameplatePowerBarHeight = UPConstants.nameplateHealthBarHeight / 2
+local function InitUPConstants()
+	UPConstants.nameplateHealthBarHeight = 14 * UnitPlatesSettings.scale --all other sizes are based upon nameplateHealthBarHeight
+	UPConstants.minimalOnePixel = UPConstants.nameplateHealthBarHeight / 16
 
-UPConstants.nameFontSize = UPConstants.nameplateHealthBarHeight * 0.6875
-UPConstants.healthPercentageFontSize = UPConstants.nameplateHealthBarHeight * 0.625
-UPConstants.healthBigFontSize = UPConstants.nameplateHealthBarHeight * 0.625
-UPConstants.powerFontSize = UPConstants.nameplateHealthBarHeight * 0.5
-UPConstants.levelFontSize = UPConstants.nameplateHealthBarHeight * 0.625
-UPConstants.castWarningNameFontSize = UPConstants.nameplateHealthBarHeight * 0.6875
-UPConstants.castWarningDurationFontSize = UPConstants.nameplateHealthBarHeight * 0.5
+	UPConstants.nameplateHealthBarWidth = UPConstants.nameplateHealthBarHeight * 6.5
+	UPConstants.nameplateWidthGrayLevel = UPConstants.nameplateHealthBarHeight * 4.1
+	UPConstants.nameplatePowerBarHeight = UPConstants.nameplateHealthBarHeight / 2
 
-UPConstants.nameplateArrowSize = UPConstants.nameplateHealthBarHeight * 1.875
-UPConstants.nameplateRarityH = UPConstants.nameplateHealthBarHeight * 2.75
-UPConstants.nameplateRarityW = UPConstants.nameplateHealthBarHeight * 2.625
+	UPConstants.nameFontSize = UPConstants.nameplateHealthBarHeight * 0.6875
+	UPConstants.healthPercentageFontSize = UPConstants.nameplateHealthBarHeight * 0.625
+	UPConstants.healthBigFontSize = UPConstants.nameplateHealthBarHeight * 0.625
+	UPConstants.powerFontSize = UPConstants.nameplateHealthBarHeight * 0.5
+	UPConstants.levelFontSize = UPConstants.nameplateHealthBarHeight * 0.625
+	UPConstants.castWarningNameFontSize = UPConstants.nameplateHealthBarHeight * 0.6875
+	UPConstants.castWarningDurationFontSize = UPConstants.nameplateHealthBarHeight * 0.5
 
-UPConstants.questIconSize = UPConstants.nameplateHealthBarHeight * 1.1
+	UPConstants.nameplateArrowSize = UPConstants.nameplateHealthBarHeight * 1.875
+	UPConstants.nameplateRarityH = UPConstants.nameplateHealthBarHeight * 2.75
+	UPConstants.nameplateRarityW = UPConstants.nameplateHealthBarHeight * 2.625
 
-UPConstants.petHappinessIconSize = UPConstants.nameplateHealthBarHeight * 1.4
+	UPConstants.questIconSize = UPConstants.nameplateHealthBarHeight * 1.1
 
-UPConstants.combatIconSize = UPConstants.nameplateHealthBarHeight * 1.4
+	UPConstants.petHappinessIconSize = UPConstants.nameplateHealthBarHeight * 1.4
 
-UPConstants.shootingIconSize = UPConstants.nameplateHealthBarHeight * 0.9
+	UPConstants.combatIconSize = UPConstants.nameplateHealthBarHeight * 1.4
 
-UPConstants.nameplateTypeIconSize = UPConstants.nameplateHealthBarHeight
-UPConstants.nameplateClassIconSize = UPConstants.nameplateHealthBarHeight * 1.25
+	UPConstants.shootingIconSize = UPConstants.nameplateHealthBarHeight * 0.9
 
-UPConstants.totemIconSize = UPConstants.nameplateHealthBarHeight * 2
+	UPConstants.nameplateTypeIconSize = UPConstants.nameplateHealthBarHeight
+	UPConstants.nameplateClassIconSize = UPConstants.nameplateHealthBarHeight * 1.25
 
-UPConstants.raidIconSize = UPConstants.nameplateHealthBarHeight * 2
+	UPConstants.totemIconSize = UPConstants.nameplateHealthBarHeight * 2
 
-UPConstants.threatFrameSize = UPConstants.nameplateHealthBarHeight
-UPConstants.threatFontSize = UPConstants.nameplateHealthBarHeight * 0.5
+	UPConstants.raidIconSize = UPConstants.nameplateHealthBarHeight * 2
 
-UPConstants.maxAuras = 80
-UPConstants.maxAurasInRow = 5
-UPConstants.auraIconOffset = 0.1 * UPConstants.minimalOnePixel
+	UPConstants.threatFrameSize = UPConstants.nameplateHealthBarHeight
+	UPConstants.threatFontSize = UPConstants.nameplateHealthBarHeight * 0.5
 
-local castBarSizes = {
-	cbheight = UPConstants.nameplateHealthBarHeight * 0.3125,
-	shield = UPConstants.nameplateHealthBarHeight,
-	icon = UPConstants.nameplateHealthBarHeight
- }
+	UPConstants.maxAuras = 80
+	UPConstants.maxAurasInRow = 5
+	UPConstants.auraIconOffset = 0.1 * UPConstants.minimalOnePixel
 
-local combopointsSizes = {
-	combopoints = UPConstants.nameplateHealthBarHeight * 0.5625,
-	spacing = UPConstants.minimalOnePixel
-}
+	--OFFSETS
+	UPConstants.nameplateRarityXOffset = UPConstants.nameplateRarityW * 0.619
 
---OFFSETS
-local nameplateRarityXOffset = UPConstants.nameplateRarityW * 0.619
+	UPConstants.castBarSizes = {
+		cbheight = UPConstants.nameplateHealthBarHeight * 0.3125,
+		shield = UPConstants.nameplateHealthBarHeight,
+		icon = UPConstants.nameplateHealthBarHeight
+	 }
+
+	UPConstants.combopointsSizes = {
+		combopoints = UPConstants.nameplateHealthBarHeight * 0.5625,
+		spacing = UPConstants.minimalOnePixel
+	}
+	
+	UnitPlatesConstantsInitialized = true
+end
 
 --COLORS
 local glowColor = {.3, 0.7, 1, 1}
@@ -1524,7 +1530,7 @@ local function InitFrame(originalPlateFrame)
 	
 	kuiPlateFrame.rarityIcon = CreateFrame("Frame", nil, kuiPlateFrame)
 	kuiPlateFrame.rarityIcon:SetFrameLevel(0)
-	kuiPlateFrame.rarityIcon:SetPoint("RIGHT", kuiPlateFrame.typeIcon, "LEFT", nameplateRarityXOffset, -1 * UPConstants.minimalOnePixel)
+	kuiPlateFrame.rarityIcon:SetPoint("RIGHT", kuiPlateFrame.typeIcon, "LEFT", UPConstants.nameplateRarityXOffset, -1 * UPConstants.minimalOnePixel)
 	kuiPlateFrame.rarityIcon:SetHeight(UPConstants.nameplateRarityH)
 	kuiPlateFrame.rarityIcon:SetWidth(UPConstants.nameplateRarityW)
 	kuiPlateFrame.rarityIcon.icon = kuiPlateFrame.rarityIcon:CreateTexture(nil, "BORDER")
@@ -1536,7 +1542,7 @@ local function InitFrame(originalPlateFrame)
 
 	kuiPlateFrame.rarityIconR = CreateFrame("Frame", nil, kuiPlateFrame)
 	kuiPlateFrame.rarityIconR:SetFrameLevel(0)
-	kuiPlateFrame.rarityIconR:SetPoint("LEFT", kuiPlateFrame.health, "RIGHT", -nameplateRarityXOffset, -1 * UPConstants.minimalOnePixel)
+	kuiPlateFrame.rarityIconR:SetPoint("LEFT", kuiPlateFrame.health, "RIGHT", -UPConstants.nameplateRarityXOffset, -1 * UPConstants.minimalOnePixel)
 	kuiPlateFrame.rarityIconR:SetHeight(UPConstants.nameplateRarityH)
 	kuiPlateFrame.rarityIconR:SetWidth(UPConstants.nameplateRarityW)
 	kuiPlateFrame.rarityIconR.icon = kuiPlateFrame.rarityIconR:CreateTexture(nil, "BORDER")
@@ -1622,8 +1628,8 @@ local function InitFrame(originalPlateFrame)
 	kuiPlateFrame.castWarning.shield:SetTexCoord(0, 0.84375, 0, 1)
 	kuiPlateFrame.castWarning.shield:SetVertexColor(0.5, 0.5, 0.7)
 
-	kuiPlateFrame.castWarning.shield:SetWidth(castBarSizes.shield * .84375)
-	kuiPlateFrame.castWarning.shield:SetHeight(castBarSizes.shield)
+	kuiPlateFrame.castWarning.shield:SetWidth(UPConstants.castBarSizes.shield * .84375)
+	kuiPlateFrame.castWarning.shield:SetHeight(UPConstants.castBarSizes.shield)
 	kuiPlateFrame.castWarning.shield:SetPoint("LEFT", kuiPlateFrame.castWarning.bar, -7 * UPConstants.minimalOnePixel, 0)
 
 	kuiPlateFrame.castWarning.shield:SetBlendMode("BLEND")
@@ -1662,8 +1668,8 @@ local function InitFrame(originalPlateFrame)
 	kuiPlateFrame.castWarning.icon = CreateFrame("Frame", nil, kuiPlateFrame.castWarning)
 	kuiPlateFrame.castWarning.icon:SetFrameLevel(0)
 	kuiPlateFrame.castWarning.icon:SetPoint("RIGHT", kuiPlateFrame.castWarning.text, "LEFT", -2 * UPConstants.minimalOnePixel, 0)
-	kuiPlateFrame.castWarning.icon:SetHeight(castBarSizes.icon)
-	kuiPlateFrame.castWarning.icon:SetWidth(castBarSizes.icon)
+	kuiPlateFrame.castWarning.icon:SetHeight(UPConstants.castBarSizes.icon)
+	kuiPlateFrame.castWarning.icon:SetWidth(UPConstants.castBarSizes.icon)
 	kuiPlateFrame.castWarning.icon.tex = kuiPlateFrame.castWarning.icon:CreateTexture(nil, "ARTWORK")
 	kuiPlateFrame.castWarning.icon.tex:SetAllPoints()
 	-- kuiPlateFrame.castWarning.icon.tex:SetTexture("Interface\\AddOns\\UnitPlates\\img\\loading.tga")
@@ -1698,7 +1704,7 @@ local function InitFrame(originalPlateFrame)
 		-- cp:SetTexCoord(0, 0.375, 0, 0.75)
 
 		if i > 0 then
-			cp:SetPoint("LEFT", pcp, "RIGHT", combopointsSizes.spacing, 0)
+			cp:SetPoint("LEFT", pcp, "RIGHT", UPConstants.combopointsSizes.spacing, 0)
 		end
 
 		tinsert(kuiPlateFrame.combopoints, i + 1, cp)
@@ -1706,12 +1712,12 @@ local function InitFrame(originalPlateFrame)
 	end
 
 	for i, cp in ipairs(kuiPlateFrame.combopoints) do
-		cp:SetWidth(combopointsSizes.combopoints)
-		cp:SetHeight(combopointsSizes.combopoints)
+		cp:SetWidth(UPConstants.combopointsSizes.combopoints)
+		cp:SetHeight(UPConstants.combopointsSizes.combopoints)
 
 		if i == 1 then
 			-- place first icon to offset others to center
-			cp:SetPoint("BOTTOM", kuiPlateFrame.health, "BOTTOM", -(combopointsSizes.combopoints + combopointsSizes.spacing) * 2, -(combopointsSizes.combopoints / 2))
+			cp:SetPoint("BOTTOM", kuiPlateFrame.health, "BOTTOM", -(UPConstants.combopointsSizes.combopoints + UPConstants.combopointsSizes.spacing) * 2, -(UPConstants.combopointsSizes.combopoints / 2))
 		end
 	end
 	-- create combo points end
@@ -2339,6 +2345,7 @@ UnitPlatesMainFrame:SetScript("OnEvent", function()
 			--UnitPlatesMainFrame:UnregisterEvent("PLAYER_ENTERING_WORLD")
 			--CoolHealthBar_OnLoad()
 			UPConfigInitUnitPlatesSettings()
+			InitUPConstants()
 		end
 	end
 	if event == "PLAYER_ENTERING_WORLD" then
@@ -2350,6 +2357,7 @@ UnitPlatesMainFrame:SetScript("OnEvent", function()
 			--UnitPlatesMainFrame:UnregisterEvent("ADDON_LOADED")
 			--CoolHealthBar_OnLoad()
 			UPConfigInitUnitPlatesSettings()
+			InitUPConstants()
 			OnPlayerEnteringWorld()
 		end
 	end
@@ -2375,7 +2383,7 @@ UnitPlatesMainFrame:SetScript("OnUpdate", function()
 		UnitPlatesElapsedTimeSinceFullyLoaded = UnitPlatesElapsedTimeSinceFullyLoaded + arg1
 	end
 
-	if (UnitPlatesAddonIsLoaded) and (UnitPlatesPlayerEnteredWorld) and (UnitPlatesElapsedTimeSinceFullyLoaded > UnitPlatesLoadDelay) then	
+	if (UnitPlatesAddonIsLoaded) and (UnitPlatesPlayerEnteredWorld) and (UnitPlatesElapsedTimeSinceFullyLoaded > UnitPlatesLoadDelay) and UnitPlatesConstantsInitialized then	
 		--print("here2")
 
 		local self = UnitPlatesMainFrame

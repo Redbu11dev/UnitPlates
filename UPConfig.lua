@@ -108,7 +108,7 @@ function UPConfigLoadUnitPlatesDefaultSettings()
 		ignoredDebuffNames = "name1,name2",
 		enableWoWTranslateSupport = true,
 		enableChatBubbleHandling = true,
-		scale = 1
+		scale = "1.0"
 	}
 end
 
@@ -150,8 +150,8 @@ function UPConfigLoadUnitPlatesSettings()
 		if UnitPlatesSettings.enableChatBubbleHandling == nil then
 			UnitPlatesSettings.enableChatBubbleHandling=true
 		end
-		if UnitPlatesSettings.scale == nil then
-			UnitPlatesSettings.scale=1
+		if UnitPlatesSettings.scale == nil or (not tonumber(UnitPlatesSettings.scale)) then
+			UnitPlatesSettings.scale="1.0"
 		end
 		print("UnitPlates saved data loaded")
 	end
@@ -246,8 +246,17 @@ function UPConfigInitUnitPlatesSettings()
 	scrollChild:SetAllPoints(UnitPlatesOptionsFrame.scrollFrame)
 	UnitPlatesOptionsFrame.scrollFrame:SetScrollChild(scrollChild)
 	
+	
+	
+	local aurasSectionTitle = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	aurasSectionTitle:SetPoint("TOPLEFT",8,-24)
+	aurasSectionTitle:SetTextColor(0.999,0.819,0,barAlpha)
+	aurasSectionTitle:SetJustifyH("LEFT")
+	aurasSectionTitle:SetText("--- AURAS:")	
+	
+	
 	local smallerAurasCheckbox = CreateFrame("CheckButton", "smallerAurasCheckbox", scrollChild, "UICheckButtonTemplate")
-	smallerAurasCheckbox:SetPoint("TOPLEFT",8,-24)
+	smallerAurasCheckbox:SetPoint("TOPLEFT", aurasSectionTitle, "BOTTOMLEFT", 0, -4)
 	getglobal(smallerAurasCheckbox:GetName() .. 'Text'):SetText("Smaller auras")
 	smallerAurasCheckbox:SetChecked(UnitPlatesSettings.smallerAuras)
 	smallerAurasCheckbox.tooltip = "Smaller auras"
@@ -296,7 +305,7 @@ function UPConfigInitUnitPlatesSettings()
 	
 	
 	local showBuffsCheckbox = CreateFrame("CheckButton", "showBuffsCheckbox", scrollChild, "UICheckButtonTemplate")
-	showBuffsCheckbox:SetPoint("TOPLEFT", additionalAuraPollingDelaySecondsTitle, "BOTTOMLEFT", 0, -32)
+	showBuffsCheckbox:SetPoint("TOPLEFT", additionalAuraPollingDelaySecondsInput, "BOTTOMLEFT", 0, -16)
 	getglobal(showBuffsCheckbox:GetName() .. 'Text'):SetText("Show buffs")
 	showBuffsCheckbox:SetChecked(UnitPlatesSettings.showBuffs)
 	showBuffsCheckbox.tooltip = "Show buffs"
@@ -335,7 +344,7 @@ function UPConfigInitUnitPlatesSettings()
 	ignoredBuffnamesInput:SetJustifyH("LEFT")
 	ignoredBuffnamesInput:SetWidth(280)
 	ignoredBuffnamesInput:SetHeight(26)
-	ignoredBuffnamesInput:SetPoint("LEFT", ignoredBuffnamesTitle, "RIGHT", 0, 0)
+	ignoredBuffnamesInput:SetPoint("TOPLEFT", ignoredBuffnamesTitle, "BOTTOMLEFT", 0, 0)
 	ignoredBuffnamesInput:SetFontObject("GameFontNormal")
 	ignoredBuffnamesInput:SetAutoFocus(false)
 	ignoredBuffnamesInput:SetText(""..UnitPlatesSettings.ignoredBuffNames)
@@ -351,7 +360,7 @@ function UPConfigInitUnitPlatesSettings()
 	end)
 	
 	local showDebuffsCheckbox = CreateFrame("CheckButton", "showDebuffsCheckbox", scrollChild, "UICheckButtonTemplate")
-	showDebuffsCheckbox:SetPoint("TOPLEFT", ignoredBuffnamesTitle, "BOTTOMLEFT", 0, -16)
+	showDebuffsCheckbox:SetPoint("TOPLEFT", ignoredBuffnamesInput, "BOTTOMLEFT", 0, -16)
 	getglobal(showDebuffsCheckbox:GetName() .. 'Text'):SetText("Show debuffs")
 	showDebuffsCheckbox:SetChecked(UnitPlatesSettings.showDebuffs)
 	showDebuffsCheckbox.tooltip = "Show debuffs"
@@ -390,7 +399,7 @@ function UPConfigInitUnitPlatesSettings()
 	ignoredDebuffnamesInput:SetJustifyH("LEFT")
 	ignoredDebuffnamesInput:SetWidth(280)
 	ignoredDebuffnamesInput:SetHeight(26)
-	ignoredDebuffnamesInput:SetPoint("LEFT", ignoredDebuffnamesTitle, "RIGHT", 0, 0)
+	ignoredDebuffnamesInput:SetPoint("TOPLEFT", ignoredDebuffnamesTitle, "BOTTOMLEFT", 0, 0)
 	ignoredDebuffnamesInput:SetFontObject("GameFontNormal")
 	ignoredDebuffnamesInput:SetAutoFocus(false)
 	ignoredDebuffnamesInput:SetText(""..UnitPlatesSettings.ignoredDebuffNames)
@@ -405,8 +414,58 @@ function UPConfigInitUnitPlatesSettings()
 		end
 	end)
 	
+	----------------
+	
+	local uiSectionTitle = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	uiSectionTitle:SetPoint("TOPLEFT", ignoredDebuffnamesInput, "BOTTOMLEFT", 0, -32)
+	uiSectionTitle:SetTextColor(0.999,0.819,0,barAlpha)
+	uiSectionTitle:SetJustifyH("LEFT")
+	uiSectionTitle:SetText("--- UI:")	
+	
+	local scaleTitle = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	scaleTitle:SetPoint("TOPLEFT", uiSectionTitle, "BOTTOMLEFT", 0, -8)
+	scaleTitle:SetTextColor(0.999,0.819,0,barAlpha)
+	scaleTitle:SetJustifyH("LEFT")
+	scaleTitle:SetText("Scale (Valid value is number e.g. 1 or 1.0 or 0.3434 etc.): ")
+	
+	local scaleInput = CreateFrame("EditBox", nil, scrollChild)
+	scaleInput:SetBackdrop({
+		bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+		edgeFile = "Interface/DialogFrame/UI-DialogBox-Border",
+		edgeSize = 12,
+		insets = { left = 2, right = 2, top = 2, bottom = 2 },
+	})
+	scaleInput:SetBackdropColor(0,0,0,.5)
+	scaleInput:SetTextInsets(5, 5, 5, 5)
+	scaleInput:SetTextColor(1,1,1,1)
+	scaleInput:SetJustifyH("LEFT")
+	scaleInput:SetWidth(280)
+	scaleInput:SetHeight(26)
+	scaleInput:SetPoint("TOPLEFT", scaleTitle, "BOTTOMLEFT", 0, 0)
+	scaleInput:SetFontObject("GameFontNormal")
+	scaleInput:SetAutoFocus(false)
+	scaleInput:SetText(""..UnitPlatesSettings.scale)
+	scaleInput:SetScript("OnTextChanged", function(self)
+		local inputValue = scaleInput:GetText()
+		if not inputValue then
+			scaleInput:SetText(""..UnitPlatesSettings.scale)
+		else
+			UnitPlatesSettings.scale = inputValue
+			scaleInput:SetText(""..UnitPlatesSettings.scale)
+			--applyAllSettings()
+		end
+	end)
+	
+	----------------
+	
+	local compatibilitySectionTitle = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	compatibilitySectionTitle:SetPoint("TOPLEFT", scaleInput, "BOTTOMLEFT", 0, -32)
+	compatibilitySectionTitle:SetTextColor(0.999,0.819,0,barAlpha)
+	compatibilitySectionTitle:SetJustifyH("LEFT")
+	compatibilitySectionTitle:SetText("--- COMPATIBILITY:")	
+	
 	local enableWoWTranslateSupportCheckbox = CreateFrame("CheckButton", "enableWoWTranslateSupportCheckbox", scrollChild, "UICheckButtonTemplate")
-	enableWoWTranslateSupportCheckbox:SetPoint("TOPLEFT", ignoredDebuffnamesTitle, "BOTTOMLEFT", 0, -16)
+	enableWoWTranslateSupportCheckbox:SetPoint("TOPLEFT", compatibilitySectionTitle, "BOTTOMLEFT", 0, -8)
 	getglobal(enableWoWTranslateSupportCheckbox:GetName() .. 'Text'):SetText("Enable WoWTranslate support")
 	enableWoWTranslateSupportCheckbox:SetChecked(UnitPlatesSettings.enableWoWTranslateSupport)
 	enableWoWTranslateSupportCheckbox.tooltip = "Enable WoWTranslate support"
