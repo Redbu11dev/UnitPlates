@@ -40,9 +40,9 @@ local function InitUPConstants()
 	UPConstants.nameplateHealthBarHeight = 14 * UnitPlatesSettings.scale --all other sizes are based upon nameplateHealthBarHeight
 	UPConstants.minimalOnePixel = UPConstants.nameplateHealthBarHeight / 16
 
-	UPConstants.nameplateHealthBarWidth = UPConstants.nameplateHealthBarHeight * 6.5
-	UPConstants.nameplateWidthGrayLevel = UPConstants.nameplateHealthBarHeight * 4.1
-	UPConstants.nameplatePowerBarHeight = UPConstants.nameplateHealthBarHeight / 2
+	UPConstants.nameplateHealthBarWidth = (UPConstants.nameplateHealthBarHeight * 6.5)
+	UPConstants.nameplateWidthGrayLevel = (UPConstants.nameplateHealthBarHeight * 4.1)
+	UPConstants.nameplatePowerBarHeight = (UPConstants.nameplateHealthBarHeight / 2)
 
 	UPConstants.nameFontSize = UPConstants.nameplateHealthBarHeight * 0.6875
 	UPConstants.healthPercentageFontSize = UPConstants.nameplateHealthBarHeight * 0.625
@@ -107,8 +107,9 @@ local castBarColor = {.43, 0.47, 0.55, 1}
 local castBarShieldColor = {.8, 0.1, 0.1, 1}
 
 local combopointsColors = {
-	-- full = {1, 0.224, 0.027}
-	full = {0, 0.9, 1} --Electric Cyan
+	full = {1, 0.224, 0.027},
+	--full = {0, 0.9, 1}, --Electric Cyan
+	empty = {0.3, 0.3, 0.3}
 }
 
 local powerBarColors = {
@@ -118,13 +119,13 @@ local powerBarColors = {
 	rageDim = {0.5, 0, 0, 0.99999779462814}
 }
 
-local chatTextColors = {
-    ["CHAT_MSG_SAY"] = {1.0, 1.0, 1.0, 0.99}, -- White
-    ["CHAT_MSG_PARTY"] = {0.67, 0.67, 1.0, 0.99}, -- Light Blue
-    ["CHAT_MSG_YELL"] = {1.0, 0.25, 0.25, 0.99}, -- Bright Red
-    ["CHAT_MSG_MONSTER_SAY"] = {1.0, 1.0, 0.6, 0.99}, -- Pale Yellow
-    ["CHAT_MSG_MONSTER_YELL"] = {1.0, 0.48, 0.0, 0.99}, -- Orange-Gold (Distinct from Say)
-}
+-- local chatTextColors = {
+    -- ["CHAT_MSG_SAY"] = {1.0, 1.0, 1.0, 0.99}, -- White
+    -- ["CHAT_MSG_PARTY"] = {0.67, 0.67, 1.0, 0.99}, -- Light Blue
+    -- ["CHAT_MSG_YELL"] = {1.0, 0.25, 0.25, 0.99}, -- Bright Red
+    -- ["CHAT_MSG_MONSTER_SAY"] = {1.0, 1.0, 0.6, 0.99}, -- Pale Yellow
+    -- ["CHAT_MSG_MONSTER_YELL"] = {1.0, 0.48, 0.0, 0.99}, -- Orange-Gold (Distinct from Say)
+-- }
 
 --FONT
 --local mainFontPath = "Interface\\AddOns\\UnitPlates\\fonts\\francois.ttf"
@@ -305,6 +306,30 @@ local function UpdatePlate(kuiPlateFrame)
 	
 	-- print("here3")
 	
+	--combo points update
+	if kuiPlateFrame.isTarget then
+		kuiPlateFrame.combopoints.points = GetComboPoints("player", "target")
+		if not kuiPlateFrame.combopoints.points or kuiPlateFrame.combopoints.points < 1 then
+			kuiPlateFrame.combopoints:Hide()
+		else
+			--kuiPlateFrame.combopoints.color = combopointsColors.full
+			for i = 1, 5 do
+				if i <= kuiPlateFrame.combopoints.points then
+					kuiPlateFrame.combopoints[i]:SetAlpha(1)
+					kuiPlateFrame.combopoints[i]:SetVertexColor(unpack(combopointsColors.full))
+				else
+					kuiPlateFrame.combopoints[i]:SetAlpha(1)
+					kuiPlateFrame.combopoints[i]:SetVertexColor(unpack(combopointsColors.empty))
+				end
+			end
+			kuiPlateFrame.combopoints:Show()
+		end
+	else
+		kuiPlateFrame.combopoints.points = nil
+		kuiPlateFrame.combopoints:Hide()
+	end
+	--combo points update end
+	
 	
 	--setGuild
 	if kuiPlateFrame.guildTextVariable then
@@ -330,14 +355,30 @@ local function UpdatePlate(kuiPlateFrame)
 	else
 		kuiPlateFrame.name:SetText(kuiPlateFrame.nameTextVariable)
 	end
-	
 	kuiPlateFrame.name:SetTextColor(1,1,1,1)
-	if (kuiPlateFrame.guild:GetText() == nil or kuiPlateFrame.guild:GetText() == '') then
+	--setName end
+	
+	--set name and guild positions
+	--reset
 		kuiPlateFrame.name:SetPoint("BOTTOM", kuiPlateFrame.health, "TOP", 0, 2 * UPConstants.minimalOnePixel)
+		kuiPlateFrame.guild:SetPoint("BOTTOM", kuiPlateFrame.health, "TOP", 0, 2 * UPConstants.minimalOnePixel)
+	--
+	if (kuiPlateFrame.guild:GetText() == nil or kuiPlateFrame.guild:GetText() == '') then
+		if kuiPlateFrame.combopoints:IsShown() then
+			kuiPlateFrame.name:SetPoint("BOTTOM", kuiPlateFrame.combopoints[3], "TOP", 0, 2 * UPConstants.minimalOnePixel * 2)
+		else
+			kuiPlateFrame.name:SetPoint("BOTTOM", kuiPlateFrame.health, "TOP", 0, 2 * UPConstants.minimalOnePixel)
+		end
 	else
+		if kuiPlateFrame.combopoints:IsShown() then
+			kuiPlateFrame.guild:SetPoint("BOTTOM", kuiPlateFrame.combopoints[3], "TOP", 0, 2 * UPConstants.minimalOnePixel * 2)
+		else
+			kuiPlateFrame.guild:SetPoint("BOTTOM", kuiPlateFrame.health, "TOP", 0, 2 * UPConstants.minimalOnePixel)
+		end
+		
 		kuiPlateFrame.name:SetPoint("BOTTOM", kuiPlateFrame.guild, "TOP", 0, 2 * UPConstants.minimalOnePixel)
 	end
-	--setName end
+	--set name and guild positions end
 	
 	--level
 	if kuiPlateFrame.levelNumber > 0 then
@@ -606,29 +647,6 @@ local function UpdatePlate(kuiPlateFrame)
 		--gotta set normal color?
 	end
 	--tapped end
-	
-	--combo points update
-	if kuiPlateFrame.isTarget then
-		kuiPlateFrame.combopoints.points = GetComboPoints("player", "target")
-		if not kuiPlateFrame.combopoints.points or kuiPlateFrame.combopoints.points < 1 then
-			kuiPlateFrame.combopoints:Hide()
-		else
-			kuiPlateFrame.combopoints.color = combopointsColors.full
-			for i = 1, 5 do
-				if i <= kuiPlateFrame.combopoints.points then
-					kuiPlateFrame.combopoints[i]:SetAlpha(1)
-				else
-					kuiPlateFrame.combopoints[i]:SetAlpha(.3)
-				end
-				kuiPlateFrame.combopoints[i]:SetVertexColor(unpack(kuiPlateFrame.combopoints.color))
-			end
-			kuiPlateFrame.combopoints:Show()
-		end
-	else
-		kuiPlateFrame.combopoints.points = nil
-		kuiPlateFrame.combopoints:Hide()
-	end
-	--combo points update end
 	
 	--mouseover
 	if kuiPlateFrame.originalPlateFrame.isInMouseOver then
@@ -1717,9 +1735,46 @@ local function InitFrame(originalPlateFrame)
 
 		if i == 1 then
 			-- place first icon to offset others to center
-			cp:SetPoint("BOTTOM", kuiPlateFrame.health, "BOTTOM", -(UPConstants.combopointsSizes.combopoints + UPConstants.combopointsSizes.spacing) * 2, -(UPConstants.combopointsSizes.combopoints / 2))
+			cp:SetPoint("TOP", kuiPlateFrame.health, "TOP", -(UPConstants.combopointsSizes.combopoints + UPConstants.combopointsSizes.spacing) * 2, (UPConstants.combopointsSizes.combopoints * 1.15))
 		end
 	end
+	
+	
+	
+	-- 1. CLEAN BACKDROP HANDLING: Create a distinct frame *behind* the type icon
+	kuiPlateFrame.combopoints.bgOffsetFrame = CreateFrame("Frame", nil, kuiPlateFrame.combopoints)
+	kuiPlateFrame.combopoints.bgOffsetFrame:SetFrameLevel(1) -- Below icon frame
+	kuiPlateFrame.combopoints.bgOffsetFrame:SetBackdrop({
+		bgFile = "Interface\\Buttons\\WHITE8X8", 
+		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", -- Built-in rounded edge
+		tile = false, tileSize = 0, edgeSize = 10,
+		insets = { left = 2, right = 2, top = 2, bottom = 2 }
+	})
+	kuiPlateFrame.combopoints.bgOffsetFrame:SetBackdropColor(0, 0, 0, 0.8) 
+	kuiPlateFrame.combopoints.bgOffsetFrame:SetBackdropBorderColor(0.1, 0.1, 0.1, 1) 
+
+	-- 2. THE CORNER MASKING OVERLAY: Create a frame *above* the type icon
+	kuiPlateFrame.combopoints.overlayMask = CreateFrame("Frame", nil, kuiPlateFrame.combopoints)
+	kuiPlateFrame.combopoints.overlayMask:SetFrameLevel(3) -- Directly above the icon texture
+	kuiPlateFrame.combopoints.overlayMask:SetBackdrop({
+		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", -- Slices off the 4 square corners
+		tile = false, tileSize = 0, edgeSize = 10,
+		insets = { left = 2, right = 2, top = 2, bottom = 2 }
+	})
+	kuiPlateFrame.combopoints.overlayMask:SetBackdropBorderColor(0, 0, 0, 1) -- Black masking border
+
+	-- Lock the background and foreground rounded layers tight to the icon dimensions plus padding
+	local combopointsPadding = 2.5
+	local combopointsPaddingHorizontalMod = 1.5
+	kuiPlateFrame.combopoints.bgOffsetFrame:ClearAllPoints()
+	kuiPlateFrame.combopoints.bgOffsetFrame:SetPoint("TOPLEFT", kuiPlateFrame.combopoints[1], "TOPLEFT", -combopointsPadding * combopointsPaddingHorizontalMod, combopointsPadding)
+	kuiPlateFrame.combopoints.bgOffsetFrame:SetPoint("BOTTOMRIGHT", kuiPlateFrame.combopoints[5], "BOTTOMRIGHT", combopointsPadding * combopointsPaddingHorizontalMod, -combopointsPadding)
+
+	kuiPlateFrame.combopoints.overlayMask:ClearAllPoints()
+	kuiPlateFrame.combopoints.overlayMask:SetPoint("TOPLEFT", kuiPlateFrame.combopoints[1], "TOPLEFT", -combopointsPadding * combopointsPaddingHorizontalMod, combopointsPadding)
+	kuiPlateFrame.combopoints.overlayMask:SetPoint("BOTTOMRIGHT", kuiPlateFrame.combopoints[5], "BOTTOMRIGHT", combopointsPadding * combopointsPaddingHorizontalMod, -combopointsPadding)
+	
+	
 	-- create combo points end
 	
 	--totem

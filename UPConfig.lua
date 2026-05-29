@@ -108,7 +108,9 @@ function UPConfigLoadUnitPlatesDefaultSettings()
 		ignoredDebuffNames = "name1,name2",
 		enableWoWTranslateSupport = true,
 		enableChatBubbleHandling = true,
-		scale = "1.0"
+		scale = "1.0",
+		widthScale = "1.0",
+		widthTrivialScale = "1.0"
 	}
 end
 
@@ -247,6 +249,7 @@ function UPConfigInitUnitPlatesSettings()
 	UnitPlatesOptionsFrame.scrollFrame:SetScrollChild(scrollChild)
 	
 	
+	---------------- AURAS
 	
 	local aurasSectionTitle = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 	aurasSectionTitle:SetPoint("TOPLEFT",8,-24)
@@ -414,7 +417,7 @@ function UPConfigInitUnitPlatesSettings()
 		end
 	end)
 	
-	----------------
+	---------------- UI
 	
 	local uiSectionTitle = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 	uiSectionTitle:SetPoint("TOPLEFT", ignoredDebuffnamesInput, "BOTTOMLEFT", 0, -32)
@@ -456,7 +459,7 @@ function UPConfigInitUnitPlatesSettings()
 		end
 	end)
 	
-	----------------
+	---------------- COMPATIBILITY
 	
 	local compatibilitySectionTitle = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 	compatibilitySectionTitle:SetPoint("TOPLEFT", scaleInput, "BOTTOMLEFT", 0, -32)
