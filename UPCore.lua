@@ -363,31 +363,31 @@ function UPCoreIsNameplate(frame)
 	return regions:GetTexture() == "Interface\\Tooltips\\Nameplate-Border" or nil
 end
 
-function UPCoreGetNameplateByUnitId(unitId)
-	local frames = {WorldFrame:GetChildren()} -- Pack them into a table
-	local framesCount = table.getn(frames)
-	for i = 1, framesCount do
-		local f = frames[i]
-		if f.kui and (f.kui.unitId == unitId) then
-			return f.kui
-		end
-	end
+-- function UPCoreGetNameplateByUnitId(unitId)
+	-- local frames = {WorldFrame:GetChildren()} -- Pack them into a table
+	-- local framesCount = table.getn(frames)
+	-- for i = 1, framesCount do
+		-- local f = frames[i]
+		-- if f.kui and (f.kui.unitId == unitId) then
+			-- return f.kui
+		-- end
+	-- end
 	
 	
-	return nil
-end
+	-- return nil
+-- end
 
-function UPCoreGetNameplateByName(name)
-	local frames = {WorldFrame:GetChildren()} -- Pack them into a table
-	local framesCount = table.getn(frames)
-	for i = 1, framesCount do
-		local f = frames[i]
-		if f.kui and (f.kui.oldName:GetText() == name) then
-			return f.kui
-		end
-	end
+-- function UPCoreGetNameplateByName(name)
+	-- local frames = {WorldFrame:GetChildren()} -- Pack them into a table
+	-- local framesCount = table.getn(frames)
+	-- for i = 1, framesCount do
+		-- local f = frames[i]
+		-- if f.kui and (f.kui.oldName:GetText() == name) then
+			-- return f.kui
+		-- end
+	-- end
 	
-	return nil
-end
+	-- return nil
+-- end
 
 -----------------------------------------------------------

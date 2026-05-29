@@ -93,9 +93,7 @@ function LoadUPMinimapButton()
 	end
 end
 
-
-
-
+--UnitPlatesSettings = UnitPlatesSettings or {}
 
 function UPConfigLoadUnitPlatesDefaultSettings()
 	UnitPlatesSettings = {
@@ -109,7 +107,8 @@ function UPConfigLoadUnitPlatesDefaultSettings()
 		onlyYourDebuffs=false,
 		ignoredDebuffNames = "name1,name2",
 		enableWoWTranslateSupport = true,
-		enableChatBubbleHandling = true
+		enableChatBubbleHandling = true,
+		scale = 1
 	}
 end
 
@@ -150,6 +149,9 @@ function UPConfigLoadUnitPlatesSettings()
 		end
 		if UnitPlatesSettings.enableChatBubbleHandling == nil then
 			UnitPlatesSettings.enableChatBubbleHandling=true
+		end
+		if UnitPlatesSettings.scale == nil then
+			UnitPlatesSettings.scale=1
 		end
 		print("UnitPlates saved data loaded")
 	end

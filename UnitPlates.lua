@@ -34,7 +34,7 @@ local slowUpdateTime, critUpdateTime, aurasUnitUpdateTime = 0.1, 0.01, 0.2
 --SIZES
 --make all sizes relative to UPConstants.nameplateHealthBarHeight
 local UPConstants = {}
-UPConstants.nameplateHealthBarHeight = 14
+UPConstants.nameplateHealthBarHeight = 14 --all other sizes are based upon nameplateHealthBarHeight
 UPConstants.minimalOnePixel = UPConstants.nameplateHealthBarHeight / 16
 
 UPConstants.nameplateHealthBarWidth = UPConstants.nameplateHealthBarHeight * 6.5
@@ -2388,7 +2388,6 @@ UnitPlatesMainFrame:SetScript("OnUpdate", function()
 		
 		-- find new nameplates
 		local frames = {WorldFrame:GetChildren()} -- Pack them into a table
-		local activePlates = {}
 		
 		local framesCount = table.getn(frames)
 		if framesCount ~= self.numFrames then
@@ -2406,9 +2405,6 @@ UnitPlatesMainFrame:SetScript("OnUpdate", function()
 					if not f.kui then
 						--print("x2")
 						InitFrame(f)
-					elseif f.kui and f:IsShown() then
-						--Gather all currently visible nameplates
-						table.insert(activePlates, f)
 					end
 				end
 			end
@@ -2427,14 +2423,14 @@ UnitPlatesMainFrame:SetScript("OnUpdate", function()
 		
 		
 		-- FRAME LEVEL SORTING!
-		-- local activePlates = {}		
+		local activePlates = {}		
 		-- 1. Gather all currently visible nameplates
-		-- for i = 1, framesCount do
-			-- local f = frames[i]
-			-- if UPCoreIsNameplate(f) and f:IsShown() and f.kui then
-				-- table.insert(activePlates, f)
-			-- end
-		-- end
+		for i = 1, framesCount do
+			local f = frames[i]
+			if UPCoreIsNameplate(f) and f:IsShown() and f.kui then
+				table.insert(activePlates, f)
+			end
+		end
 		
 		-- 2. Sort them cleanly by their Y position on the screen 
 		-- (Highest Y is near the top of the monitor, so it should be in the background)
