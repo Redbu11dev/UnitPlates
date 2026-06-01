@@ -80,8 +80,8 @@ local function InitUPConstants()
 	
 	--glow
 	UPConstants.glowHeight = UPConstants.nameplateHealthBarHeight * 4.5
-	UPConstants.glowWidth = UPConstants.nameplateHealthBarWidth * 4.2
-	UPConstants.glowWidthGrayLevel = UPConstants.nameplateWidthGrayLevel * 4.2
+	UPConstants.glowWidth = UPConstants.nameplateHealthBarWidth * 2.6
+	UPConstants.glowWidthGrayLevel = UPConstants.nameplateWidthGrayLevel * 3.0
 	UPConstants.glowWidthTotem = UPConstants.totemIconSize * 3.5
 
 	--OFFSETS
@@ -481,7 +481,7 @@ local function UpdatePlate(kuiPlateFrame)
 			-- kuiPlateFrame.originalPlateFrame:SetWidth(UPConstants.nameplateWidthGrayLevel)
 			-- kuiPlateFrame.originalPlateFrame:SetHeight(UPConstants.nameplateHealthBarHeight)
 		-- end
-		kuiPlateFrame.originalPlateFrame.selectionGlow:SetWidth(UPConstants.glowWidth)
+		kuiPlateFrame.originalPlateFrame.selectionGlow:SetWidth(UPConstants.glowWidthGrayLevel)
 		kuiPlateFrame.originalPlateFrame.selectionGlow:SetHeight(UPConstants.glowHeight)
 		kuiPlateFrame.originalPlateFrame.selectionGlow:SetPoint("CENTER", kuiPlateFrame.health, "CENTER", -UPConstants.nameplateTypeIconSize/2, 0)
 		kuiPlateFrame.originalPlateFrame:SetWidth(UPConstants.nameplateWidthGrayLevel)
@@ -499,7 +499,7 @@ local function UpdatePlate(kuiPlateFrame)
 			-- kuiPlateFrame.originalPlateFrame:SetWidth(UPConstants.nameplateHealthBarWidth)
 			-- kuiPlateFrame.originalPlateFrame:SetHeight(UPConstants.nameplateHealthBarHeight)
 		-- end
-		kuiPlateFrame.originalPlateFrame.selectionGlow:SetWidth(UPConstants.glowWidthGrayLevel)
+		kuiPlateFrame.originalPlateFrame.selectionGlow:SetWidth(UPConstants.glowWidth)
 		kuiPlateFrame.originalPlateFrame.selectionGlow:SetHeight(UPConstants.glowHeight)
 		kuiPlateFrame.originalPlateFrame.selectionGlow:SetPoint("CENTER", kuiPlateFrame.health, "CENTER", -UPConstants.nameplateTypeIconSize/2, 0)
 		kuiPlateFrame.originalPlateFrame:SetWidth(UPConstants.nameplateHealthBarWidth)
@@ -555,12 +555,12 @@ local function UpdatePlate(kuiPlateFrame)
 	kuiPlateFrame.health:SetValue(kuiPlateFrame.health.curr)
 	if UPCoreNum(kuiPlateFrame.health.max) == 100 then
 		--most likely it is unknown hp
-		--try to get from MobHealth
-		local current, max = UPCompatGetHealthFromMobHealth(kuiPlateFrame.guid)
+		--try to get from shaguTweaks
+		local current, max = UPCompatGetHealthFromShaguTweaks(kuiPlateFrame.guid)
 		
 		if not current then
-			--try shaguTweaks fallback
-			current, max = UPCompatGetHealthFromShaguTweaks(kuiPlateFrame.guid)
+			--try MobHealth fallback
+			current, max = UPCompatGetHealthFromMobHealth(kuiPlateFrame.guid)
 		end
 		
 		if current then
