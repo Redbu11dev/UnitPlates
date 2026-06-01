@@ -80,8 +80,8 @@ local function InitUPConstants()
 	
 	--glow
 	UPConstants.glowHeight = UPConstants.nameplateHealthBarHeight * 4.5
-	UPConstants.glowWidth = UPConstants.nameplateHealthBarWidth * 4.5
-	UPConstants.glowWidthGrayLevel = UPConstants.nameplateWidthGrayLevel * 4.5
+	UPConstants.glowWidth = UPConstants.nameplateHealthBarWidth * 4.2
+	UPConstants.glowWidthGrayLevel = UPConstants.nameplateWidthGrayLevel * 4.2
 	UPConstants.glowWidthTotem = UPConstants.totemIconSize * 3.5
 
 	--OFFSETS
