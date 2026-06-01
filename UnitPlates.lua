@@ -674,7 +674,7 @@ local function UpdatePlate(kuiPlateFrame)
 	
 	--target
 	if kuiPlateFrame.isTarget then
-		kuiPlateFrame:SetFrameStrata("MEDIUM")
+		kuiPlateFrame.originalPlateFrame:SetFrameStrata("MEDIUM")
 		kuiPlateFrame.glow:Show() 
 		kuiPlateFrame.glow2:Show()
 		kuiPlateFrame.originalPlateFrame.totem.glow:Show()
@@ -1180,7 +1180,7 @@ local function InitFrame(originalPlateFrame)
 	--kuiPlateFrame.SetFrameCenter = SetFrameCenter
 	------------------------------------------------------------------ Layout --	
 	kuiPlateFrame:SetPoint("CENTER", originalPlateFrame, "CENTER")
-	kuiPlateFrame:SetFrameStrata("BACKGROUND")
+	kuiPlateFrame.originalPlateFrame:SetFrameStrata("BACKGROUND")
 	--kuiPlateFrame:SetFrameLevel(0)
 	SetFrameCenter(kuiPlateFrame)
 	
