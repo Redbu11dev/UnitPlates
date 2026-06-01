@@ -77,6 +77,12 @@ local function InitUPConstants()
 	UPConstants.maxAuras = 80
 	UPConstants.maxAurasInRow = 5
 	UPConstants.auraIconOffset = 0.1 * UPConstants.minimalOnePixel
+	
+	--glow
+	UPConstants.glowHeight = UPConstants.nameplateHealthBarHeight * 4.5
+	UPConstants.glowWidth = UPConstants.nameplateHealthBarWidth * 4.5
+	UPConstants.glowWidthGrayLevel = UPConstants.nameplateWidthGrayLevel * 4.5
+	UPConstants.glowWidthTotem = UPConstants.totemIconSize * 3.5
 
 	--OFFSETS
 	UPConstants.nameplateRarityXOffset = UPConstants.nameplateRarityW * 0.619
@@ -475,6 +481,8 @@ local function UpdatePlate(kuiPlateFrame)
 			-- kuiPlateFrame.originalPlateFrame:SetWidth(UPConstants.nameplateWidthGrayLevel)
 			-- kuiPlateFrame.originalPlateFrame:SetHeight(UPConstants.nameplateHealthBarHeight)
 		-- end
+		kuiPlateFrame.originalPlateFrame.selectionGlow:SetWidth(UPConstants.glowWidth)
+		kuiPlateFrame.originalPlateFrame.selectionGlow:SetHeight(UPConstants.glowHeight)
 		kuiPlateFrame.originalPlateFrame:SetWidth(UPConstants.nameplateWidthGrayLevel)
 		kuiPlateFrame.originalPlateFrame:SetHeight(UPConstants.nameplateHealthBarHeight)
 		SetFrameCenter(kuiPlateFrame)
@@ -490,6 +498,8 @@ local function UpdatePlate(kuiPlateFrame)
 			-- kuiPlateFrame.originalPlateFrame:SetWidth(UPConstants.nameplateHealthBarWidth)
 			-- kuiPlateFrame.originalPlateFrame:SetHeight(UPConstants.nameplateHealthBarHeight)
 		-- end
+		kuiPlateFrame.originalPlateFrame.selectionGlow:SetWidth(UPConstants.glowWidthGrayLevel)
+		kuiPlateFrame.originalPlateFrame.selectionGlow:SetHeight(UPConstants.glowHeight)
 		kuiPlateFrame.originalPlateFrame:SetWidth(UPConstants.nameplateHealthBarWidth)
 		kuiPlateFrame.originalPlateFrame:SetHeight(UPConstants.nameplateHealthBarHeight)
 		SetFrameCenter(kuiPlateFrame)
@@ -648,21 +658,21 @@ local function UpdatePlate(kuiPlateFrame)
 	end
 	--tapped end
 	
-	--mouseover
-	if kuiPlateFrame.originalPlateFrame.isInMouseOver then
-		kuiPlateFrame.originalPlateFrame:SetFrameStrata("LOW")
-		-- kuiPlateFrame.name:SetTextColor(1,1,0,1)
-		-- kuiPlateFrame.guild:SetTextColor(1,1,0,1)
-	else
-		kuiPlateFrame.originalPlateFrame:SetFrameStrata("BACKGROUND")
-		-- kuiPlateFrame.name:SetTextColor(1,1,0,1)
-		-- kuiPlateFrame.guild:SetTextColor(1,1,0,1)
-	end
-	--mouseover end
+	-- --mouseover
+	-- if kuiPlateFrame.originalPlateFrame.isInMouseOver then
+		-- kuiPlateFrame.originalPlateFrame:SetFrameStrata("LOW")
+		-- -- kuiPlateFrame.name:SetTextColor(1,1,0,1)
+		-- -- kuiPlateFrame.guild:SetTextColor(1,1,0,1)
+	-- else
+		-- kuiPlateFrame.originalPlateFrame:SetFrameStrata("BACKGROUND")
+		-- -- kuiPlateFrame.name:SetTextColor(1,1,0,1)
+		-- -- kuiPlateFrame.guild:SetTextColor(1,1,0,1)
+	-- end
+	-- --mouseover end
 	
 	--target
 	if kuiPlateFrame.isTarget then
-		kuiPlateFrame:SetFrameStrata("LOW")
+		kuiPlateFrame:SetFrameStrata("MEDIUM")
 		kuiPlateFrame.glow:Show() 
 		kuiPlateFrame.glow2:Show()
 		kuiPlateFrame.originalPlateFrame.totem.glow:Show()
@@ -679,7 +689,23 @@ local function UpdatePlate(kuiPlateFrame)
 		-- kuiPlateFrame.health.overlayMask:SetBackdropBorderColor(unpack(glowColor)) -- Black masking border
 		
 		--kuiPlateFrame:SetFrameLevel(3)
+		
+		
+		kuiPlateFrame.originalPlateFrame.selectionGlow:Show()
 	else
+		--mouseover
+		if kuiPlateFrame.originalPlateFrame.isInMouseOver then
+			kuiPlateFrame.originalPlateFrame:SetFrameStrata("LOW")
+			-- kuiPlateFrame.name:SetTextColor(1,1,0,1)
+			-- kuiPlateFrame.guild:SetTextColor(1,1,0,1)
+		else
+			kuiPlateFrame.originalPlateFrame:SetFrameStrata("BACKGROUND")
+			-- kuiPlateFrame.name:SetTextColor(1,1,0,1)
+			-- kuiPlateFrame.guild:SetTextColor(1,1,0,1)
+		end
+		--mouseover end
+	
+	
 		kuiPlateFrame.glow:Hide() 
 		kuiPlateFrame.glow2:Hide()
 		kuiPlateFrame.originalPlateFrame.totem.glow:Hide()
@@ -696,6 +722,7 @@ local function UpdatePlate(kuiPlateFrame)
 		-- kuiPlateFrame.health.overlayMask:SetBackdropBorderColor(0, 0, 0, 1) -- Black masking border
 		
 		--kuiPlateFrame:SetFrameLevel(0)
+		kuiPlateFrame.originalPlateFrame.selectionGlow:Hide()
 	end
 	--target end
 	
@@ -721,6 +748,9 @@ local function UpdatePlate(kuiPlateFrame)
 		kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame:SetBackdropColor(totemR,totemG,totemB,totemA) -- Dark backdrop fill
 		kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame:SetBackdropBorderColor(totemR,totemG,totemB,totemA) -- Matte grey border rim
 		kuiPlateFrame.originalPlateFrame.totem.overlayMask:SetBackdropBorderColor(0, 0, 0, 1) -- Pure black mask to match layouts
+		
+		kuiPlateFrame.originalPlateFrame.selectionGlow:SetWidth(UPConstants.glowWidthTotem)
+		kuiPlateFrame.originalPlateFrame.selectionGlow:SetHeight(UPConstants.glowWidthTotem)
 		
 		kuiPlateFrame.originalPlateFrame.totem:Show()
 		kuiPlateFrame:Hide()
@@ -964,9 +994,9 @@ local function OnFrameUpdate(originalPlateFrame, e)
 	------------------------------------------------------------------- Alpha --
 	kuiPlateFrame.defaultAlpha = originalPlateFrame:GetAlpha()
 	kuiPlateFrame.currentAlpha = 1
-	if UnitExists("target") and (not kuiPlateFrame.isTarget) then
-		kuiPlateFrame.currentAlpha = 0.6
-	end	
+	-- if UnitExists("target") and (not kuiPlateFrame.isTarget) then
+		-- kuiPlateFrame.currentAlpha = 0.6
+	-- end	
 	--IMPORTANT - DISABLES NON_TARGETED PLATE TRANSPARENCY
 	kuiPlateFrame:SetAlpha(kuiPlateFrame.currentAlpha)
 	
@@ -997,7 +1027,13 @@ local function OnFrameUpdate(originalPlateFrame, e)
 		--
 	end
 	
-	
+	local unitExists, unitExistsGuid = UnitExists("mouseover")	
+	if unitExists and unitExistsGuid and (unitExistsGuid == kuiPlateFrame.guid) then
+		kuiPlateFrame.originalPlateFrame.isMouseover3dModel = true
+		kuiPlateFrame.originalPlateFrame.isInMouseOver = true
+	else
+		kuiPlateFrame.originalPlateFrame.isMouseover3dModel = false
+	end	
 	if MouseIsOver(kuiPlateFrame.health) or MouseIsOver(kuiPlateFrame.typeIcon) or MouseIsOver(kuiPlateFrame.power) or MouseIsOver(originalPlateFrame.totem) then
 		kuiPlateFrame.originalPlateFrame.isInMouseOver = true
 		--print("MouseIsOver")
@@ -1018,7 +1054,9 @@ local function OnFrameUpdate(originalPlateFrame, e)
 		GameTooltip:Show()
 	else
 		-- --SetMouseoverUnit()
-		kuiPlateFrame.originalPlateFrame.isInMouseOver = false
+		if not kuiPlateFrame.originalPlateFrame.isMouseover3dModel then
+			kuiPlateFrame.originalPlateFrame.isInMouseOver = false
+		end
 	end
 end
 
@@ -1293,6 +1331,15 @@ local function InitFrame(originalPlateFrame)
 	kuiPlateFrame.overlay = CreateFrame("Frame", nil, kuiPlateFrame)
 	kuiPlateFrame.overlay:SetAllPoints(kuiPlateFrame.health)
 	kuiPlateFrame.overlay:SetFrameLevel(2)
+	
+	originalPlateFrame.selectionGlow = originalPlateFrame:CreateTexture(nil, "BACKGROUND")
+	originalPlateFrame.selectionGlow:SetPoint("CENTER", kuiPlateFrame.health, "CENTER", 0, 0)
+	originalPlateFrame.selectionGlow:SetTexture("Interface\\AddOns\\UnitPlates\\img\\dot")
+	originalPlateFrame.selectionGlow:SetDrawLayer("BACKGROUND")
+	originalPlateFrame.selectionGlow:SetVertexColor(unpack(glowColor))
+	originalPlateFrame.selectionGlow:SetWidth(UPConstants.nameplateHealthBarWidth + 60)
+	originalPlateFrame.selectionGlow:SetHeight(UPConstants.nameplateHealthBarHeight + 60)
+	originalPlateFrame.selectionGlow:Hide()
 
 	-- self:CreateHighlight(originalPlateFrame, kuiPlateFrame)
 	-- kuiPlateFrame.highlight = kuiPlateFrame.overlay:CreateTexture(nil, "ARTWORK")
@@ -2416,6 +2463,14 @@ UnitPlatesMainFrame:SetScript("OnEvent", function()
 			OnPlayerEnteringWorld()
 		end
 	end
+	
+	-- if event == "UPDATE_MOUSEOVER_UNIT" then
+		-- print("event: "..tostring(event))
+		-- print("event: "..tostring(arg1))
+		-- print("event: "..tostring(arg2))
+		-- print("event: "..tostring(arg3))
+		-- print("event: "..tostring(arg4))
+	-- end
 end)
 
 UnitPlatesMainFrame:RegisterEvent("PLAYER_ENTERING_WORLD")

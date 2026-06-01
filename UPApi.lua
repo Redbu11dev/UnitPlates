@@ -233,7 +233,7 @@ function UPApiIsTotem(name)
 		return true
 	end
 	return false
-	--return true
+	-- return true
 end
 ---------------TOTEMS END
 
