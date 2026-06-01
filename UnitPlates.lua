@@ -483,6 +483,7 @@ local function UpdatePlate(kuiPlateFrame)
 		-- end
 		kuiPlateFrame.originalPlateFrame.selectionGlow:SetWidth(UPConstants.glowWidth)
 		kuiPlateFrame.originalPlateFrame.selectionGlow:SetHeight(UPConstants.glowHeight)
+		kuiPlateFrame.originalPlateFrame.selectionGlow:SetPoint("CENTER", kuiPlateFrame.health, "CENTER", -UPConstants.nameplateTypeIconSize/2, 0)
 		kuiPlateFrame.originalPlateFrame:SetWidth(UPConstants.nameplateWidthGrayLevel)
 		kuiPlateFrame.originalPlateFrame:SetHeight(UPConstants.nameplateHealthBarHeight)
 		SetFrameCenter(kuiPlateFrame)
@@ -500,6 +501,7 @@ local function UpdatePlate(kuiPlateFrame)
 		-- end
 		kuiPlateFrame.originalPlateFrame.selectionGlow:SetWidth(UPConstants.glowWidthGrayLevel)
 		kuiPlateFrame.originalPlateFrame.selectionGlow:SetHeight(UPConstants.glowHeight)
+		kuiPlateFrame.originalPlateFrame.selectionGlow:SetPoint("CENTER", kuiPlateFrame.health, "CENTER", -UPConstants.nameplateTypeIconSize/2, 0)
 		kuiPlateFrame.originalPlateFrame:SetWidth(UPConstants.nameplateHealthBarWidth)
 		kuiPlateFrame.originalPlateFrame:SetHeight(UPConstants.nameplateHealthBarHeight)
 		SetFrameCenter(kuiPlateFrame)
@@ -751,6 +753,7 @@ local function UpdatePlate(kuiPlateFrame)
 		
 		kuiPlateFrame.originalPlateFrame.selectionGlow:SetWidth(UPConstants.glowWidthTotem)
 		kuiPlateFrame.originalPlateFrame.selectionGlow:SetHeight(UPConstants.glowWidthTotem)
+		kuiPlateFrame.originalPlateFrame.selectionGlow:SetPoint("CENTER", kuiPlateFrame.originalPlateFrame.totem, "CENTER", 0, 0)
 		
 		kuiPlateFrame.originalPlateFrame.totem:Show()
 		kuiPlateFrame:Hide()
