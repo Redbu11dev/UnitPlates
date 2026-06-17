@@ -377,7 +377,7 @@ local function UPApiSyncAurasCacheWithActual(guid)
         -- If it's not in our cache yet, check if it's an "Infinite" spell
 		--print("adding "..actualName.." as infinite aura")
         --if not cache[actualName] and UPLibAuraDurationsByRank[actualName] and (UPLibAuraDurationsByRank[actualName][0] == -1) then
-		if not cache[actualName] and (UPLibAuraDurationsGetAuraDuration(actualName, 0) == -1) then
+		if not cache[actualName] and (UPLibAuraDurationsGetAuraDuration(actualName, 0, nil) == -1) then
 			--guid, spellId, name, texture, count, debuffType, duration, startTime, expirationTime, isDebuff
 			--print("adding "..actualName.." as infinite aura")
 			
@@ -392,7 +392,7 @@ local function UPApiSyncAurasCacheWithActual(guid)
                 -1, -- startTime
                 -1,   -- expirationTime (-1 = never)
                 isDebuff,
-				nil --unknown
+				nil --unknown (isMyAura)
             )
         end
     end
@@ -432,7 +432,7 @@ local function UPApiCacheInAuraIfValid(guid, auraName, isDebuff, isMyAura)
 				-- print("texture: "..tostring(texture))
 				-- print("count: "..tostring(count))
 				
-				local duration = UPLibAuraDurationsGetAuraDuration(name, rankNumber)
+				local duration = UPLibAuraDurationsGetAuraDuration(name, rankNumber, isMyAura)
 				if duration == nil then
 					--exit early
 					break
@@ -487,7 +487,7 @@ local function UPApiCacheInAuraIfValid(guid, auraName, isDebuff, isMyAura)
 				-- print("texture: "..tostring(texture))
 				-- print("count: "..tostring(count))
 				
-				local duration = UPLibAuraDurationsGetAuraDuration(name, rankNumber)
+				local duration = UPLibAuraDurationsGetAuraDuration(name, rankNumber, isMyAura)
 				if duration == nil then
 					--exit early
 					break
@@ -702,6 +702,7 @@ function UPApiIsUnitTargetingMe(guid)
 end
 
 local UPApiPendingAuraRefreshes = {}
+local UPApiPendingAoEAuraRefreshes = {} --special for AoE casts
 local UPApiPlayerGUIDPlaceholder = "You"
 
 
@@ -734,13 +735,15 @@ UPApiFrame:SetScript("OnUpdate", function()
 				
 				-- If 0.2 seconds pass without a failure combat log, commit it!
 				-- need a higher delay, it may not be in the ACTUAL buff/debuff list YET!!!
-				if (currentTime - data.time) > (0.5) then
+				if (currentTime - data.time) > (0.2 + UPCoreGetCurrentPingSeconds()) then --used to be 0.5	
 				
 					local auraType = UPApiGetAuraTypeOnUnit(data.targetGUID, data.spellId)
 					
 					-- if data.isMyAura then
 						-- print("UPApiPendingAuraRefreshes release for "..spellName.." auraType: "..tostring(auraType))
 					-- end
+					
+					--print("UPApiPendingAuraRefreshes release for "..spellName.." auraType: "..tostring(auraType))
 					
 					UPCoreDelayCall(
 						UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(), 
@@ -766,6 +769,89 @@ UPApiFrame:SetScript("OnUpdate", function()
 				UPApiPendingAuraRefreshes[casterGUID] = nil
 			end
 		end
+		
+		
+		
+		--AoE
+		for casterGUID, spells in pairs(UPApiPendingAoEAuraRefreshes) do
+			for spellName, data in pairs(spells) do
+			
+				--cache in once early (it will be removed if wrong anyways)
+				-- if (currentTime - data.time) > (math.max(0.2 + UPCoreGetCurrentPingSeconds())) then
+					-- UPApiCacheInAuraIfValid(
+						-- data.targetGUID,
+						-- spellName,
+						-- data.isDebuff or auraType,
+						-- data.isMyAura,
+						-- 0.01
+					-- )
+				-- end
+				
+				-- If 0.2 seconds pass without a failure combat log, commit it!
+				-- need a higher delay, it may not be in the ACTUAL buff/debuff list YET!!!
+				if (currentTime - data.time) > (0.2 + UPCoreGetCurrentPingSeconds()) then --used to be 0.5					
+				
+					local auraType = UPApiGetAuraTypeOnUnit(data.targetGUID, data.spellId)
+					
+					-- if data.isMyAura then
+						-- print("UPApiPendingAoEAuraRefreshes release for "..spellName.." auraType: "..tostring(auraType))
+					-- end
+					
+					-- print("UPApiPendingAoEAuraRefreshes release for: ")
+					-- print("spellName: "..tostring(spellName))
+					-- print("auraType: "..tostring(auraType))
+					-- print("data.targetGUID: "..tostring(data.targetGUID))
+					
+					UPCoreDelayCall(
+						UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(), 
+						UPApiCacheInAuraIfValid, 
+						data.targetGUID, 
+						spellName, 
+						data.isDebuff or auraType, 
+						data.isMyAura
+					)
+					
+					-- -- Sweep the global cache
+					-- for cachedGuid, cacheData in pairs(UPApiGuidAurasCache) do
+						-- -- If the mob already has this debuff, assume it got hit and refresh it
+						-- if cacheData[spellName] then
+							-- cacheData[spellName].startTime = currentTime
+							-- cacheData[spellName].expirationTime = currentTime + aoeDuration
+							
+							-- -- If your cache tracks WHO cast it, optionally update the caster here:
+							-- -- cacheData[spellName].casterGUID = casterGUID
+							
+							-- -- Trigger the UI update
+							-- UPCoreDelayCall(0.1, UPApiSyncAurasCacheWithActual, cachedGuid)
+						-- end
+					-- end
+					
+					-- UPCoreDelayCall(
+						-- UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(), 
+						-- UPApiCacheInAuraIfValid, 
+						-- data.targetGUID, 
+						-- spellName, 
+						-- data.isDebuff or auraType, 
+						-- data.isMyAura
+					-- )
+				
+					-- UPApiCacheInAuraIfValid(
+						-- data.targetGUID,
+						-- spellName,
+						-- data.isDebuff or auraType,
+						-- data.isMyAura
+					-- )
+					spells[spellName] = nil
+				end
+			end
+			
+			-- Memory cleanup: Delete empty caster tables
+			if next(spells) == nil then
+				UPApiPendingAoEAuraRefreshes[casterGUID] = nil
+			end
+		end
+		
+		
 	end
 end)
 
@@ -790,6 +876,11 @@ UPApiFrame:SetScript("OnEvent", function()
 		--print(arg1)
 		--print(arg2)
 		
+		-- if string.find(arg2, "resisted") then
+			-- print(arg1)
+			-- print(arg2)
+		-- end
+		
 		local failedSpellName = nil
 		local failedTargetGUID = nil
 		local failedCasterGUID = nil
@@ -805,6 +896,7 @@ UPApiFrame:SetScript("OnEvent", function()
 		if not spell then
 			_, _, spell, target = string.find(arg2, "^Your (.-) failed%. .- (0x%x+)")
 		end
+		
 		if spell and target then
 			failedSpellName = spell
 			failedTargetGUID = target
@@ -822,11 +914,12 @@ UPApiFrame:SetScript("OnEvent", function()
 			if not caster then
 				_, _, caster, spell, target = string.find(arg2, "^(0x%x+)'s (.-) failed%. .- (0x%x+)")
 			end
+			
 			if caster and spell and target then
 				failedCasterGUID = caster
 				failedSpellName = spell
 				failedTargetGUID = target
-			else
+			else			
 			--print out or report failed case
 			-- print("UPApiPendingAuraRefreshes unparsed event:")
 			-- print(arg1)
@@ -840,6 +933,22 @@ UPApiFrame:SetScript("OnEvent", function()
 				-- Verify the target GUID matches just to be bulletproof
 				if UPApiPendingAuraRefreshes[failedCasterGUID][failedSpellName].targetGUID == failedTargetGUID then
 					UPApiPendingAuraRefreshes[failedCasterGUID][failedSpellName] = nil
+				end
+			end
+		end
+		
+		if failedCasterGUID and failedSpellName and UPApiPendingAoEAuraRefreshes[failedCasterGUID] then
+			if UPApiPendingAoEAuraRefreshes[failedCasterGUID][failedSpellName] then
+				-- print("---------")
+				-- print("AOE FAIL FOR")
+				-- print("name: "..failedSpellName)
+				-- print("caster: "..failedCasterGUID)
+				-- print("target: "..failedTargetGUID)
+				-- print("---------")
+				--we should have assumed guid
+				-- Verify the target GUID matches just to be bulletproof
+				if UPApiPendingAoEAuraRefreshes[failedCasterGUID][failedSpellName].targetGUID == failedTargetGUID then
+					UPApiPendingAoEAuraRefreshes[failedCasterGUID][failedSpellName] = nil
 				end
 			end
 		end
@@ -1000,13 +1109,54 @@ UPApiFrame:SetScript("OnEvent", function()
 			-- print("cast event for: "..spellName.." targetGUID: "..targetGUID.." spellId: "..spellId)
 			--entry.name = nil
 			--entry.endTime = 0
-			if targetGUID and spellId then
-				-- Capture our own GUID dynamically so we can map "Your" logs later
-				local isMyAura = nil
-				if UnitName(casterGUID) == UnitName("player") then
-					casterGUID = UPApiPlayerGUIDPlaceholder
-					isMyAura = true
+			
+			-- Capture our own GUID dynamically so we can map "Your" logs later
+			local isMyAura = nil
+			if UnitName(casterGUID) == UnitName("player") then
+				casterGUID = UPApiPlayerGUIDPlaceholder
+				isMyAura = true
+			end
+			
+			-- AOE CASE: Handle AoE (no targetGUID) Refreshes for ALL Casters
+			-- if ((not targetGUID) or targetGUID == "") and UPLibAoeAuraNames[spellName] then
+			--probably I don't care for separate spell list (it should not have targetGUID only in valid case anyways)
+			if ((not targetGUID) or targetGUID == "") and UPLibAuraDurationsByRank[spellName] then
+				-- Parse the rank number from the cast event
+				local _, _, rankNumberStr = string.find(spellRank or "", "(%d+)")
+				local rankNumber = tonumber(rankNumberStr) or 0
+				
+				local aoeDuration = UPLibAuraDurationsGetAuraDuration(spellName, rankNumber, isMyAura)
+				
+				if aoeDuration and aoeDuration > 0 then
+					local currentTime = GetTime()
+					
+					if not UPApiPendingAoEAuraRefreshes[casterGUID] then
+						UPApiPendingAoEAuraRefreshes[casterGUID] = {}
+					end
+					
+					--first find out who is currently affected by this aura
+					--if I find a way to check for spell and target distance, then I can do it here
+					--Basically here we decide WHO CAN BE AFFECTED BY THIS CAST
+					for cachedGuid, cacheData in pairs(UPApiGuidAurasCache) do
+						if cacheData[spellName] then
+							--maybe put only visible nameplates affected by this aura???
+							--now we assume that everyone who has this aura will be affected
+							-- Put the cast in the waiting room
+							UPApiPendingAoEAuraRefreshes[casterGUID][spellName] = {
+								targetGUID = cachedGuid, --we don't have target guid here
+								time = currentTime,
+								isDebuff = nil, --auraType is unreliable here
+								isMyAura = isMyAura,
+								spellId = spellId
+							}
+						end
+					end
 				end
+			end
+			-- AOE CASE END
+			
+			
+			if targetGUID and spellId then
 			
 				--local auraType = UPApiGetAuraTypeOnUnit(targetGUID, spellId)
 				

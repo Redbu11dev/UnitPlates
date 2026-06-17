@@ -41,7 +41,7 @@ local function InitUPConstants()
 	UPConstants.minimalOnePixel = UPConstants.nameplateHealthBarHeight / 16
 
 	UPConstants.nameplateHealthBarWidth = (UPConstants.nameplateHealthBarHeight * 6.5)
-	UPConstants.nameplateWidthGrayLevel = (UPConstants.nameplateHealthBarHeight * 4.1)
+	UPConstants.nameplateWidthGrayLevel = (UPConstants.nameplateHealthBarHeight * 4.5) --4.1
 	UPConstants.nameplatePowerBarHeight = (UPConstants.nameplateHealthBarHeight / 2)
 
 	UPConstants.nameFontSize = UPConstants.nameplateHealthBarHeight * 0.6875
@@ -286,6 +286,8 @@ local function UpdatePlate(kuiPlateFrame)
 	kuiPlateFrame.isPlayer = UnitIsPlayer(kuiPlateFrame.guid)	
 	kuiPlateFrame.isInCombat = UnitAffectingCombat(kuiPlateFrame.guid)
 	kuiPlateFrame.class, kuiPlateFrame.race, kuiPlateFrame.gender = UPApiGetClassRaceGender(kuiPlateFrame.guid)
+	-- print("race: "..tostring(race))
+	-- print("gender: "..tostring(gender))
 	kuiPlateFrame.classification = UnitClassification(kuiPlateFrame.guid)
 	kuiPlateFrame.isPlusMob = UnitIsPlusMob(kuiPlateFrame.guid)
 	kuiPlateFrame.creatureType = UPApiGetCreatureType(kuiPlateFrame.guid)	
@@ -1438,7 +1440,54 @@ local function InitFrame(originalPlateFrame)
 	
 	
 	
+	-- kuiPlateFrame.levelFrame = CreateFrame("Frame", nil, kuiPlateFrame)
+	-- kuiPlateFrame.levelFrame:SetFrameLevel(2) -- Bumped to match health bar level logic
+	-- -- kuiPlateFrame.levelFrame:SetPoint("TOPRIGHT", kuiPlateFrame.typeIcon, "TOPLEFT", 0, 0)
+	-- kuiPlateFrame.levelFrame:SetPoint("BOTTOMLEFT", kuiPlateFrame.health, "BOTTOMLEFT", 2 * UPConstants.minimalOnePixel, -(UPConstants.levelFontSize * 0.4))
+	-- kuiPlateFrame.levelFrame:SetHeight(UPConstants.nameplateTypeIconSize/1)
+	-- kuiPlateFrame.levelFrame:SetWidth(UPConstants.nameplateTypeIconSize)
 	
+	-- -- kuiPlateFrame.typeIcon.icon = kuiPlateFrame.typeIcon:CreateTexture(nil, "ARTWORK") -- Changed to ARTWORK layer to stay under mask
+	-- -- kuiPlateFrame.typeIcon.icon:SetAllPoints()
+	-- -- kuiPlateFrame.typeIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\loading.tga")
+
+	-- -- 1. CLEAN BACKDROP HANDLING: Create a distinct frame *behind* the type icon
+	-- if not kuiPlateFrame.levelFrame.bgOffsetFrame then
+		-- kuiPlateFrame.levelFrame.bgOffsetFrame = CreateFrame("Frame", nil, kuiPlateFrame)
+		-- kuiPlateFrame.levelFrame.bgOffsetFrame:SetFrameLevel(1) -- Below icon frame
+		-- kuiPlateFrame.levelFrame.bgOffsetFrame:SetBackdrop({
+			-- bgFile = "Interface\\Buttons\\WHITE8X8", 
+			-- edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", -- Built-in rounded edge
+			-- tile = false, tileSize = 0, edgeSize = 10,
+			-- insets = { left = 2, right = 2, top = 2, bottom = 2 }
+		-- })
+		-- kuiPlateFrame.levelFrame.bgOffsetFrame:SetBackdropColor(0.1, 0.1, 0.1, 1) 
+		-- kuiPlateFrame.levelFrame.bgOffsetFrame:SetBackdropBorderColor(0.1, 0.1, 0.1, 1) 
+	-- end
+
+	-- -- 2. THE CORNER MASKING OVERLAY: Create a frame *above* the type icon
+	-- if not kuiPlateFrame.levelFrame.overlayMask then
+		-- kuiPlateFrame.levelFrame.overlayMask = CreateFrame("Frame", nil, kuiPlateFrame)
+		-- kuiPlateFrame.levelFrame.overlayMask:SetFrameLevel(3) -- Directly above the icon texture
+		-- kuiPlateFrame.levelFrame.overlayMask:SetBackdrop({
+			-- edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", -- Slices off the 4 square corners
+			-- tile = false, tileSize = 0, edgeSize = 10,
+			-- insets = { left = 2, right = 2, top = 2, bottom = 2 }
+		-- })
+		-- kuiPlateFrame.levelFrame.overlayMask:SetBackdropBorderColor(0, 0, 0, 1) -- Black masking border
+	-- end
+
+	-- -- Lock the background and foreground rounded layers tight to the icon dimensions plus padding
+	-- local padding = 2.5
+	-- kuiPlateFrame.levelFrame.bgOffsetFrame:ClearAllPoints()
+	-- kuiPlateFrame.levelFrame.bgOffsetFrame:SetPoint("TOPLEFT", kuiPlateFrame.levelFrame, "TOPLEFT", -padding, padding)
+	-- kuiPlateFrame.levelFrame.bgOffsetFrame:SetPoint("BOTTOMRIGHT", kuiPlateFrame.levelFrame, "BOTTOMRIGHT", padding, -padding)
+
+	-- kuiPlateFrame.levelFrame.overlayMask:ClearAllPoints()
+	-- kuiPlateFrame.levelFrame.overlayMask:SetPoint("TOPLEFT", kuiPlateFrame.levelFrame, "TOPLEFT", -padding, padding)
+	-- kuiPlateFrame.levelFrame.overlayMask:SetPoint("BOTTOMRIGHT", kuiPlateFrame.levelFrame, "BOTTOMRIGHT", padding, -padding)
+
+	-- kuiPlateFrame.levelFrame:Show()
 	
 	
 	
@@ -1481,6 +1530,7 @@ local function InitFrame(originalPlateFrame)
 	-- kuiPlateFrame.level:SetPoint("RIGHT", kuiPlateFrame.typeIcon, "RIGHT", -2, -4)
 	kuiPlateFrame.level:ClearAllPoints()
 	kuiPlateFrame.level:SetPoint("BOTTOMLEFT", kuiPlateFrame.health, "BOTTOMLEFT", 2 * UPConstants.minimalOnePixel, -(UPConstants.levelFontSize * 0.4))
+	-- kuiPlateFrame.level:SetPoint("CENTER", kuiPlateFrame.levelFrame, "CENTER", 0, 0)
 	-- kuiPlateFrame.oldLevel.enabled = true
 	-- kuiPlateFrame.oldLevel:Hide()
 	
@@ -2599,6 +2649,16 @@ UnitPlatesMainFrame:SetScript("OnUpdate", function()
 					kuiPlateFrame.typeIcon.overlayMask:SetFrameLevel(targetLevel + 4)
 				end
 			end
+			
+			-- if kuiPlateFrame.levelFrame then
+				-- if kuiPlateFrame.levelFrame.bgOffsetFrame then
+					-- kuiPlateFrame.levelFrame.bgOffsetFrame:SetFrameLevel(targetLevel + 2)
+				-- end
+				-- kuiPlateFrame.levelFrame:SetFrameLevel(targetLevel + 3)
+				-- if kuiPlateFrame.levelFrame.overlayMask then
+					-- kuiPlateFrame.levelFrame.overlayMask:SetFrameLevel(targetLevel + 4)
+				-- end
+			-- end
 			
 			if kuiPlateFrame.power then
 				kuiPlateFrame.power:SetFrameLevel(targetLevel + 1)

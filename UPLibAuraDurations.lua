@@ -1,32 +1,47 @@
 UPLibDynamicAuraNames = {
   ["Rupture"] = "Rupture",
   ["Kidney Shot"] = "Kidney Shot",
-  ["Rend"] = "Rend",--not handled
   ["Shadow Word: Pain"] = "Shadow Word: Pain",
-  ["Demoralizing Shout"] = "Demoralizing Shout",
   ["Frostbolt"] = "Frostbolt",
   ["Gouge"] = "Gouge",
+  
+  --warrior
+  ["Demoralizing Shout"] = "Demoralizing Shout",
+  ["Rend"] = "Rend",--not handled
 }
 
+-- --[name = range]
+-- UPLibAoeAuraNames = {
+  -- --warrior
+  -- ["Demoralizing Shout"] = 30,
+  -- ["Battle Shout"] = 30,
+-- }
 
 --duration of -1 (minus one) means it's infinite (like paladin auras)
 UPLibAuraDurationsByRank = {
   --infinite auras
   ['Riding Turtle']={[0]=-1,},
+  
   ['Battle Stance']={[0]=-1,},
   ['Berserker Stance']={[0]=-1,},
   ['Defensive Stance']={[0]=-1,},
+  
+  ['Righteous Fury']={[0]=-1,},
   ['Devotion Aura']={[0]=-1,},
   ['Retribution Aura']={[0]=-1,},
+  
   ['Aspect of the Cheetah']={[0]=-1,},
   ['Aspect of the Hawk']={[0]=-1,},
   ['Aspect of the Wolf']={[0]=-1,},
   
   --finite auras
+  ['Resurrection Sickness']={[0]=-1,},
+  
   --paladin
   ['Blessing of Freedom']={[0]=10.0,},
   ['Blessing of Sacrifice']={[0]=30.0,},
-  ['Blessing of Protection']={[0]=6.0,},
+  ['Blessing of Protection']={[0]=6.0,[1]=6.0,[2]=8.0,[3]=10.0,},
+  ['Seal of Protection']={[0]=8.0,},
   
   ['Blessing of Kings']={[0]=300.0,[1]=300.0,[2]=300.0,[3]=300.0,[4]=300.0,[5]=300.0,[6]=300.0,[7]=300.0},
   ['Blessing of Light']={[0]=300.0,[1]=300.0,[2]=300.0,[3]=300.0,[4]=300.0,[5]=300.0,[6]=300.0,[7]=300.0},
@@ -42,9 +57,21 @@ UPLibAuraDurationsByRank = {
   ['Greater Blessing of Sanctuary']={[0]=900.0,[1]=900.0,[2]=900.0},
   ['Greater Blessing of Wisdom']={[0]=900.0,[1]=900.0,[2]=900.0},
   
+  ['Seal of Righteousness']={[0]=30.0,},
+  ['Seal of the Crusader']={[0]=30.0,},
+  ['Seal of Command']={[0]=30.0,},
+  ['Seal of Justice']={[0]=30.0,},
+  ['Seal of Light']={[0]=30.0,},
+  ['Seal of Wisdom']={[0]=30.0,},
+  
+  ['Judgement of Justice']={[0]=10.0,},
+  ['Judgement of Light']={[0]=10.0,},
+  ['Judgement of Wisdom']={[0]=10.0,},
+  ['Judgement of the Crusader']={[0]=10.0,},
+  
   --warrior
-  ['Battle Shout']={[0]=120.0,},
-  ['Demoralizing Shout']={[0]=30.0,},
+  ['Battle Shout']={[0]=120.0,}, --!DURATION DEPENDS ON TALENTS
+  ['Demoralizing Shout']={[0]=30.0,}, --!DURATION DEPENDS ON TALENTS
   
   --hunter
   
@@ -53,9 +80,12 @@ UPLibAuraDurationsByRank = {
   
   
   --mage
-  ['Chilled']={[0]=1.5,[1]=5,[2]=5,[3]=5,[4]=5,[5]=5,},--there are 2 spells named "chilled?" --if I receive no rank in combat log, then it's probably not cast by player?  
+  ['Chilled']={[0]=1.5,[1]=5,[2]=5,[3]=5,[4]=5,[5]=5,},--there are 2 spells named "chilled?" --if I receive no rank in combat log, then it's probably not cast by player? --!DURATION DEPENDS ON TALENTS?
+  ['Frost Nova']={[0]=8.0,[1]=8.0,[2]=8.0,[3]=8.0,[4]=8.0,}, --!DURATION DEPENDS ON TALENTS?
+  ['Cone of Cold']={[0]=8.0,[1]=8.0,[2]=8.0,[3]=8.0,[4]=8.0,[5]=8.0,}, --!DURATION DEPENDS ON TALENTS
   
   --priest
+  ['Power Word: Fortitude']={[0]=1800.0,},
   
   
   --rogue
@@ -427,7 +457,6 @@ UPLibAuraDurationsByRank = {
   ['Frost Aura']={[0]=5.0,},
   ['Frost Burn']={[0]=15.0,},
   ['Frost Hold']={[0]=10.0,},
-  ['Frost Nova']={[0]=8.0,},
   ['Frost Protection ']={[0]=3600.0,},
   ['Frost Shock']={[0]=8.0,},
   ['Frost Shot']={[0]=10.0,},
@@ -496,7 +525,6 @@ UPLibAuraDurationsByRank = {
   ['Holy Fire']={[0]=10.0,},
   ['Holy Protection ']={[0]=3600.0,},
   ['Holy Sunder']={[0]=60.0,},
-  ['Holy Word: Fortitude']={[0]=1800.0,},
   ['Hooked Net']={[0]=10.0,},
   ['Howl of Terror']={[1]=10.0,[2]=15.0,[0]=15.0,},
   ['Howling Blade']={[0]=30.0,},
@@ -549,10 +577,6 @@ UPLibAuraDurationsByRank = {
   ['Jeff Dummy 1']={[0]=30.0,},
   ['Jeff Dummy 2']={[0]=30.0,},
   ['Judge\'s Gavel']={[0]=10.0,},
-  ['Judgement of Justice']={[0]=10.0,},
-  ['Judgement of Light']={[0]=10.0,},
-  ['Judgement of Wisdom']={[0]=10.0,},
-  ['Judgement of the Crusader']={[0]=10.0,},
   ['Keg Trap']={[0]=2.0,},
   ['Kick']={[0]=5.0,},
   ['Kick - Silenced']={[0]=2.0,},
@@ -998,9 +1022,11 @@ UPLibAuraDurationsByRank = {
   ['scaler test']={[0]=10.0,},
 }
 
-function UPLibAuraDurationsGetAuraDuration(name, rankNumber)
+function UPLibAuraDurationsGetAuraDuration(name, rankNumber, isMyAura)
 	--find if database has known duration for name and rank
 	--duration is in seconds, floating (like 9.53 seconds)
+	
+	--TODO if rank is 0 then should try using max possible rank at current level
 
 	local duration = nil
 
