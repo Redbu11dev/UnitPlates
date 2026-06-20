@@ -13,7 +13,6 @@ Configuration window - /up or /unitplates (or click the minimap button)
 - (NOTE: I do not wish to clutter the addon logic with many config options, I will only be keeping minimal amount of options)
 
 TODO list:
-- !PFUI is known to cause fps drops with my addon, will try to implement compatibility
 - Did not test it in party/raid yet, will probably have to adjust for these cases
 - More buffs/debuffs and correct(mostly) aura durations data (can only show as much as there are in local library, but the library is based on shaguplates - so at the very least no less than shaguplates can show). Please report incorrect durations found, also not all auras may be present.
 - Implement mouselook clickthrough
