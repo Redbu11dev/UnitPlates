@@ -20,21 +20,28 @@ UPLibDynamicAuraNames = {
 --duration of -1 (minus one) means it's infinite (like paladin auras)
 UPLibAuraDurationsByRank = {
   --infinite auras
+  
+  --mounts
   ['Riding Turtle']={[0]=-1,},
   
+  --warrior
   ['Battle Stance']={[0]=-1,},
   ['Berserker Stance']={[0]=-1,},
   ['Defensive Stance']={[0]=-1,},
   
+  --paladin
   ['Righteous Fury']={[0]=-1,},
   ['Devotion Aura']={[0]=-1,},
   ['Retribution Aura']={[0]=-1,},
   
+  --hunter
   ['Aspect of the Cheetah']={[0]=-1,},
   ['Aspect of the Hawk']={[0]=-1,},
   ['Aspect of the Wolf']={[0]=-1,},
+  --infinite auras end
   
   --finite auras
+  --special pseudo-infinite
   ['Resurrection Sickness']={[0]=-1,},
   
   --paladin
@@ -92,6 +99,10 @@ UPLibAuraDurationsByRank = {
   
   
   --shaman
+  
+  --druid
+  ['Mark of the Wild']={[0]=1800.0,},
+  ['Thorns']={[0]=600.0,},
   
   
   --unsorted finite auras
@@ -623,7 +634,6 @@ UPLibAuraDurationsByRank = {
   ['Mark of Mograine']={[0]=75.0,},
   ['Mark of Nature']={[0]=12.0,},
   ['Mark of Zeliek']={[0]=75.0,},
-  ['Mark of the Wild']={[0]=1800.0,},
   ['Mass Healing']={[0]=12.0,},
   ['Massive Tremor']={[0]=2.0,},
   ['Maul']={[0]=2.0,},
@@ -926,7 +936,6 @@ UPLibAuraDurationsByRank = {
   ['Test Strike W50']={[0]=10.0,},
   ['Tetanus']={[0]=1200.0,},
   ['Thorn Volley']={[0]=2.0,},
-  ['Thorns']={[0]=600.0,},
   ['Threatening Gaze']={[0]=6.0,},
   ['Threatening Growl']={[0]=30.0,},
   ['Throw Axe']={[0]=2.0,},

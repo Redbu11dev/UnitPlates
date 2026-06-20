@@ -68,12 +68,13 @@ local UPApiActionSlotScanner = CreateFrame("GameTooltip", "UPApiActionSlotScanne
 UPApiActionSlotScanner:SetOwner(WorldFrame, "ANCHOR_NONE")
 UPApiActionSlotScannerTextLeft1 = _G["UPApiActionSlotScannerTextLeft1"]
 
+local cachedShootingSlot = 0
 --PUBLIC
 function UPApiIsTargetInShootingDistance()
-	for i = 1, 120 do
+	if cachedShootingSlot > 0 then
 		UPApiActionSlotScanner:ClearLines()
         -- This tells the tooltip to load the information from action slot 'i'
-        UPApiActionSlotScanner:SetAction(i)
+        UPApiActionSlotScanner:SetAction(cachedShootingSlot)
 		
 		-- In 1.12, the first line of the tooltip is the name of the spell/item
         local text = UPApiActionSlotScannerTextLeft1:GetText()
@@ -81,8 +82,25 @@ function UPApiIsTargetInShootingDistance()
         if (text == "Auto Shot") or (text == "Throw") or (text == "Shoot Bow") or (text == "Shoot Gun") or (text == "Shoot Crossbow") or (text == "Shoot") then
             --print("Found Auto Shot at slot " .. i)
 			--return IsUsableAction(i) and IsActionInRange(i)
-			return IsActionInRange(i) == 1
+			return IsActionInRange(cachedShootingSlot) == 1
         end
+	else
+	--scan all
+		for i = 1, 120 do
+			UPApiActionSlotScanner:ClearLines()
+			-- This tells the tooltip to load the information from action slot 'i'
+			UPApiActionSlotScanner:SetAction(i)
+			
+			-- In 1.12, the first line of the tooltip is the name of the spell/item
+			local text = UPApiActionSlotScannerTextLeft1:GetText()
+			
+			if (text == "Auto Shot") or (text == "Throw") or (text == "Shoot Bow") or (text == "Shoot Gun") or (text == "Shoot Crossbow") or (text == "Shoot") then
+				--print("Found Auto Shot at slot " .. i)
+				--return IsUsableAction(i) and IsActionInRange(i)
+				cachedShootingSlot = i
+				return IsActionInRange(i) == 1
+			end
+		end
 	end
 	
 	return false
@@ -714,6 +732,8 @@ UPApiFrame.numFrames = 0
 
 UPApiFrame:RegisterEvent("RAW_COMBATLOG")
 UPApiFrame:RegisterEvent("UNIT_CASTEVENT")
+UPApiFrame:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
+UPApiFrame:RegisterEvent("SPELLS_CHANGED")
 
 UPApiFrame:SetScript("OnUpdate", function()
 	if UnitPlatesAddonIsLoaded and UnitPlatesPlayerEnteredWorld and (UnitPlatesElapsedTimeSinceFullyLoaded > UnitPlatesLoadDelay) then
@@ -856,6 +876,10 @@ UPApiFrame:SetScript("OnUpdate", function()
 end)
 
 UPApiFrame:SetScript("OnEvent", function()
+	if event == "ACTIONBAR_SLOT_CHANGED" or event == "SPELLS_CHANGED" then
+		cachedShootingSlot = 0
+	end
+	
 	if event == "RAW_COMBATLOG" then
 	
 	--if arg2 and (string.find(arg2, "missed") or string.find(arg2, "dodged") or string.find(arg2, "parried") or string.find(arg2, "resisted") or string.find(arg2, "failed")) then
