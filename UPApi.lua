@@ -1,26 +1,28 @@
 local _G = getfenv(0)
 
 local function UPApiGetAdditionalAuraPollingDelaySeconds()
-	local fallbackDelay = 0.2 --0.2 default fallback
+	return 0
+
+	-- local fallbackDelay = 0.2 --0.2 default fallback
     
-    -- 1. Grab the raw setting
-    local rawValue = UnitPlatesSettings.additionalAuraPollingDelaySeconds
+    -- -- 1. Grab the raw setting
+    -- local rawValue = UnitPlatesSettings.additionalAuraPollingDelaySeconds
     
-    -- 2. If it's a string, swap any commas to periods so EU players don't break the parser
-    if type(rawValue) == "string" then
-        rawValue = string.gsub(rawValue, ",", ".")
-    end
+    -- -- 2. If it's a string, swap any commas to periods so EU players don't break the parser
+    -- if type(rawValue) == "string" then
+        -- rawValue = string.gsub(rawValue, ",", ".")
+    -- end
     
-    -- 3. Attempt to convert to a mathematical number
-    local delay = tonumber(rawValue)
+    -- -- 3. Attempt to convert to a mathematical number
+    -- local delay = tonumber(rawValue)
     
-    -- 4. If the conversion failed (nil) OR the number is negative, force the fallback
-    if not delay or delay < 0 then
-        return fallbackDelay
-    end
+    -- -- 4. If the conversion failed (nil) OR the number is negative, force the fallback
+    -- if not delay or delay < 0 then
+        -- return fallbackDelay
+    -- end
     
-    -- 5. If it passed all checks, return the valid, positive number
-    return delay
+    -- -- 5. If it passed all checks, return the valid, positive number
+    -- return delay
 end
 
 UPApiScanTool = CreateFrame( "GameTooltip", "UPApiScanTool", nil, "GameTooltipTemplate" )
@@ -1102,6 +1104,12 @@ UPApiFrame:SetScript("OnEvent", function()
 		--local targetName = UnitName(targetGUID)
 		
 		local spellName, spellRank, spellTexture, spellMinRange, spellMaxRange = SpellInfo(spellId)
+		
+		--spellName = nil
+		if not spellName then
+			--print("adasdasd")
+			return nil
+		end
 		
 		-- if string.find(spellName, "Rend") then
 			-- print(eventType)
