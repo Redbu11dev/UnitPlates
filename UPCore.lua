@@ -41,7 +41,6 @@ function UPCoreGetCurrentPingSeconds()
 	return lagHome / 1000
 end
 
-
 function UPCoreTrimString(s)
   local l = 1
   while strsub(s,l,l) == ' ' do

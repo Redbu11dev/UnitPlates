@@ -796,73 +796,30 @@ UPApiFrame:SetScript("OnUpdate", function()
 		
 		--AoE
 		for casterGUID, spells in pairs(UPApiPendingAoEAuraRefreshes) do
-			for spellName, data in pairs(spells) do
+			for spellName, targets in pairs(spells) do
+				for targetGUID, data in pairs(targets) do
 			
-				--cache in once early (it will be removed if wrong anyways)
-				-- if (currentTime - data.time) > (math.max(0.2 + UPCoreGetCurrentPingSeconds())) then
-					-- UPApiCacheInAuraIfValid(
-						-- data.targetGUID,
-						-- spellName,
-						-- data.isDebuff or auraType,
-						-- data.isMyAura,
-						-- 0.01
-					-- )
-				-- end
+					-- If 0.2 seconds pass without a failure combat log, commit it!
+					if (currentTime - data.time) > (0.2 + UPCoreGetCurrentPingSeconds()) then					
+					
+						local auraType = UPApiGetAuraTypeOnUnit(targetGUID, data.spellId)
+						
+						UPCoreDelayCall(
+							UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(), 
+							UPApiCacheInAuraIfValid, 
+							targetGUID, 
+							spellName, 
+							data.isDebuff or auraType, 
+							data.isMyAura
+						)
+						
+						-- Clear this target out of the queue
+						targets[targetGUID] = nil
+					end
+				end
 				
-				-- If 0.2 seconds pass without a failure combat log, commit it!
-				-- need a higher delay, it may not be in the ACTUAL buff/debuff list YET!!!
-				if (currentTime - data.time) > (0.2 + UPCoreGetCurrentPingSeconds()) then --used to be 0.5					
-				
-					local auraType = UPApiGetAuraTypeOnUnit(data.targetGUID, data.spellId)
-					
-					-- if data.isMyAura then
-						-- print("UPApiPendingAoEAuraRefreshes release for "..spellName.." auraType: "..tostring(auraType))
-					-- end
-					
-					-- print("UPApiPendingAoEAuraRefreshes release for: ")
-					-- print("spellName: "..tostring(spellName))
-					-- print("auraType: "..tostring(auraType))
-					-- print("data.targetGUID: "..tostring(data.targetGUID))
-					
-					UPCoreDelayCall(
-						UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(), 
-						UPApiCacheInAuraIfValid, 
-						data.targetGUID, 
-						spellName, 
-						data.isDebuff or auraType, 
-						data.isMyAura
-					)
-					
-					-- -- Sweep the global cache
-					-- for cachedGuid, cacheData in pairs(UPApiGuidAurasCache) do
-						-- -- If the mob already has this debuff, assume it got hit and refresh it
-						-- if cacheData[spellName] then
-							-- cacheData[spellName].startTime = currentTime
-							-- cacheData[spellName].expirationTime = currentTime + aoeDuration
-							
-							-- -- If your cache tracks WHO cast it, optionally update the caster here:
-							-- -- cacheData[spellName].casterGUID = casterGUID
-							
-							-- -- Trigger the UI update
-							-- UPCoreDelayCall(0.1, UPApiSyncAurasCacheWithActual, cachedGuid)
-						-- end
-					-- end
-					
-					-- UPCoreDelayCall(
-						-- UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(), 
-						-- UPApiCacheInAuraIfValid, 
-						-- data.targetGUID, 
-						-- spellName, 
-						-- data.isDebuff or auraType, 
-						-- data.isMyAura
-					-- )
-				
-					-- UPApiCacheInAuraIfValid(
-						-- data.targetGUID,
-						-- spellName,
-						-- data.isDebuff or auraType,
-						-- data.isMyAura
-					-- )
+				-- Memory cleanup: Delete empty spell tables
+				if next(targets) == nil then
 					spells[spellName] = nil
 				end
 			end
@@ -963,21 +920,25 @@ UPApiFrame:SetScript("OnEvent", function()
 			end
 		end
 		
-		if failedCasterGUID and failedSpellName and UPApiPendingAoEAuraRefreshes[failedCasterGUID] then
+		if failedCasterGUID and failedSpellName and failedTargetGUID and UPApiPendingAoEAuraRefreshes[failedCasterGUID] then
 			if UPApiPendingAoEAuraRefreshes[failedCasterGUID][failedSpellName] then
-				-- print("---------")
-				-- print("AOE FAIL FOR")
-				-- print("name: "..failedSpellName)
-				-- print("caster: "..failedCasterGUID)
-				-- print("target: "..failedTargetGUID)
-				-- print("---------")
-				--we should have assumed guid
-				-- Verify the target GUID matches just to be bulletproof
-				if UPApiPendingAoEAuraRefreshes[failedCasterGUID][failedSpellName].targetGUID == failedTargetGUID then
-					UPApiPendingAoEAuraRefreshes[failedCasterGUID][failedSpellName] = nil
+				-- Directly clear this specific target from the waiting room
+				if UPApiPendingAoEAuraRefreshes[failedCasterGUID][failedSpellName][failedTargetGUID] then
+					UPApiPendingAoEAuraRefreshes[failedCasterGUID][failedSpellName][failedTargetGUID] = nil
 				end
+				
+				-- -- Clean up empty spell table
+				-- if next(UPApiPendingAoEAuraRefreshes[failedCasterGUID][failedSpellName]) == nil then
+					-- UPApiPendingAoEAuraRefreshes[failedCasterGUID][failedSpellName] = nil
+				-- end
 			end
+			
+			-- -- Clean up empty caster table
+			-- if next(UPApiPendingAoEAuraRefreshes[failedCasterGUID]) == nil then
+				-- UPApiPendingAoEAuraRefreshes[failedCasterGUID] = nil
+			-- end
 		end
+		
 	end
 	
 		-- if string.find(arg2, "Feed Pet") then
@@ -1166,6 +1127,11 @@ UPApiFrame:SetScript("OnEvent", function()
 						UPApiPendingAoEAuraRefreshes[casterGUID] = {}
 					end
 					
+					-- 2. Initialize the spell's table if missing
+					if not UPApiPendingAoEAuraRefreshes[casterGUID][spellName] then
+						UPApiPendingAoEAuraRefreshes[casterGUID][spellName] = {}
+					end
+					
 					--first find out who is currently affected by this aura
 					--if I find a way to check for spell and target distance, then I can do it here
 					--Basically here we decide WHO CAN BE AFFECTED BY THIS CAST
@@ -1174,8 +1140,9 @@ UPApiFrame:SetScript("OnEvent", function()
 							--maybe put only visible nameplates affected by this aura???
 							--now we assume that everyone who has this aura will be affected
 							-- Put the cast in the waiting room
-							UPApiPendingAoEAuraRefreshes[casterGUID][spellName] = {
-								targetGUID = cachedGuid, --we don't have target guid here
+							--must allow duplicates somehow? because right now it simply overwrites
+							UPApiPendingAoEAuraRefreshes[casterGUID][spellName][cachedGuid] = {
+								--targetGUID = cachedGuid, --we don't have target guid here
 								time = currentTime,
 								isDebuff = nil, --auraType is unreliable here
 								isMyAura = isMyAura,
