@@ -310,6 +310,18 @@ local function UpdatePlate(kuiPlateFrame)
 	end
 	--init data end
 	
+	--hide plate early to avoid calculations
+	if (not kuiPlateFrame.isTarget) and kuiPlateFrame.isPet and (kuiPlateFrame.creatureType == "NOT SPECIFIED") then
+		--print(kuiPlateFrame.nameTextVariable.." creaturetype: "..kuiPlateFrame.creatureType)
+		--unknown creature type is NOT SPECIFIED
+		--hide entirely
+		kuiPlateFrame.originalPlateFrame.selectionGlow:Hide()
+		kuiPlateFrame.originalPlateFrame.totem:Hide()
+		kuiPlateFrame:Hide()
+		return
+	end
+	--
+	
 	
 	
 	-- print("here3")
@@ -542,7 +554,7 @@ local function UpdatePlate(kuiPlateFrame)
 	
 	--health percentage
 	local hpPercent = math.floor(kuiPlateFrame.health.percent)
-	if hpPercent < 100 then
+	if (hpPercent < 100) or (kuiPlateFrame.isInCombat) then
 		kuiPlateFrame.health.percentage:SetText(math.floor(kuiPlateFrame.health.percent).."%")
 	else
 		kuiPlateFrame.health.percentage:SetText("")
@@ -1136,12 +1148,12 @@ local function InitFrame(originalPlateFrame)
 	originalPlateFrame.raidIconRegion = raidIconRegion
 	--raid icon end	
 	
-	-- bossIconRegion:SetTexture(nil)
+	bossIconRegion:SetTexture(nil)
 	if bossIconRegion and bossIconRegion:IsVisible() then
-		-- This unit is a Boss (it has the skull icon active)
-		--print("Boss detected!")
-		bossIconRegion:SetTexture(nil)
-		kuiPlateFrame.isBoss = true
+		-- -- This unit is a Boss (it has the skull icon active)
+		-- --print("Boss detected!")
+		-- bossIconRegion:SetTexture(nil)
+		-- kuiPlateFrame.isBoss = true
 	end
 	originalPlateFrame.bossIconRegion = bossIconRegion
 	

@@ -30,6 +30,11 @@ UPApiScanTool:SetOwner( WorldFrame, "ANCHOR_NONE" )
 UPApiScanToolTextLine2 = _G["UPApiScanToolTextLeft2"] -- This is the line with <[Player]'s Pet>
 
 --PUBLIC
+function UPApiGetMyGUID()
+	local _, xguid = UnitExists("player")
+	return xguid
+end
+
 function UPApiGetGuildText(guid)
 	UPApiScanTool:ClearLines()
 	UPApiScanTool:SetUnit(guid)
@@ -269,17 +274,32 @@ local function UPApiGetGuidAurasCache(guid)
     return UPApiGuidAurasCache[guid]
 end
 
-local function UPApiPutIntoAurasCache(guid, spellId, name, texture, count, debuffType, duration, startTime, expirationTime, isDebuff, isMyAura)
+local function UPApiPutIntoAurasCache(guid, spellId, name, texture, count, debuffType, duration, startTime, expirationTime, isDebuff, isMyAura, casterGuid)
     if not guid or not name then return end
     
     local cache = UPApiGetGuidAurasCache(guid)
 	
 	local localIsMyAura = nil
-	if cache[name] and cache[name].isMyAura then
-		localIsMyAura = cache[name].isMyAura
+	local localCasterGuid = nil
+	
+	-- if cache[name] and cache[name].isMyAura then
+		-- localIsMyAura = cache[name].isMyAura
+	-- end
+	
+	if cache[name] then
+		if cache[name].isMyAura ~= nil then
+			localIsMyAura = cache[name].isMyAura
+		end
+		if cache[name].casterGuid ~= nil then
+			localCasterGuid = cache[name].casterGuid
+		end
 	end
+	
 	if isMyAura ~= nil then
 		localIsMyAura = isMyAura
+	end
+	if casterGuid ~= nil then
+		localCasterGuid = casterGuid
 	end
 	
 	-- if isMyAura then
@@ -298,11 +318,50 @@ local function UPApiPutIntoAurasCache(guid, spellId, name, texture, count, debuf
 		startTime = startTime,
 		expirationTime = expirationTime,
 		isDebuff = isDebuff,
-		isMyAura = localIsMyAura
+		isMyAura = localIsMyAura,
+		casterGuid = localCasterGuid
     }
 end
 
--- Returns "BUFF", "DEBUFF", or nil if it exists on the unit
+local function UPApiUnitHasBuff(unitGUID, expectedName)
+	local hasBuff = false
+	
+	-- local buffName, buffRank = GetPlayerBuffName(1)
+	-- print("debug: "..buffName.."/"..buffRank)
+	
+    -- for i=0,40 do
+		-- local bId,bCancel = GetPlayerBuff(i,"HELPFUL|HARMFUL|PASSIVE")
+		-- if(bId >= 0) then			
+			-- local buffName, bufftexture, buffSecondsLeft, buffCount = getBuffInfo(bId, bCancel)
+			-- --print(i.." debug buffName: "..buffName.." bufftexture: "..bufftexture.." buffSecondsLeft: "..buffSecondsLeft.." buffCount: "..buffCount)
+			-- if not buffName then
+				-- break
+			-- end
+			
+			-- if buffName == expectedName then
+				-- hasBuff = true
+				-- break 
+			-- end
+		-- end
+    -- end 
+	
+	-- 2. Scan Buffs
+    local i = 1
+    while true do
+        local texture, count, spellId = UnitBuff(unitGUID, i)
+        if not texture then break end -- No more buffs
+        
+		local name, rank, icon, spellMinRange, spellMaxRange = SpellInfo(spellId)
+        if name == expectedName then
+            return true
+        end
+        i = i + 1
+    end
+	
+	return hasBuff
+end
+
+-- Returns false if it is BUFF, true if it is DEBUFF or nil if it exists on the unit
 local function UPApiGetAuraTypeOnUnit(unitGUID, targetSpellId)
     if not unitGUID or not targetSpellId then return nil end
 	--local name, rank, icon, spellMinRange, spellMaxRange = SpellInfo(spellId)
@@ -315,7 +374,8 @@ local function UPApiGetAuraTypeOnUnit(unitGUID, targetSpellId)
         if not texture then break end -- No more debuffs
         
         if spellId == targetSpellId then
-            return "DEBUFF"
+            --return "DEBUFF"
+			return true
         end
         i = i + 1
     end
@@ -327,7 +387,8 @@ local function UPApiGetAuraTypeOnUnit(unitGUID, targetSpellId)
         if not texture then break end -- No more buffs
         
         if spellId == targetSpellId then
-            return "BUFF"
+            --return "BUFF"
+			return false
         end
         i = i + 1
     end
@@ -336,6 +397,9 @@ local function UPApiGetAuraTypeOnUnit(unitGUID, targetSpellId)
 end
 
 local function UPApiSyncAurasCacheWithActual(guid)
+	--print("UPApiSyncAurasCacheWithActual "..auraName.." from UPApiPendingAuraRefreshes isDebuff: "..tostring(isDebuff))
+
+
 	local actualUnitAuras = {} --both debuffs and buffs in case buff/debuff gets assigned wrong
 	for i = 1, 16 do
 		local texture, count, debuffType, spellId
@@ -400,7 +464,6 @@ local function UPApiSyncAurasCacheWithActual(guid)
 		if not cache[actualName] and (UPLibAuraDurationsGetAuraDuration(actualName, 0, nil) == -1) then
 			--guid, spellId, name, texture, count, debuffType, duration, startTime, expirationTime, isDebuff
 			--print("adding "..actualName.." as infinite aura")
-			
             UPApiPutIntoAurasCache(
                 guid, 
                 actualData.spellId, 
@@ -411,14 +474,42 @@ local function UPApiSyncAurasCacheWithActual(guid)
                 -1,   -- duration (-1 = infinite)
                 -1, -- startTime
                 -1,   -- expirationTime (-1 = never)
-                isDebuff,
-				nil --unknown (isMyAura)
+                UPApiGetAuraTypeOnUnit(guid, actualData.spellId), --isDebuff
+				nil, --unknown (isMyAura)
+				nil  -- unknown (casterGuid)
             )
+		elseif not cache[actualName] and (UPLibAuraDurationsGetAuraDuration(actualName, 0, nil) ~= nil and UPLibAuraDurationsGetAuraDuration(actualName, 0, nil) > 0) then
+			--assume max duration on auras that are not in cache
+			local xDuration = UPLibAuraDurationsGetAuraDuration(actualName, 0, nil)
+			if (xDuration ~= nil) then
+				local xStartTime = GetTime()
+				local xExpirationTime = xStartTime+xDuration
+				UPApiPutIntoAurasCache(
+					guid, 
+					actualData.spellId, 
+					actualName, 
+					actualData.texture, 
+					actualData.count, 
+					nil, -- debuffType
+					xDuration,   -- duration (-1 = infinite)
+					xStartTime, -- startTime
+					xExpirationTime,   -- expirationTime (-1 = never)
+					UPApiGetAuraTypeOnUnit(guid, actualData.spellId), --isDebuff
+					nil, --unknown (isMyAura)
+					nil  -- unknown (casterGuid)
+				)
+			end
         end
     end
 end
 
-local function UPApiCacheInAuraIfValid(guid, auraName, isDebuff, isMyAura)
+local function UPApiCacheInAuraIfValid(guid, auraName, isDebuff, isMyAura, casterGuid)
+
+	-- print("UPApiCacheInAuraIfValid "..auraName.." from UPApiPendingAuraRefreshes isDebuff: "..tostring(isDebuff))
+	
+	-- if (isDebuff == nil) then
+		-- print("UPApiCacheInAuraIfValid "..auraName.." from UPApiPendingAuraRefreshes isDebuff is nil")
+	-- end
 
 	-- if isMyAura then
 		-- print("UPApiCacheInAuraIfValid: name: "..tostring(auraName))
@@ -427,7 +518,7 @@ local function UPApiCacheInAuraIfValid(guid, auraName, isDebuff, isMyAura)
 
 	--print("new aura cache data0: "..tostring(guid).." "..tostring(auraName).." "..tostring(isDebuff))
 
-	if isDebuff or (isDebuff == nil) then
+	if (isDebuff == true) or (isDebuff == nil) then
 		--check for unit debuffs with same name
 		for i = 1, 16 do
 			local texture, count, debuffType, spellId, add1, add2, add3, add4 = UnitDebuff(guid, i)
@@ -461,6 +552,7 @@ local function UPApiCacheInAuraIfValid(guid, auraName, isDebuff, isMyAura)
 				--put into cache
 				local startTime = GetTime()
 				local expirationTime = startTime+duration
+				-- print("UPApiCacheInAuraIfValid1 "..auraName.." from UPApiPendingAuraRefreshes")
 				UPApiPutIntoAurasCache(
 					guid,
 					spellId,
@@ -472,7 +564,8 @@ local function UPApiCacheInAuraIfValid(guid, auraName, isDebuff, isMyAura)
 					startTime,
 					expirationTime,
 					true,
-					isMyAura --can be nil
+					isMyAura, --can be nil
+					casterGuid -- Passed down
 				)
 				
 				--print("new aura cache data: "..tostring(name).." "..tostring(startTime).." "..tostring(expirationTime).." "..tostring(duration))
@@ -482,7 +575,7 @@ local function UPApiCacheInAuraIfValid(guid, auraName, isDebuff, isMyAura)
 			end
 		end
 	end
-	if (not isDebuff) then
+	if (isDebuff == false) or (isDebuff == nil) then
 		--check for unit buffs with same name
 		for i = 1, 16 do
 			local texture, count, spellId, add1, add2, add3, add4 = UnitBuff(guid, i)
@@ -516,6 +609,7 @@ local function UPApiCacheInAuraIfValid(guid, auraName, isDebuff, isMyAura)
 				--put into cache
 				local startTime = GetTime()
 				local expirationTime = startTime+duration
+				-- print("UPApiCacheInAuraIfValid2 "..auraName.." from UPApiPendingAuraRefreshes")
 				UPApiPutIntoAurasCache(
 					guid,
 					spellId,
@@ -527,7 +621,8 @@ local function UPApiCacheInAuraIfValid(guid, auraName, isDebuff, isMyAura)
 					startTime,
 					expirationTime,
 					false,
-					isMyAura --can be nil
+					isMyAura, --can be nil
+					casterGuid -- Passed down
 				)
 				
 				--break loop (found it)
@@ -588,6 +683,7 @@ function UpApiGetUnitAuras(guid, getBuffs, onlyMineBuffs, getDebuffs, onlyMineDe
 		local expirationTime = cachedData.expirationTime
 		local isDebuff = cachedData.isDebuff
 		local isMyAura = cachedData.isMyAura
+		local casterGuid = cachedData.casterGuid -- Retrieve it
 		
 		--print("aura name1: "..tostring(name))
 		
@@ -610,7 +706,9 @@ function UpApiGetUnitAuras(guid, getBuffs, onlyMineBuffs, getDebuffs, onlyMineDe
 					duration = duration,
 					startTime = startTime,
 					expirationTime = expirationTime,
-					isDebuff = false
+					isDebuff = false,
+					--isMyAura = nil,
+					casterGuid = casterGuid -- Add to return table
 				})
 			end
 		end
@@ -634,7 +732,9 @@ function UpApiGetUnitAuras(guid, getBuffs, onlyMineBuffs, getDebuffs, onlyMineDe
 					duration = duration,
 					startTime = startTime,
 					expirationTime = expirationTime,
-					isDebuff = true
+					isDebuff = true,
+					--isMyAura = nil,
+					casterGuid = casterGuid -- Add to return table
 				})
 				
 				--print("new aura poll: "..tostring(name).." "..tostring(startTime).." "..tostring(expirationTime).." "..tostring(duration))
@@ -723,7 +823,8 @@ end
 
 local UPApiPendingAuraRefreshes = {}
 local UPApiPendingAoEAuraRefreshes = {} --special for AoE casts
-local UPApiPlayerGUIDPlaceholder = "You"
+--local UPApiPlayerGUIDPlaceholder = "You"
+local UPApiLastFadedSeals = {}
 
 
 ------------------------------ApiFrame
@@ -759,7 +860,7 @@ UPApiFrame:SetScript("OnUpdate", function()
 				-- need a higher delay, it may not be in the ACTUAL buff/debuff list YET!!!
 				if (currentTime - data.time) > (0.2 + UPCoreGetCurrentPingSeconds()) then --used to be 0.5	
 				
-					local auraType = UPApiGetAuraTypeOnUnit(data.targetGUID, data.spellId)
+					-- local isDebuff = UPApiGetAuraTypeOnUnit(data.targetGUID, data.spellId)
 					
 					-- if data.isMyAura then
 						-- print("UPApiPendingAuraRefreshes release for "..spellName.." auraType: "..tostring(auraType))
@@ -767,14 +868,40 @@ UPApiFrame:SetScript("OnUpdate", function()
 					
 					--print("UPApiPendingAuraRefreshes release for "..spellName.." auraType: "..tostring(auraType))
 					
+					-- 1. Snapshot the variables for this specific loop iteration
+					local pTarget = data.targetGUID
+					local pSpell = spellName
+					local pDebuff = data.isDebuff or UPApiGetAuraTypeOnUnit(data.targetGUID, data.spellId)
+					local pMine = data.isMyAura
+					local pCaster = casterGUID
+					
+					-- print("UPCoreDelayCall "..spellName.." from UPApiPendingAuraRefreshes")
 					UPCoreDelayCall(
 						UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(), 
-						UPApiCacheInAuraIfValid, 
-						data.targetGUID, 
-						spellName, 
-						data.isDebuff or auraType, 
-						data.isMyAura
+						function()
+							UPApiCacheInAuraIfValid(pTarget, pSpell, pDebuff, pMine, pCaster)
+						end
 					)
+					
+					-- UPCoreDelayCall(
+						-- UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(),
+						-- UPApiCacheInAuraIfValid,
+						-- pTarget,
+						-- pSpell,
+						-- pDebuff,
+						-- pMine,
+						-- pCaster
+					-- )
+					
+					-- UPCoreDelayCall(
+						-- UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(), 
+						-- UPApiCacheInAuraIfValid, 
+						-- data.targetGUID, 
+						-- spellName, 
+						-- data.isDebuff or auraType, 
+						-- data.isMyAura,
+						-- casterGUID -- Pass the key from the loop
+					-- )
 				
 					-- UPApiCacheInAuraIfValid(
 						-- data.targetGUID,
@@ -802,16 +929,32 @@ UPApiFrame:SetScript("OnUpdate", function()
 					-- If 0.2 seconds pass without a failure combat log, commit it!
 					if (currentTime - data.time) > (0.2 + UPCoreGetCurrentPingSeconds()) then					
 					
-						local auraType = UPApiGetAuraTypeOnUnit(targetGUID, data.spellId)
+						-- local isDebuff = UPApiGetAuraTypeOnUnit(targetGUID, data.spellId)
 						
+						-- 1. Snapshot the variables for the AoE loop iteration
+						local pTarget = targetGUID
+						local pSpell = spellName
+						local pDebuff = data.isDebuff or UPApiGetAuraTypeOnUnit(targetGUID, data.spellId)
+						local pMine = data.isMyAura
+						local pCaster = casterGUID
+						
+						-- 2. Pass them inside a parameter-less anonymous function
 						UPCoreDelayCall(
 							UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(), 
-							UPApiCacheInAuraIfValid, 
-							targetGUID, 
-							spellName, 
-							data.isDebuff or auraType, 
-							data.isMyAura
+							function()
+								UPApiCacheInAuraIfValid(pTarget, pSpell, pDebuff, pMine, pCaster)
+							end
 						)
+						
+						-- UPCoreDelayCall(
+							-- UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(), 
+							-- UPApiCacheInAuraIfValid, 
+							-- targetGUID, 
+							-- spellName, 
+							-- data.isDebuff or auraType, 
+							-- data.isMyAura,
+							-- casterGUID -- Pass the key from the loop
+						-- )
 						
 						-- Clear this target out of the queue
 						targets[targetGUID] = nil
@@ -840,6 +983,112 @@ UPApiFrame:SetScript("OnEvent", function()
 	end
 	
 	if event == "RAW_COMBATLOG" then
+	
+	--print("raw combat log event: "..arg2)
+	
+	--here I can keep track of last faded seal on unit
+	if arg2 and (string.find(arg2, "Seal") and string.find(arg2, "fades")) then
+		--print("raw combat log event: "..arg2)
+		
+		-- Pattern A: Fades from the player ("Seal of X fades from you.")
+		local _, _, sealName = string.find(arg2, "^(Seal.-) fades from you%.")
+		if sealName then
+			UPApiLastFadedSeals[UPApiGetMyGUID()] = sealName
+		else
+			-- Pattern B: Fades from others ("Seal of X fades from 0xABC123.")
+			local _, _, sealName, guid = string.find(arg2, "^(Seal.-) fades from (0x%x+)%.")
+			if sealName and guid then
+				UPApiLastFadedSeals[guid] = sealName
+			end
+		end
+	end
+	
+	--if you are paladin
+	local localizedClass, englishClass = UnitClass("player")
+	--if "You hit guid for x damage" then refresh your judgements
+	--CASE JUDGEMENT IS YOURS
+	if arg2 and (string.find(arg2, "You hit") or string.find(arg2, "You crit")) then
+		--refresh your judgements
+		--print("judgement refresh 1: "..arg2)
+		
+		local _, _, hitGuid = string.find(arg2, "You hit (0x%x+)")
+		if not hitGuid then
+			_, _, hitGuid = string.find(arg2, "You crit (0x%x+)")
+		end
+		
+		if hitGuid then
+			--print("judgement refresh 2: "..hitGuid)
+			-- Grab the target's current aura cache
+			local cache = UPApiGetGuidAurasCache(hitGuid)
+			
+			-- The standard Vanilla Paladin judgements that refresh on melee hits
+
+			local currentTime = GetTime()
+
+			for _, judgementName in ipairs(UPLibPaladinRefreshableJudgements) do
+				local auraData = cache[judgementName]				
+				
+				--If the target has this judgement, and we track it in our cache, refresh it
+				--no way to know if the judgement is yours
+				if auraData and auraData.isMyAura then
+					-- Grab the duration from your external duration library (defaulting to 10s if nil)
+					local duration = UPLibAuraDurationsGetAuraDuration(judgementName, 0, auraData.isMyAura) or 10.0
+					
+					-- Reset the timers to simulate the silent server refresh
+					auraData.startTime = currentTime
+					auraData.expirationTime = currentTime + duration
+					
+					--print("judgement refresh 3: "..hitGuid)
+					
+					-- Optional debugging:
+					--print("judgement refresh 4: " .. judgementName .. " on " .. hitGuid)
+				end
+			end
+		end
+	end
+	--CASE JUDGEMENT IS NOT YOURS
+	if arg2 and (string.find(arg2, "hits") or string.find(arg2, "crits")) then
+		
+		-- Capture BOTH the attacker's GUID and the mob's GUID
+		local _, _, attackerGuid, hitGuid = string.find(arg2, "^(0x%x+) hits (0x%x+)")
+		if not attackerGuid then
+			_, _, attackerGuid, hitGuid = string.find(arg2, "^(0x%x+) crits (0x%x+)")
+		end
+		
+		--print("judgement refresh 1: "..arg2)
+		
+		--print("judgement refresh 1: "..attackerGuid)
+		--print("judgement refresh 1: "..hitGuid)
+		
+		if attackerGuid and hitGuid then
+			local cache = UPApiGetGuidAurasCache(hitGuid)
+			local currentTime = GetTime()
+
+			for _, judgementName in ipairs(UPLibPaladinRefreshableJudgements) do
+				local auraData = cache[judgementName]	
+
+				--print("---111Refreshed1 " .. judgementName .. " on " .. hitGuid .. " for caster " .. attackerGuid)
+				
+				-- if auraData then
+					-- print(tostring(auraData))
+					-- print(tostring(auraData.casterGuid))
+					-- print(tostring(auraData.spellId))
+				-- end
+				
+				-- Check if the aura exists, is NOT yours, AND the attacker is the one who cast it
+				if auraData and (not auraData.isMyAura) and (auraData.casterGuid == attackerGuid) then
+					local duration = UPLibAuraDurationsGetAuraDuration(judgementName, 0, auraData.isMyAura) or 10.0
+					
+					-- Reset the timers to simulate the silent server refresh
+					auraData.startTime = currentTime
+					auraData.expirationTime = currentTime + duration
+					
+					-- Optional debugging:
+					-- print("000Refreshed " .. judgementName .. " on " .. hitGuid .. " for caster " .. attackerGuid)
+				end
+			end
+		end
+	end
 	
 	--if arg2 and (string.find(arg2, "missed") or string.find(arg2, "dodged") or string.find(arg2, "parried") or string.find(arg2, "resisted") or string.find(arg2, "failed")) then
 	-- if arg2 and (string.find(arg2, "missed") or string.find(arg2, "dodged") or string.find(arg2, "parried") or string.find(arg2, "resisted")) then
@@ -884,7 +1133,7 @@ UPApiFrame:SetScript("OnEvent", function()
 			failedSpellName = spell
 			failedTargetGUID = target
 			--failedCasterGUID = UPApiPlayerGUID -- Mapped from our UNIT_CASTEVENT catch
-			failedCasterGUID = UPApiPlayerGUIDPlaceholder
+			failedCasterGUID = UPApiGetMyGUID()
 		else
 			-- 3. Pattern B: OTHERS' failures ("0xABC...'s Rend was/is parried by 0xDEF...")
 			local _, _, caster, spell, target = string.find(arg2, "^(0x%x+)'s (.-) was .- (0x%x+)")
@@ -1105,10 +1354,16 @@ UPApiFrame:SetScript("OnEvent", function()
 			
 			-- Capture our own GUID dynamically so we can map "Your" logs later
 			local isMyAura = nil
+			--local realCasterGuid = casterGUID
 			if UnitName(casterGUID) == UnitName("player") then
-				casterGUID = UPApiPlayerGUIDPlaceholder
+				--casterGUID = UPApiPlayerGUIDPlaceholder
 				isMyAura = true
 			end
+			-- local realCasterGuid = casterGUID
+			-- if realCasterGuid == UPApiPlayerGUIDPlaceholder then
+				-- local _, xguid = UnitExists("player")
+				-- realCasterGuid = xguid
+			-- end
 			
 			-- AOE CASE: Handle AoE (no targetGUID) Refreshes for ALL Casters
 			-- if ((not targetGUID) or targetGUID == "") and UPLibAoeAuraNames[spellName] then
@@ -1150,12 +1405,30 @@ UPApiFrame:SetScript("OnEvent", function()
 							}
 						end
 					end
+					
+					--also apply/refresh immediately if has no target and has this aura on itself? (for seals and alike)
+					--refresh immediately
+					UPApiCacheInAuraIfValid(casterGUID, spellName, nil, isMyAura, casterGUID)
+					--if UPApiUnitHasBuff(casterGUID, spellName) then
+						-- local xcache = UPApiGetGuidAurasCache(casterGUID)
+						-- local xcurrentTime = GetTime()
+						-- local xauraData = xcache[spellName]						
+						-- if xauraData then
+							-- local xduration = UPLibAuraDurationsGetAuraDuration(spellName, rankNumber, isMyAura) or 10.0
+							
+							-- -- Reset the timers to simulate the silent server refresh
+							-- xauraData.startTime = xcurrentTime
+							-- xauraData.expirationTime = xcurrentTime + xduration
+						-- end
+					--end
 				end
 			end
 			-- AOE CASE END
 			
 			
 			if targetGUID and spellId then
+			
+				--need to handle JUDGEMENT cast
 			
 				--local auraType = UPApiGetAuraTypeOnUnit(targetGUID, spellId)
 				
@@ -1179,6 +1452,43 @@ UPApiFrame:SetScript("OnEvent", function()
 						-- print("cast waiting room for: "..spellName.." isMyAura: "..tostring(isMyAura))
 					-- end
 					
+					if spellName == "Judgement" then						
+						local expectedJudgement = nil
+	
+						-- 1. Check if we recorded a Seal fading a split second ago
+						local fadedSeal = UPApiLastFadedSeals[casterGUID]
+						if fadedSeal then
+							expectedJudgement = string.gsub(fadedSeal, "Seal", "Judgement")
+						end
+						
+						-- 2. Fallback: Check if the buff is somehow still active on them
+						if not expectedJudgement then
+							for _, sealName in ipairs(UPLibPaladinRefreshableSeals) do
+								if UPApiUnitHasBuff(casterGUID, sealName) then
+									expectedJudgement = string.gsub(sealName, "Seal", "Judgement")
+									break
+								end
+							end
+						end
+						
+						-- 3. Apply the transformation and clear the cache
+						if expectedJudgement then
+							spellName = expectedJudgement
+							--print("Transformed cast to: " .. spellName)
+							
+							-- Clear it so we don't accidentally reuse it later
+							UPApiLastFadedSeals[casterGUID] = nil
+						else
+							--print("Warning: Could not determine which Judgement was cast by " .. casterGUID)
+						end
+						
+						-- print(""..spellName)
+						-- print("Judgement cast by: "..casterGUID)
+					end
+					
+					-- if string.find(spellName, "dodged") then
+					-- end
+					
 					-- Put the cast in the waiting room
 					UPApiPendingAuraRefreshes[casterGUID][spellName] = {
 						targetGUID = targetGUID,
@@ -1187,6 +1497,24 @@ UPApiFrame:SetScript("OnEvent", function()
 						isMyAura = isMyAura,
 						spellId = spellId
 					}
+					
+					-- print("put "..spellName.." into UPApiPendingAuraRefreshes")
+					
+					--also apply/refresh immediately if has no target and has this aura on it? (for buffs and alike)
+					--refresh immediately
+					-- UPApiCacheInAuraIfValid(realCasterGuid, spellName, nil, isMyAura, realCasterGuid)
+					--if UPApiUnitHasBuff(casterGUID, spellName) then
+						-- local xcache = UPApiGetGuidAurasCache(targetGUID)
+						-- local xcurrentTime = GetTime()
+						-- local xauraData = xcache[spellName]						
+						-- if xauraData then
+							-- local xduration = UPLibAuraDurationsGetAuraDuration(spellName, rankNumber, isMyAura) or 10.0
+							
+							-- -- Reset the timers to simulate the silent server refresh
+							-- xauraData.startTime = xcurrentTime
+							-- xauraData.expirationTime = xcurrentTime + xduration
+						-- end
+					--end
 				--end
 			end
 		elseif eventType == "FAIL" then

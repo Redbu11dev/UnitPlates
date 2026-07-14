@@ -10,6 +10,21 @@ UPLibDynamicAuraNames = {
   ["Rend"] = "Rend",--not handled
 }
 
+UPLibPaladinRefreshableJudgements = {
+	"Judgement of Light",
+	"Judgement of Wisdom",
+	"Judgement of the Crusader",
+	"Judgement of Justice"
+}
+
+--seal spell name to judgement spell id
+UPLibPaladinRefreshableSeals = {
+	"Seal of Light",
+	"Seal of Wisdom",
+	"Seal of the Crusader",
+	"Seal of Justice"
+}
+
 -- --[name = range]
 -- UPLibAoeAuraNames = {
   -- --warrior
@@ -23,6 +38,21 @@ UPLibAuraDurationsByRank = {
   
   --mounts
   ['Riding Turtle']={[0]=-1,},
+  
+  --general
+  ['Drink']={[0]=18,},
+  ['Food']={[0]=18,},
+  
+  ['Sayge\'s Dark Fortune of Agility']={[0]=7200,},
+  ['Sayge\'s Dark Fortune of Armor']={[0]=7200,},
+  ['Sayge\'s Dark Fortune of Damage']={[0]=7200,},
+  ['Sayge\'s Dark Fortune of Intelligence']={[0]=7200,},
+  ['Sayge\'s Dark Fortune of Resistance']={[0]=7200,},
+  ['Sayge\'s Dark Fortune of Spirit']={[0]=7200,},
+  ['Sayge\'s Dark Fortune of Stamina']={[0]=7200,},
+  ['Sayge\'s Dark Fortune of Strength']={[0]=7200,},
+  
+  ['Rallying Cry of the Dragonslayer']={[0]=7200.0,},
   
   --warrior
   ['Battle Stance']={[0]=-1,},
@@ -84,12 +114,14 @@ UPLibAuraDurationsByRank = {
   
   
   --warlock
+  ['Demon Armor']={[0]=1800.0,[1]=1800.0,[2]=1800.0,[3]=1800.0,[4]=1800.0,[5]=1800.0,},
   
   
   --mage
   ['Chilled']={[0]=1.5,[1]=5,[2]=5,[3]=5,[4]=5,[5]=5,},--there are 2 spells named "chilled?" --if I receive no rank in combat log, then it's probably not cast by player? --!DURATION DEPENDS ON TALENTS?
   ['Frost Nova']={[0]=8.0,[1]=8.0,[2]=8.0,[3]=8.0,[4]=8.0,}, --!DURATION DEPENDS ON TALENTS?
   ['Cone of Cold']={[0]=8.0,[1]=8.0,[2]=8.0,[3]=8.0,[4]=8.0,[5]=8.0,}, --!DURATION DEPENDS ON TALENTS
+  ['Frost Armor']={[0]=1800.0,[1]=1800.0,[2]=1800.0,[3]=1800.0,},
   
   --priest
   ['Power Word: Fortitude']={[0]=1800.0,},
@@ -743,7 +775,6 @@ UPLibAuraDurationsByRank = {
   ['Radiation Poisoning']={[0]=25.0,},
   ['Rage of Thule']={[0]=120.0,},
   ['Rake']={[0]=9.0,},
-  ['Rallying Cry of the Dragonslayer']={[0]=7200.0,},
   ['Rampage']={[0]=2.5,},
   ['Rat Nova']={[0]=10.0,},
   ['Ravage']={[0]=2.0,},
