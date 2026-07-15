@@ -98,8 +98,6 @@ end
 function UPConfigLoadUnitPlatesDefaultSettings()
 	UnitPlatesSettings = {
 		minimapIconPos = 0,
-		smallerAuras = true,
-		additionalAuraPollingDelaySeconds = "0.2",
 		showBuffs=true,
 		onlyYourBuffs=false,
 		ignoredBuffNames = "name1,name2",
@@ -108,9 +106,12 @@ function UPConfigLoadUnitPlatesDefaultSettings()
 		ignoredDebuffNames = "name1,name2",
 		enableWoWTranslateSupport = true,
 		enableChatBubbleHandling = true,
+		overlapping = true,
 		scale = "1.0",
-		widthScale = "1.0",
-		widthTrivialScale = "1.0"
+		aurasInRow = 6,
+		aurasInRowTrivial = 4,
+		nameplateWidthPercent = 65,
+		nameplateWidthPercentTrivial = 45
 	}
 end
 
@@ -121,12 +122,6 @@ function UPConfigLoadUnitPlatesSettings()
 	else
 		if UnitPlatesSettings.minimapIconPos == nil then
 			UnitPlatesSettings.minimapIconPos=0
-		end
-		if UnitPlatesSettings.smallerAuras == nil then
-			UnitPlatesSettings.smallerAuras=true
-		end
-		if UnitPlatesSettings.additionalAuraPollingDelaySeconds == nil then
-			UnitPlatesSettings.additionalAuraPollingDelaySeconds="0.2"
 		end
 		if UnitPlatesSettings.showBuffs == nil then
 			UnitPlatesSettings.showBuffs=true
@@ -152,8 +147,23 @@ function UPConfigLoadUnitPlatesSettings()
 		if UnitPlatesSettings.enableChatBubbleHandling == nil then
 			UnitPlatesSettings.enableChatBubbleHandling=true
 		end
+		if UnitPlatesSettings.overlapping == nil then
+			UnitPlatesSettings.overlapping=true
+		end
 		if UnitPlatesSettings.scale == nil or (not tonumber(UnitPlatesSettings.scale)) then
 			UnitPlatesSettings.scale="1.0"
+		end
+		if UnitPlatesSettings.aurasInRow == nil then
+			UnitPlatesSettings.aurasInRow=6
+		end
+		if UnitPlatesSettings.aurasInRowTrivial == nil then
+			UnitPlatesSettings.aurasInRowTrivial=4
+		end
+		if UnitPlatesSettings.nameplateWidthPercent == nil then
+			UnitPlatesSettings.nameplateWidthPercent=65
+		end
+		if UnitPlatesSettings.nameplateWidthPercentTrivial == nil then
+			UnitPlatesSettings.nameplateWidthPercentTrivial=45
 		end
 		print("UnitPlates saved data loaded")
 	end
@@ -194,15 +204,15 @@ function UPConfigInitUnitPlatesSettings()
 		edgeSize = 12,
 		insets = { left = 2, right = 2, top = 2, bottom = 2 },
 	})
-	UnitPlatesOptionsFrame:SetBackdropColor(0,0,0,.5)
+	UnitPlatesOptionsFrame:SetBackdropColor(0,0,0,.7)
 	
 	UnitPlatesOptionsFrame.title = UnitPlatesOptionsFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 	--nameplate.health.text:SetAllPoints()
 	UnitPlatesOptionsFrame.title:SetPoint("TOP", UnitPlatesOptionsFrame, "TOP", 0, -8)
 	UnitPlatesOptionsFrame.title:SetTextColor(1,1,1,barAlpha)
 	UnitPlatesOptionsFrame.title:SetFont("Interface\\AddOns\\UnitPlates\\fonts\\francois.ttf", 12, "OUTLINE")
-	UnitPlatesOptionsFrame.title:SetJustifyH("LEFT")
-	UnitPlatesOptionsFrame.title:SetText("UnitPlates options")
+	UnitPlatesOptionsFrame.title:SetJustifyH("CENTER")
+	UnitPlatesOptionsFrame.title:SetText("UnitPlates options\n(all settings require reload)")
 	
 	local closeButton = CreateFrame("Button", nil, UnitPlatesOptionsFrame, "UIPanelButtonTemplate")
 	closeButton:SetPoint("TOPRIGHT",0,0)
@@ -255,18 +265,72 @@ function UPConfigInitUnitPlatesSettings()
 	aurasSectionTitle:SetPoint("TOPLEFT",8,-24)
 	aurasSectionTitle:SetTextColor(0.999,0.819,0,barAlpha)
 	aurasSectionTitle:SetJustifyH("LEFT")
-	aurasSectionTitle:SetText("--- AURAS:")	
+	aurasSectionTitle:SetText("--- AURAS:")
 	
+	local aurasInRowTitle = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	aurasInRowTitle:SetPoint("TOPLEFT", aurasSectionTitle, "BOTTOMLEFT", 0, -16)
+	aurasInRowTitle:SetTextColor(0.999,0.819,0,barAlpha)
+	aurasInRowTitle:SetJustifyH("LEFT")
+	aurasInRowTitle:SetText("Auras in row: ")
 	
-	local smallerAurasCheckbox = CreateFrame("CheckButton", "smallerAurasCheckbox", scrollChild, "UICheckButtonTemplate")
-	smallerAurasCheckbox:SetPoint("TOPLEFT", aurasSectionTitle, "BOTTOMLEFT", 0, -4)
-	getglobal(smallerAurasCheckbox:GetName() .. 'Text'):SetText("Smaller auras")
-	smallerAurasCheckbox:SetChecked(UnitPlatesSettings.smallerAuras)
-	smallerAurasCheckbox.tooltip = "Smaller auras"
-	smallerAurasCheckbox:SetScript("OnClick", function()
-		UnitPlatesSettings.smallerAuras=not UnitPlatesSettings.smallerAuras
-		--applyAllSettings()
+	local aurasInRowSlider = CreateFrame("Slider", "aurasInRowSlider", scrollChild, "OptionsSliderTemplate")
+	aurasInRowSlider:SetPoint("TOPLEFT", aurasInRowTitle, "BOTTOMLEFT", 0, -16)
+	aurasInRowSlider:SetWidth(350)
+	aurasInRowSlider:SetHeight(16)
+	aurasInRowSlider:SetMinMaxValues(4, 20)
+	aurasInRowSlider:SetValueStep(1)
+	aurasInRowSlider:SetValue(UnitPlatesSettings.aurasInRow)
+	
+	-- OptionsSliderTemplate creates fontstrings automatically for High, Low, and Text
+	getglobal(aurasInRowSlider:GetName() .. 'Low'):SetText('4')
+	getglobal(aurasInRowSlider:GetName() .. 'High'):SetText('20')
+	getglobal(aurasInRowSlider:GetName() .. 'Text'):SetText("Current: " .. UnitPlatesSettings.aurasInRow)
+	
+	aurasInRowSlider:SetScript("OnValueChanged", function()
+		-- In 1.12, 'this' refers to the UI element triggering the script
+		local val = math.floor(this:GetValue() + 0.5) -- rounds to nearest whole number
+		UnitPlatesSettings.aurasInRow = val
+		getglobal(this:GetName() .. 'Text'):SetText("Current: " .. val)
+		-- applyAllSettings() -- uncomment if you have a function that applies settings in real-time
 	end)
+	
+	local aurasInRowTrivialTitle = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	aurasInRowTrivialTitle:SetPoint("TOPLEFT", aurasInRowSlider, "BOTTOMLEFT", 0, -24)
+	aurasInRowTrivialTitle:SetTextColor(0.999,0.819,0,barAlpha)
+	aurasInRowTrivialTitle:SetJustifyH("LEFT")
+	aurasInRowTrivialTitle:SetText("Auras in row (Trivials - gray level, pets, minions): ")
+	
+	local aurasInRowTrivialSlider = CreateFrame("Slider", "aurasInRowTrivialSlider", scrollChild, "OptionsSliderTemplate")
+	aurasInRowTrivialSlider:SetPoint("TOPLEFT", aurasInRowTrivialTitle, "BOTTOMLEFT", 0, -16)
+	aurasInRowTrivialSlider:SetWidth(350)
+	aurasInRowTrivialSlider:SetHeight(16)
+	aurasInRowTrivialSlider:SetMinMaxValues(4, 20)
+	aurasInRowTrivialSlider:SetValueStep(1)
+	aurasInRowTrivialSlider:SetValue(UnitPlatesSettings.aurasInRowTrivial)
+	
+	-- OptionsSliderTemplate creates fontstrings automatically for High, Low, and Text
+	getglobal(aurasInRowTrivialSlider:GetName() .. 'Low'):SetText('4')
+	getglobal(aurasInRowTrivialSlider:GetName() .. 'High'):SetText('20')
+	getglobal(aurasInRowTrivialSlider:GetName() .. 'Text'):SetText("Current: " .. UnitPlatesSettings.aurasInRowTrivial)
+	
+	aurasInRowTrivialSlider:SetScript("OnValueChanged", function()
+		-- In 1.12, 'this' refers to the UI element triggering the script
+		local val = math.floor(this:GetValue() + 0.5) -- rounds to nearest whole number
+		UnitPlatesSettings.aurasInRowTrivial = val
+		getglobal(this:GetName() .. 'Text'):SetText("Current: " .. val)
+		-- applyAllSettings() -- uncomment if you have a function that applies settings in real-time
+	end)
+	
+	
+	-- local smallerAurasCheckbox = CreateFrame("CheckButton", "smallerAurasCheckbox", scrollChild, "UICheckButtonTemplate")
+	-- smallerAurasCheckbox:SetPoint("TOPLEFT", aurasInRowTrivialSlider, "BOTTOMLEFT", 0, -4)
+	-- getglobal(smallerAurasCheckbox:GetName() .. 'Text'):SetText("Smaller auras")
+	-- smallerAurasCheckbox:SetChecked(UnitPlatesSettings.smallerAuras)
+	-- smallerAurasCheckbox.tooltip = "Smaller auras"
+	-- smallerAurasCheckbox:SetScript("OnClick", function()
+		-- UnitPlatesSettings.smallerAuras=not UnitPlatesSettings.smallerAuras
+		-- --applyAllSettings()
+	-- end)
 	
 	
 	-- local additionalAuraPollingDelaySecondsTitle = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -308,7 +372,7 @@ function UPConfigInitUnitPlatesSettings()
 	
 	
 	local showBuffsCheckbox = CreateFrame("CheckButton", "showBuffsCheckbox", scrollChild, "UICheckButtonTemplate")
-	showBuffsCheckbox:SetPoint("TOPLEFT", smallerAurasCheckbox, "BOTTOMLEFT", 0, 0)
+	showBuffsCheckbox:SetPoint("TOPLEFT", aurasInRowTrivialSlider, "BOTTOMLEFT", 0, -14)
 	getglobal(showBuffsCheckbox:GetName() .. 'Text'):SetText("Show buffs")
 	showBuffsCheckbox:SetChecked(UnitPlatesSettings.showBuffs)
 	showBuffsCheckbox.tooltip = "Show buffs"
@@ -425,8 +489,18 @@ function UPConfigInitUnitPlatesSettings()
 	uiSectionTitle:SetJustifyH("LEFT")
 	uiSectionTitle:SetText("--- UI:")	
 	
+	local overlappingNameplatesCheckbox = CreateFrame("CheckButton", "overlappingNameplatesCheckbox", scrollChild, "UICheckButtonTemplate")
+	overlappingNameplatesCheckbox:SetPoint("TOPLEFT", uiSectionTitle, "BOTTOMLEFT", 0, -4)
+	getglobal(overlappingNameplatesCheckbox:GetName() .. 'Text'):SetText("Overlapping (Recommended)")
+	overlappingNameplatesCheckbox:SetChecked(UnitPlatesSettings.overlapping)
+	overlappingNameplatesCheckbox.tooltip = "Overlapping (Recommended)"
+	overlappingNameplatesCheckbox:SetScript("OnClick", function()
+		UnitPlatesSettings.overlapping=not UnitPlatesSettings.overlapping
+		--applyAllSettings()
+	end)
+	
 	local scaleTitle = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-	scaleTitle:SetPoint("TOPLEFT", uiSectionTitle, "BOTTOMLEFT", 0, -8)
+	scaleTitle:SetPoint("TOPLEFT", overlappingNameplatesCheckbox, "BOTTOMLEFT", 0, -8)
 	scaleTitle:SetTextColor(0.999,0.819,0,barAlpha)
 	scaleTitle:SetJustifyH("LEFT")
 	scaleTitle:SetText("Scale (Valid value is number e.g. 1 or 1.0 or 0.3434 etc.): ")
@@ -459,10 +533,64 @@ function UPConfigInitUnitPlatesSettings()
 		end
 	end)
 	
+	local nameplateWidthTitle = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	nameplateWidthTitle:SetPoint("TOPLEFT", scaleInput, "BOTTOMLEFT", 0, -16)
+	nameplateWidthTitle:SetTextColor(0.999,0.819,0,barAlpha)
+	nameplateWidthTitle:SetJustifyH("LEFT")
+	nameplateWidthTitle:SetText("Nameplate width %: ")
+	
+	local nameplateWidthSlider = CreateFrame("Slider", "nameplateWidthSlider", scrollChild, "OptionsSliderTemplate")
+	nameplateWidthSlider:SetPoint("TOPLEFT", nameplateWidthTitle, "BOTTOMLEFT", 0, -16)
+	nameplateWidthSlider:SetWidth(350)
+	nameplateWidthSlider:SetHeight(16)
+	nameplateWidthSlider:SetMinMaxValues(40, 200)
+	nameplateWidthSlider:SetValueStep(1)
+	nameplateWidthSlider:SetValue(UnitPlatesSettings.nameplateWidthPercent)
+	
+	-- OptionsSliderTemplate creates fontstrings automatically for High, Low, and Text
+	getglobal(nameplateWidthSlider:GetName() .. 'Low'):SetText('40%')
+	getglobal(nameplateWidthSlider:GetName() .. 'High'):SetText('200%')
+	getglobal(nameplateWidthSlider:GetName() .. 'Text'):SetText("Current: " .. UnitPlatesSettings.nameplateWidthPercent.."%")
+	
+	nameplateWidthSlider:SetScript("OnValueChanged", function()
+		-- In 1.12, 'this' refers to the UI element triggering the script
+		local val = math.floor(this:GetValue() + 0.5) -- rounds to nearest whole number
+		UnitPlatesSettings.nameplateWidthPercent = val
+		getglobal(this:GetName() .. 'Text'):SetText("Current: " .. val.."%")
+		-- applyAllSettings() -- uncomment if you have a function that applies settings in real-time
+	end)
+	
+	local nameplateWidthTrivialTitle = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	nameplateWidthTrivialTitle:SetPoint("TOPLEFT", nameplateWidthSlider, "BOTTOMLEFT", 0, -24)
+	nameplateWidthTrivialTitle:SetTextColor(0.999,0.819,0,barAlpha)
+	nameplateWidthTrivialTitle:SetJustifyH("LEFT")
+	nameplateWidthTrivialTitle:SetText("Nameplate width % (Trivials - gray level, pets, minions): ")
+	
+	local nameplateWidthTrivialSlider = CreateFrame("Slider", "nameplateWidthTrivialSlider", scrollChild, "OptionsSliderTemplate")
+	nameplateWidthTrivialSlider:SetPoint("TOPLEFT", nameplateWidthTrivialTitle, "BOTTOMLEFT", 0, -16)
+	nameplateWidthTrivialSlider:SetWidth(350)
+	nameplateWidthTrivialSlider:SetHeight(16)
+	nameplateWidthTrivialSlider:SetMinMaxValues(40, 200)
+	nameplateWidthTrivialSlider:SetValueStep(1)
+	nameplateWidthTrivialSlider:SetValue(UnitPlatesSettings.nameplateWidthPercentTrivial)
+	
+	-- OptionsSliderTemplate creates fontstrings automatically for High, Low, and Text
+	getglobal(nameplateWidthTrivialSlider:GetName() .. 'Low'):SetText('40%')
+	getglobal(nameplateWidthTrivialSlider:GetName() .. 'High'):SetText('200%')
+	getglobal(nameplateWidthTrivialSlider:GetName() .. 'Text'):SetText("Current: " .. UnitPlatesSettings.nameplateWidthPercentTrivial.."%")
+	
+	nameplateWidthTrivialSlider:SetScript("OnValueChanged", function()
+		-- In 1.12, 'this' refers to the UI element triggering the script
+		local val = math.floor(this:GetValue() + 0.5) -- rounds to nearest whole number
+		UnitPlatesSettings.nameplateWidthPercentTrivial = val
+		getglobal(this:GetName() .. 'Text'):SetText("Current: " .. val.."%")
+		-- applyAllSettings() -- uncomment if you have a function that applies settings in real-time
+	end)
+	
 	---------------- COMPATIBILITY
 	
 	local compatibilitySectionTitle = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-	compatibilitySectionTitle:SetPoint("TOPLEFT", scaleInput, "BOTTOMLEFT", 0, -32)
+	compatibilitySectionTitle:SetPoint("TOPLEFT", nameplateWidthTrivialSlider, "BOTTOMLEFT", 0, -36)
 	compatibilitySectionTitle:SetTextColor(0.999,0.819,0,barAlpha)
 	compatibilitySectionTitle:SetJustifyH("LEFT")
 	compatibilitySectionTitle:SetText("--- COMPATIBILITY:")	

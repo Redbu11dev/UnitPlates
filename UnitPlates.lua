@@ -4,6 +4,28 @@ UnitPlatesElapsedTimeSinceFullyLoaded = 0
 UnitPlatesLoadDelay = 0
 UnitPlatesConstantsInitialized = false
 
+local UnitPlatesMouselookCatcher = CreateFrame("Button", "UnitPlatesMouselookCatcher", UIParent)
+UnitPlatesMouselookCatcher:SetAllPoints(UIParent)
+UnitPlatesMouselookCatcher:SetFrameStrata("TOOLTIP") -- Ensures it sits above all other UI elements
+UnitPlatesMouselookCatcher:EnableMouse(true)
+UnitPlatesMouselookCatcher:Hide()
+
+UnitPlatesMouselookCatcher:SetScript("OnMouseDown", function()
+	print("UnitPlatesMouselookCatcher:SetScript(OnMouseDown, function()")
+    -- if IsMouselooking() then
+        -- MouselookStop()
+    -- end
+    -- UnitPlatesMouselookCatcher:Hide() -- Hide the catcher immediately to restore normal UI interaction
+end)
+
+UnitPlatesMouselookCatcher:SetScript("OnMouseUp", function()
+	print("UnitPlatesMouselookCatcher:SetScript(OnMouseUp, function()")
+    -- if IsMouselooking() then
+        -- MouselookStop()
+    -- end
+    -- UnitPlatesMouselookCatcher:Hide() -- Hide the catcher immediately to restore normal UI interaction
+end)
+
 ---------------------------CONSTANTS
 
 local spellSchoolColors = {
@@ -32,6 +54,8 @@ end
 
 local slowUpdateTime, critUpdateTime, aurasUnitUpdateTime = 0.1, 0.01, 0.2
 
+local clickToMoveCameraDelay = 0.11
+
 --SIZES
 --make all sizes relative to UPConstants.nameplateHealthBarHeight
 local UPConstants = {}
@@ -40,8 +64,9 @@ local function InitUPConstants()
 	UPConstants.nameplateHealthBarHeight = 14 * UnitPlatesSettings.scale --all other sizes are based upon nameplateHealthBarHeight
 	UPConstants.minimalOnePixel = UPConstants.nameplateHealthBarHeight / 16
 
-	UPConstants.nameplateHealthBarWidth = (UPConstants.nameplateHealthBarHeight * 6.5)
-	UPConstants.nameplateWidthGrayLevel = (UPConstants.nameplateHealthBarHeight * 4.5) --4.1
+	UPConstants.nameplateHealthBarWidth = (UPConstants.nameplateHealthBarHeight * (UnitPlatesSettings.nameplateWidthPercent / 10)) --6.5
+	UPConstants.nameplateWidthGrayLevel = (UPConstants.nameplateHealthBarHeight * (UnitPlatesSettings.nameplateWidthPercentTrivial / 10)) --4.5
+	
 	UPConstants.nameplatePowerBarHeight = (UPConstants.nameplateHealthBarHeight / 2)
 
 	UPConstants.nameFontSize = UPConstants.nameplateHealthBarHeight * 0.6875
@@ -75,7 +100,10 @@ local function InitUPConstants()
 	UPConstants.threatFontSize = UPConstants.nameplateHealthBarHeight * 0.5
 
 	UPConstants.maxAuras = 80
-	UPConstants.maxAurasInRow = 5
+	-- UPConstants.maxAurasInRowSetting = 5
+	UPConstants.maxAurasInRow = UnitPlatesSettings.aurasInRow --6
+	UPConstants.maxAurasInRowGrayLevel = UnitPlatesSettings.aurasInRowTrivial --4
+	
 	UPConstants.auraIconOffset = 0.1 * UPConstants.minimalOnePixel
 	
 	--glow
@@ -170,8 +198,15 @@ local function SetFrameCenter(kuiPlateFrame)
 	-- .. so we have to align frames manually.
 	
 	--overlap
-	kuiPlateFrame.originalPlateFrame:SetWidth(1)
-	kuiPlateFrame.originalPlateFrame:SetHeight(1)
+	if UnitPlatesSettings.overlapping then
+		kuiPlateFrame.originalPlateFrame:SetWidth(1)
+		kuiPlateFrame.originalPlateFrame:SetHeight(1)
+	else
+		if kuiPlateFrame:GetHeight() and kuiPlateFrame:GetHeight() > 0 then
+			kuiPlateFrame.originalPlateFrame:SetWidth(kuiPlateFrame:GetWidth())
+			kuiPlateFrame.originalPlateFrame:SetHeight(kuiPlateFrame:GetHeight())
+		end
+	end
 	
 	local w = kuiPlateFrame:GetWidth()
 	local h = kuiPlateFrame:GetHeight()
@@ -193,6 +228,7 @@ local function ResetFrame(kuiPlateFrame, originalPlateFrame)
 	kuiPlateFrame.elapsed = 0
 	kuiPlateFrame.critElap = 0
 	kuiPlateFrame.aurasUpdateElapsed = 0
+	kuiPlateFrame.clickElapsed = 0
 	
 	--kuiPlateFrame:SetFrameLevel(0)
 	kuiPlateFrame.glow:Hide() 
@@ -1001,12 +1037,15 @@ local function UpdatePlate(kuiPlateFrame)
 	--AURA POLLING END
 end
 
+local clickUpdateTime = 0.01
+
 -- stuff that needs to be updated every frame
 local function OnFrameUpdate(originalPlateFrame, e)
 	local kuiPlateFrame = originalPlateFrame.kui
 	kuiPlateFrame.elapsed = kuiPlateFrame.elapsed - e
 	kuiPlateFrame.critElap = kuiPlateFrame.critElap - e
 	kuiPlateFrame.aurasUpdateElapsed = kuiPlateFrame.aurasUpdateElapsed - e
+	kuiPlateFrame.clickElapsed = kuiPlateFrame.clickElapsed - e
 	
 	------------------------------------------------------------------- Alpha --
 	kuiPlateFrame.defaultAlpha = originalPlateFrame:GetAlpha()
@@ -1044,14 +1083,58 @@ local function OnFrameUpdate(originalPlateFrame, e)
 		--
 	end
 	
+	-- kuiPlateFrame.health:EnableMouse(false)
+	
+	-- if kuiPlateFrame.clickElapsed <= 0 then
+		-- kuiPlateFrame.clickElapsed = clickUpdateTime
+		
+		-- if (not IsMouselooking() and MouseIsOver(kuiPlateFrame.health)) then
+			-- kuiPlateFrame.health:EnableMouse(true)
+			-- kuiPlateFrame.health:SetScript("OnMouseUp", function()
+				-- --print("here1")
+				-- if (not IsMouselooking()) and MouseIsOver(kuiPlateFrame.health) then
+					-- --print("here")
+					-- originalPlateFrame:Click(arg1)
+				-- end
+			-- end)
+			-- kuiPlateFrame.health:SetScript("OnMouseDown", function()
+				-- --print("here1")
+				-- if (not IsMouselooking()) and MouseIsOver(kuiPlateFrame.health) then
+					-- --print("here")
+					-- originalPlateFrame:Click(arg1)
+				-- end
+			-- end)
+		-- end
+	-- end
+	
+	-- kuiPlateFrame.originalPlateFrame:SetScript("OnMouseUp", function()
+		-- --print("here1")
+		-- if MouseIsOver(kuiPlateFrame.originalPlateFrame) then
+			-- --print("here")
+			-- originalPlateFrame:Click(arg1)
+		-- end
+	-- end)
+	
+	
+	
 	local unitExists, unitExistsGuid = UnitExists("mouseover")	
 	if unitExists and unitExistsGuid and (unitExistsGuid == kuiPlateFrame.guid) then
 		kuiPlateFrame.originalPlateFrame.isMouseover3dModel = true
 		kuiPlateFrame.originalPlateFrame.isInMouseOver = true
+		-- SetMouseoverUnit(unitExistsGuid)
 	else
 		kuiPlateFrame.originalPlateFrame.isMouseover3dModel = false
+		-- SetMouseoverUnit()
 	end	
+	
+	-- if not kuiPlateFrame.originalPlateFrame.isInMouseOver == false and kuiPlateFrame.originalPlateFrame.isMouseover3dModel == false then
+		-- SetMouseoverUnit()
+	-- end
+	
+	-- SetMouseoverUnit()
 	if MouseIsOver(kuiPlateFrame.health) or MouseIsOver(kuiPlateFrame.typeIcon) or MouseIsOver(kuiPlateFrame.power) or MouseIsOver(originalPlateFrame.totem) then
+		-- UnitPlatesMouselookCatcher:Show()
+	
 		kuiPlateFrame.originalPlateFrame.isInMouseOver = true
 		--print("MouseIsOver")
 		--SetMouseoverUnit(kuiPlateFrame.guid)
@@ -1069,11 +1152,15 @@ local function OnFrameUpdate(originalPlateFrame, e)
 		GameTooltip_SetDefaultAnchor(GameTooltip, UIParent)
 		GameTooltip:SetUnit(kuiPlateFrame.guid)
 		GameTooltip:Show()
+		
+		
 	else
 		-- --SetMouseoverUnit()
 		if not kuiPlateFrame.originalPlateFrame.isMouseover3dModel then
 			kuiPlateFrame.originalPlateFrame.isInMouseOver = false
 		end
+		
+		-- UnitPlatesMouselookCatcher:Hide()
 	end
 end
 
@@ -1168,11 +1255,15 @@ local function InitFrame(originalPlateFrame)
 	--castbarOverlay:SetTexture(nil)
 	glowRegion:SetTexture(nil)
 	--spellIconRegion:SetSize(0.01, 0.01)
+	
+	if not UnitPlatesSettings.overlapping then
+		borderRegion:SetTexture(nil)
+	end
 
 	--overlayRegion:Hide()
 	--castbarOverlay:Hide()
 
-	healthBar:Hide()
+	-- healthBar:Hide()
 	--nameTextRegion:Hide()
 
 	-- re-hidden OnFrameShow
@@ -1183,6 +1274,8 @@ local function InitFrame(originalPlateFrame)
 
 	-- make default healthbar & castbar transparent
 	--castBar:SetStatusBarTexture("Interface\\AddOns\\UnitPlates\\Media\\t\\empty")
+	
+	healthBar:Hide()
 	healthBar:SetStatusBarTexture("Interface\\AddOns\\UnitPlates\\Media\\t\\empty")
 
 	kuiPlateFrame.oldGlow = glowRegion
@@ -2080,46 +2173,61 @@ local function InitFrame(originalPlateFrame)
 			-- Position the icon dynamically
 			--determine icon size based on active count and max in row
 			
-			if activeUnitAurasCount <= 8 then
-				if UnitPlatesSettings.smallerAuras then
-					UPConstants.maxAurasInRow = 6
-				else
-					UPConstants.maxAurasInRow = 4
-				end
-			elseif activeUnitAurasCount <= 16 then
-				if UnitPlatesSettings.smallerAuras then
-					UPConstants.maxAurasInRow = 6
-				else
-					UPConstants.maxAurasInRow = 5
-				end
-			elseif activeUnitAurasCount <= 24 then
-				UPConstants.maxAurasInRow = 6
-			else
-				UPConstants.maxAurasInRow = 7
+			-- if activeUnitAurasCount <= 8 then
+				-- if UnitPlatesSettings.smallerAuras then
+					-- UPConstants.maxAurasInRow = 6
+				-- else
+					-- UPConstants.maxAurasInRow = 4
+				-- end
+			-- elseif activeUnitAurasCount <= 16 then
+				-- if UnitPlatesSettings.smallerAuras then
+					-- UPConstants.maxAurasInRow = 6
+				-- else
+					-- UPConstants.maxAurasInRow = 5
+				-- end
+			-- elseif activeUnitAurasCount <= 24 then
+				-- UPConstants.maxAurasInRow = 6
+			-- else
+				-- UPConstants.maxAurasInRow = 7
+			-- end
+			
+			-- if activeUnitAurasCount <= 8 then
+				-- UPConstants.maxAurasInRow = maxAurasInRowSetting - 1
+			-- elseif activeUnitAurasCount <= 16 then
+				-- UPConstants.maxAurasInRow = maxAurasInRowSetting - 1
+			-- elseif activeUnitAurasCount <= 24 then
+				-- UPConstants.maxAurasInRow = maxAurasInRowSetting - 1
+			-- else
+				-- UPConstants.maxAurasInRow = maxAurasInRowSetting - 1
+			-- end
+			
+			local maxAuras = UPConstants.maxAurasInRow
+			if kuiPlateFrame.isTrivial then
+				maxAuras = UPConstants.maxAurasInRowGrayLevel
 			end
 			
 			
-			local iconSize = (UPConstants.nameplateHealthBarWidth / UPConstants.maxAurasInRow) - UPConstants.auraIconOffset
+			local iconSize = (UPConstants.nameplateHealthBarWidth / maxAuras) - UPConstants.auraIconOffset
 			if kuiPlateFrame.isGrayLevel or kuiPlateFrame.isPet then
-				iconSize = (UPConstants.nameplateWidthGrayLevel / UPConstants.maxAurasInRow) - UPConstants.auraIconOffset
+				iconSize = (UPConstants.nameplateWidthGrayLevel / maxAuras) - UPConstants.auraIconOffset
 			end
 			
-			local column = math.mod((iconIndex - 1), UPConstants.maxAurasInRow)          -- Results in 0, 1, 2, 3
-			local row = math.floor((iconIndex - 1) / UPConstants.maxAurasInRow) -- Results in 0, 1, 2...
+			local column = math.mod((iconIndex - 1), maxAuras)          -- Results in 0, 1, 2, 3
+			local row = math.floor((iconIndex - 1) / maxAuras) -- Results in 0, 1, 2...
 			
 			if not aura.isDebuff then
 				hadAnyBuffs = true
 			end
 			if hadAnyBuffs and aura.isDebuff and firstDebuffIndex == 1 then
-				buffrows = (math.floor((iconIndex - 1 - 1) / UPConstants.maxAurasInRow))
+				buffrows = (math.floor((iconIndex - 1 - 1) / maxAuras))
 				firstDebuffIndex = iconIndex
 				firstDebuffRow = row
 			end
 			
 			if firstDebuffIndex > 1 then
 				-- row = row + 1
-				column = math.mod((iconIndex - firstDebuffIndex), UPConstants.maxAurasInRow)
-				row = math.floor((iconIndex - firstDebuffIndex) / UPConstants.maxAurasInRow)
+				column = math.mod((iconIndex - firstDebuffIndex), maxAuras)
+				row = math.floor((iconIndex - firstDebuffIndex) / maxAuras)
 			end
 			
 			local xOffset = column * (iconSize + UPConstants.auraIconOffset)
@@ -2365,38 +2473,94 @@ local function InitFrame(originalPlateFrame)
 	kuiPlateFrame.power:EnableMouse(true)
 	originalPlateFrame.totem:EnableMouse(true)
 	
+	-- kuiPlateFrame.lastMouseClickEvent = ""
+	
 	kuiPlateFrame.health:SetScript("OnMouseUp", function()
+		kuiPlateFrame.lastMouseClickEvent = "OnMouseUp"
 		--print("here1")
-		if MouseIsOver(kuiPlateFrame.health) then
+		if (not IsMouselooking()) and MouseIsOver(kuiPlateFrame.health) then
 			--print("here")
 			originalPlateFrame:Click(arg1)
 		end
 	end)
 	kuiPlateFrame.typeIcon:SetScript("OnMouseUp", function()
+		kuiPlateFrame.lastMouseClickEvent = "OnMouseUp"
 		--print("here1")
-		if MouseIsOver(kuiPlateFrame.typeIcon) then
+		if (not IsMouselooking()) and MouseIsOver(kuiPlateFrame.typeIcon) then
 			--print("here")
 			originalPlateFrame:Click(arg1)
 		end
 	end)
 	kuiPlateFrame.power:SetScript("OnMouseUp", function()
+		kuiPlateFrame.lastMouseClickEvent = "OnMouseUp"
 		--print("here1")
-		if MouseIsOver(kuiPlateFrame.power) then
+		if (not IsMouselooking()) and MouseIsOver(kuiPlateFrame.power) then
 			--print("here")
 			originalPlateFrame:Click(arg1)
 		end
 	end)
-	-- originalPlateFrame.totem:SetScript("OnMouseUp", function()
-		-- --print("here1")
-		-- if MouseIsOver(originalPlateFrame.totem) then
-			-- --print("here")
-			-- originalPlateFrame:Click(arg1)
-		-- end
-	-- end)
-	originalPlateFrame.totem:SetScript("OnMouseDown", function()
-		-- arg1 contains "LeftButton" or "RightButton"
+	originalPlateFrame.totem:SetScript("OnMouseUp", function()
+		kuiPlateFrame.lastMouseClickEvent = "OnMouseUp"
+		--print("here1")
 		if MouseIsOver(originalPlateFrame.totem) then
+			--print("here")
 			originalPlateFrame:Click(arg1)
+		end
+	end)
+	
+	kuiPlateFrame.health:SetScript("OnMouseDown", function()
+		kuiPlateFrame.lastMouseClickEvent = "OnMouseDown"
+		--print("here1")
+		if MouseIsOver(kuiPlateFrame.health) and arg1 == "RightButton" then
+			--print("here")
+			UPCoreDelayCall(
+				clickToMoveCameraDelay,
+				UnitPlatesStartMouselookingIfNoUpEvent,
+				kuiPlateFrame
+			)
+		end
+	end)
+	kuiPlateFrame.typeIcon:SetScript("OnMouseDown", function()
+		kuiPlateFrame.lastMouseClickEvent = "OnMouseDown"
+		--print("here1")
+		if MouseIsOver(kuiPlateFrame.typeIcon) and arg1 == "RightButton" then
+			--print("here")
+			UPCoreDelayCall(
+				clickToMoveCameraDelay,
+				UnitPlatesStartMouselookingIfNoUpEvent,
+				kuiPlateFrame
+			)
+		end
+	end)
+	kuiPlateFrame.power:SetScript("OnMouseDown", function()
+		kuiPlateFrame.lastMouseClickEvent = "OnMouseDown"
+		--print("here1")
+		if MouseIsOver(kuiPlateFrame.power) and arg1 == "RightButton" then
+			--print("here")
+			UPCoreDelayCall(
+				clickToMoveCameraDelay,
+				UnitPlatesStartMouselookingIfNoUpEvent,
+				kuiPlateFrame
+			)
+		end
+	end)
+	originalPlateFrame.totem:SetScript("OnMouseDown", function()
+		kuiPlateFrame.lastMouseClickEvent = "OnMouseDown"
+		-- arg1 contains "LeftButton" or "RightButton"
+		if MouseIsOver(originalPlateFrame.totem) and arg1 == "RightButton" then
+			UPCoreDelayCall(
+				clickToMoveCameraDelay,
+				UnitPlatesStartMouselookingIfNoUpEvent,
+				kuiPlateFrame
+			)
+			
+			-- local function UnitPlatesStartMouselookingIfNoUpEvent(kuiPlateFrame)
+				-- if kuiPlateFrame.lastMouseClickEvent == "OnMouseDown" then
+					-- MouselookStart()
+				-- end
+			-- end
+		
+			-- MouselookStart()
 			
 			--USE CUSTOM LOGIC LATER
 			-- if kuiPlateFrame and kuiPlateFrame.nameTextVariable then
@@ -2411,48 +2575,48 @@ local function InitFrame(originalPlateFrame)
 		end
 	end)
 	
-	kuiPlateFrame.health:SetScript("OnEnter", function()
-		--print("here1")
-		if kuiPlateFrame.guid then
-			SetMouseoverUnit(kuiPlateFrame.guid)
-		end
-	end)
-	kuiPlateFrame.typeIcon:SetScript("OnEnter", function()
-		--print("here1")
-		if kuiPlateFrame.guid then
-			SetMouseoverUnit(kuiPlateFrame.guid)
-		end
-	end)
-	kuiPlateFrame.power:SetScript("OnEnter", function()
-		--print("here1")
-		if kuiPlateFrame.guid then
-			SetMouseoverUnit(kuiPlateFrame.guid)
-		end
-	end)
-	originalPlateFrame.totem:SetScript("OnEnter", function()
-		--print("here1")
-		if kuiPlateFrame.guid then
-			SetMouseoverUnit(kuiPlateFrame.guid)
-		end
-	end)
+	-- kuiPlateFrame.health:SetScript("OnEnter", function()
+		-- --print("here1")
+		-- if kuiPlateFrame.guid then
+			-- SetMouseoverUnit(kuiPlateFrame.guid)
+		-- end
+	-- end)
+	-- kuiPlateFrame.typeIcon:SetScript("OnEnter", function()
+		-- --print("here1")
+		-- if kuiPlateFrame.guid then
+			-- SetMouseoverUnit(kuiPlateFrame.guid)
+		-- end
+	-- end)
+	-- kuiPlateFrame.power:SetScript("OnEnter", function()
+		-- --print("here1")
+		-- if kuiPlateFrame.guid then
+			-- SetMouseoverUnit(kuiPlateFrame.guid)
+		-- end
+	-- end)
+	-- originalPlateFrame.totem:SetScript("OnEnter", function()
+		-- --print("here1")
+		-- if kuiPlateFrame.guid then
+			-- SetMouseoverUnit(kuiPlateFrame.guid)
+		-- end
+	-- end)
 	
 	
-	kuiPlateFrame.health:SetScript("OnLeave", function()
-		--print("here1")
-		SetMouseoverUnit()
-	end)
-	kuiPlateFrame.typeIcon:SetScript("OnLeave", function()
-		--print("here1")
-		SetMouseoverUnit()
-	end)
-	kuiPlateFrame.power:SetScript("OnLeave", function()
-		--print("here1")
-		SetMouseoverUnit()
-	end)
-	originalPlateFrame.totem:SetScript("OnLeave", function()
-		--print("here1")
-		SetMouseoverUnit()
-	end)
+	-- kuiPlateFrame.health:SetScript("OnLeave", function()
+		-- --print("here1")
+		-- SetMouseoverUnit()
+	-- end)
+	-- kuiPlateFrame.typeIcon:SetScript("OnLeave", function()
+		-- --print("here1")
+		-- SetMouseoverUnit()
+	-- end)
+	-- kuiPlateFrame.power:SetScript("OnLeave", function()
+		-- --print("here1")
+		-- SetMouseoverUnit()
+	-- end)
+	-- originalPlateFrame.totem:SetScript("OnLeave", function()
+		-- --print("here1")
+		-- SetMouseoverUnit()
+	-- end)
 	------------------------------------------------------------ Finishing up --
 	-- addon:SendMessage("UnitPlates_PostCreate", kuiPlateFrame)
 	
@@ -2466,6 +2630,12 @@ local function InitFrame(originalPlateFrame)
 	end
 end
 -----------PLATE CREATION END
+
+function UnitPlatesStartMouselookingIfNoUpEvent(kuiPlateFrame)
+	if kuiPlateFrame.lastMouseClickEvent == "OnMouseDown" then
+		MouselookStart()
+	end
+end
 
 
 ---------------------------------------------------------------------- Events --

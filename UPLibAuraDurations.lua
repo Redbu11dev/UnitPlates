@@ -39,21 +39,6 @@ UPLibAuraDurationsByRank = {
   --mounts
   ['Riding Turtle']={[0]=-1,},
   
-  --general
-  ['Drink']={[0]=18,},
-  ['Food']={[0]=18,},
-  
-  ['Sayge\'s Dark Fortune of Agility']={[0]=7200,},
-  ['Sayge\'s Dark Fortune of Armor']={[0]=7200,},
-  ['Sayge\'s Dark Fortune of Damage']={[0]=7200,},
-  ['Sayge\'s Dark Fortune of Intelligence']={[0]=7200,},
-  ['Sayge\'s Dark Fortune of Resistance']={[0]=7200,},
-  ['Sayge\'s Dark Fortune of Spirit']={[0]=7200,},
-  ['Sayge\'s Dark Fortune of Stamina']={[0]=7200,},
-  ['Sayge\'s Dark Fortune of Strength']={[0]=7200,},
-  
-  ['Rallying Cry of the Dragonslayer']={[0]=7200.0,},
-  
   --warrior
   ['Battle Stance']={[0]=-1,},
   ['Berserker Stance']={[0]=-1,},
@@ -73,6 +58,21 @@ UPLibAuraDurationsByRank = {
   --finite auras
   --special pseudo-infinite
   ['Resurrection Sickness']={[0]=-1,},
+  
+  --general
+  ['Drink']={[0]=18,},
+  ['Food']={[0]=18,},
+  
+  ['Sayge\'s Dark Fortune of Agility']={[0]=7200,},
+  ['Sayge\'s Dark Fortune of Armor']={[0]=7200,},
+  ['Sayge\'s Dark Fortune of Damage']={[0]=7200,},
+  ['Sayge\'s Dark Fortune of Intelligence']={[0]=7200,},
+  ['Sayge\'s Dark Fortune of Resistance']={[0]=7200,},
+  ['Sayge\'s Dark Fortune of Spirit']={[0]=7200,},
+  ['Sayge\'s Dark Fortune of Stamina']={[0]=7200,},
+  ['Sayge\'s Dark Fortune of Strength']={[0]=7200,},
+  
+  ['Rallying Cry of the Dragonslayer']={[0]=7200.0,},
   
   --paladin
   ['Blessing of Freedom']={[0]=10.0,},
@@ -104,7 +104,7 @@ UPLibAuraDurationsByRank = {
   ['Judgement of Justice']={[0]=10.0,},
   ['Judgement of Light']={[0]=10.0,},
   ['Judgement of Wisdom']={[0]=10.0,},
-  ['Judgement of the Crusader']={[0]=10.0,},
+  ['Judgement of the Crusader']={[0]=1.0,},
   
   --warrior
   ['Battle Shout']={[0]=120.0,}, --!DURATION DEPENDS ON TALENTS
@@ -124,6 +124,7 @@ UPLibAuraDurationsByRank = {
   ['Frost Armor']={[0]=1800.0,[1]=1800.0,[2]=1800.0,[3]=1800.0,},
   
   --priest
+  ['Proudmoore\'s Defense']={[0]=1800.0,},
   ['Power Word: Fortitude']={[0]=1800.0,},
   
   
