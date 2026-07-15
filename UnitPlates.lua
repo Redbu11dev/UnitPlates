@@ -4,27 +4,27 @@ UnitPlatesElapsedTimeSinceFullyLoaded = 0
 UnitPlatesLoadDelay = 0
 UnitPlatesConstantsInitialized = false
 
-local UnitPlatesMouselookCatcher = CreateFrame("Button", "UnitPlatesMouselookCatcher", UIParent)
-UnitPlatesMouselookCatcher:SetAllPoints(UIParent)
-UnitPlatesMouselookCatcher:SetFrameStrata("TOOLTIP") -- Ensures it sits above all other UI elements
-UnitPlatesMouselookCatcher:EnableMouse(true)
-UnitPlatesMouselookCatcher:Hide()
+-- local UnitPlatesMouselookCatcher = CreateFrame("Button", "UnitPlatesMouselookCatcher", UIParent)
+-- UnitPlatesMouselookCatcher:SetAllPoints(UIParent)
+-- UnitPlatesMouselookCatcher:SetFrameStrata("TOOLTIP") -- Ensures it sits above all other UI elements
+-- UnitPlatesMouselookCatcher:EnableMouse(true)
+-- UnitPlatesMouselookCatcher:Hide()
 
-UnitPlatesMouselookCatcher:SetScript("OnMouseDown", function()
-	print("UnitPlatesMouselookCatcher:SetScript(OnMouseDown, function()")
-    -- if IsMouselooking() then
-        -- MouselookStop()
-    -- end
-    -- UnitPlatesMouselookCatcher:Hide() -- Hide the catcher immediately to restore normal UI interaction
-end)
+-- UnitPlatesMouselookCatcher:SetScript("OnMouseDown", function()
+	-- print("UnitPlatesMouselookCatcher:SetScript(OnMouseDown, function()")
+    -- -- if IsMouselooking() then
+        -- -- MouselookStop()
+    -- -- end
+    -- -- UnitPlatesMouselookCatcher:Hide() -- Hide the catcher immediately to restore normal UI interaction
+-- end)
 
-UnitPlatesMouselookCatcher:SetScript("OnMouseUp", function()
-	print("UnitPlatesMouselookCatcher:SetScript(OnMouseUp, function()")
-    -- if IsMouselooking() then
-        -- MouselookStop()
-    -- end
-    -- UnitPlatesMouselookCatcher:Hide() -- Hide the catcher immediately to restore normal UI interaction
-end)
+-- UnitPlatesMouselookCatcher:SetScript("OnMouseUp", function()
+	-- print("UnitPlatesMouselookCatcher:SetScript(OnMouseUp, function()")
+    -- -- if IsMouselooking() then
+        -- -- MouselookStop()
+    -- -- end
+    -- -- UnitPlatesMouselookCatcher:Hide() -- Hide the catcher immediately to restore normal UI interaction
+-- end)
 
 ---------------------------CONSTANTS
 
