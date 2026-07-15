@@ -14,7 +14,6 @@ Configuration window - /up or /unitplates (or click the minimap button)
 
 TODO list:
 - More buffs/debuffs and correct(mostly) aura durations data (can only show as much as there are in local library, but the library is based on shaguplates - so at the very least no less than shaguplates can show). Please report incorrect durations found, also not all auras may be present.
-- Implement mouselook clickthrough
 - More range indicators?
 - Did not bother with critter nameplates yet (just turn them off in UnitXP-SP3 for now, and it will be preferable mostly anyways)
 - Maybe add something complex with threat, like showing threat percentage, but it would be super difficult to do, not sure if I will be able to (I could probably do TWThreat, but beyound that - there is no accurate data)
