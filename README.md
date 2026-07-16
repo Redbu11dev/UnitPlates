@@ -5,6 +5,8 @@ Continuation of https://github.com/Redbu11dev/ShaguPlates-extra (Complete rewrit
 
 REQUIRES SUPERWOW https://github.com/balakethelock/SuperWoW (and preferably UnitXP-SP3 https://codeberg.org/konaka/UnitXP_SP3/releases) 
 
+(!) If you are using ShatuTweaks - Make sure to disable "Nameplate scale" in advanced settings (and any other napeplate setting that you may have) (!)
+
 (!) Rename folder to "UnitPlates" (!)
 
 (!) I do not and do not plan to support non-english locales (!)
