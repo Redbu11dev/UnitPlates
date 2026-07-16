@@ -1047,6 +1047,15 @@ local function OnFrameUpdate(originalPlateFrame, e)
 	kuiPlateFrame.aurasUpdateElapsed = kuiPlateFrame.aurasUpdateElapsed - e
 	kuiPlateFrame.clickElapsed = kuiPlateFrame.clickElapsed - e
 	
+	--ensure mouse enabled
+	if (not IsMouselooking()) then
+		--to allow recovery from clickthrough
+		-- kuiPlateFrame.health:EnableMouse(true)
+		-- kuiPlateFrame.typeIcon:EnableMouse(true)
+		-- kuiPlateFrame.power:EnableMouse(true)
+		-- originalPlateFrame.totem:EnableMouse(true)
+	end
+	
 	------------------------------------------------------------------- Alpha --
 	kuiPlateFrame.defaultAlpha = originalPlateFrame:GetAlpha()
 	kuiPlateFrame.currentAlpha = 1
@@ -1132,7 +1141,7 @@ local function OnFrameUpdate(originalPlateFrame, e)
 	-- end
 	
 	-- SetMouseoverUnit()
-	if MouseIsOver(kuiPlateFrame.health) or MouseIsOver(kuiPlateFrame.typeIcon) or MouseIsOver(kuiPlateFrame.power) or MouseIsOver(originalPlateFrame.totem) then
+	if (not IsMouselooking()) and (MouseIsOver(kuiPlateFrame.health) or MouseIsOver(kuiPlateFrame.typeIcon) or MouseIsOver(kuiPlateFrame.power) or MouseIsOver(originalPlateFrame.totem)) then
 		-- UnitPlatesMouselookCatcher:Show()
 	
 		kuiPlateFrame.originalPlateFrame.isInMouseOver = true
@@ -1149,11 +1158,9 @@ local function OnFrameUpdate(originalPlateFrame, e)
 			--set right click attack action?
 		end
 		
-		GameTooltip_SetDefaultAnchor(GameTooltip, UIParent)
-		GameTooltip:SetUnit(kuiPlateFrame.guid)
-		GameTooltip:Show()
-		
-		
+		-- GameTooltip_SetDefaultAnchor(GameTooltip, UIParent)
+		-- GameTooltip:SetUnit(kuiPlateFrame.guid)
+		-- GameTooltip:Show()		
 	else
 		-- --SetMouseoverUnit()
 		if not kuiPlateFrame.originalPlateFrame.isMouseover3dModel then
@@ -2510,7 +2517,15 @@ local function InitFrame(originalPlateFrame)
 	
 	kuiPlateFrame.health:SetScript("OnMouseDown", function()
 		kuiPlateFrame.lastMouseClickEvent = "OnMouseDown"
+		-- CameraOrSelectOrMoveStart()
+		-- MouselookStart()
+		--CameraOrSelectOrMoveStart()
 		--print("here1")
+		-- UPCoreDelayCall(
+				-- clickToMoveCameraDelay,
+				-- UnitPlatesStartMouselookingIfNoUpEvent,
+				-- kuiPlateFrame
+			-- )
 		if MouseIsOver(kuiPlateFrame.health) and arg1 == "RightButton" then
 			--print("here")
 			UPCoreDelayCall(
@@ -2575,48 +2590,48 @@ local function InitFrame(originalPlateFrame)
 		end
 	end)
 	
-	-- kuiPlateFrame.health:SetScript("OnEnter", function()
-		-- --print("here1")
-		-- if kuiPlateFrame.guid then
-			-- SetMouseoverUnit(kuiPlateFrame.guid)
-		-- end
-	-- end)
-	-- kuiPlateFrame.typeIcon:SetScript("OnEnter", function()
-		-- --print("here1")
-		-- if kuiPlateFrame.guid then
-			-- SetMouseoverUnit(kuiPlateFrame.guid)
-		-- end
-	-- end)
-	-- kuiPlateFrame.power:SetScript("OnEnter", function()
-		-- --print("here1")
-		-- if kuiPlateFrame.guid then
-			-- SetMouseoverUnit(kuiPlateFrame.guid)
-		-- end
-	-- end)
-	-- originalPlateFrame.totem:SetScript("OnEnter", function()
-		-- --print("here1")
-		-- if kuiPlateFrame.guid then
-			-- SetMouseoverUnit(kuiPlateFrame.guid)
-		-- end
-	-- end)
+	kuiPlateFrame.health:SetScript("OnEnter", function()
+		--print("here1")
+		if (not IsMouselooking()) and kuiPlateFrame.guid then
+			SetMouseoverUnit(kuiPlateFrame.guid)
+		end
+	end)
+	kuiPlateFrame.typeIcon:SetScript("OnEnter", function()
+		--print("here1")
+		if (not IsMouselooking()) and kuiPlateFrame.guid then
+			SetMouseoverUnit(kuiPlateFrame.guid)
+		end
+	end)
+	kuiPlateFrame.power:SetScript("OnEnter", function()
+		--print("here1")
+		if (not IsMouselooking()) and kuiPlateFrame.guid then
+			SetMouseoverUnit(kuiPlateFrame.guid)
+		end
+	end)
+	originalPlateFrame.totem:SetScript("OnEnter", function()
+		--print("here1")
+		if (not IsMouselooking()) and kuiPlateFrame.guid then
+			SetMouseoverUnit(kuiPlateFrame.guid)
+		end
+	end)
 	
 	
-	-- kuiPlateFrame.health:SetScript("OnLeave", function()
-		-- --print("here1")
-		-- SetMouseoverUnit()
-	-- end)
-	-- kuiPlateFrame.typeIcon:SetScript("OnLeave", function()
-		-- --print("here1")
-		-- SetMouseoverUnit()
-	-- end)
-	-- kuiPlateFrame.power:SetScript("OnLeave", function()
-		-- --print("here1")
-		-- SetMouseoverUnit()
-	-- end)
-	-- originalPlateFrame.totem:SetScript("OnLeave", function()
-		-- --print("here1")
-		-- SetMouseoverUnit()
-	-- end)
+	kuiPlateFrame.health:SetScript("OnLeave", function()
+		--print("here1")
+		SetMouseoverUnit()
+	end)
+	kuiPlateFrame.typeIcon:SetScript("OnLeave", function()
+		--print("here1")
+		SetMouseoverUnit()
+	end)
+	kuiPlateFrame.power:SetScript("OnLeave", function()
+		--print("here1")
+		SetMouseoverUnit()
+	end)
+	originalPlateFrame.totem:SetScript("OnLeave", function()
+		--print("here1")
+		SetMouseoverUnit()
+	end)
 	------------------------------------------------------------ Finishing up --
 	-- addon:SendMessage("UnitPlates_PostCreate", kuiPlateFrame)
 	
@@ -2631,9 +2646,42 @@ local function InitFrame(originalPlateFrame)
 end
 -----------PLATE CREATION END
 
+-- local myFrame = CreateFrame("Frame", "MyMouselookButton", UIParent)
+-- -- myFrame:SetWidth(50)
+-- -- myFrame:SetHeight(50)
+-- -- myFrame:SetPoint("CENTER", 0, 0)
+-- myFrame:SetAllPoints(UIParent)
+-- -- myFrame:RegisterForClicks("LeftButtonDown", "LeftButtonUp")
+-- myFrame:SetFrameStrata("LOW")
+-- --myFrame:SetAlpha(0)
+-- myFrame:EnableMouse(1)
+
+-- myFrame:SetScript("OnMouseDown", function()
+	-- print("OnMouseDown")
+    -- -- if arg1 == "LeftButton" then
+        -- -- MouselookStart()
+    -- -- end
+-- end)
+
+-- myFrame:SetScript("OnMouseUp", function()
+	-- print("OnMouseUp")
+    -- -- Explicitly stop mouselook when LMB is released
+    -- -- if arg1 == "LeftButton" and IsMouselooking() then
+        -- -- MouselookStop()
+    -- -- end
+-- end)
+
 function UnitPlatesStartMouselookingIfNoUpEvent(kuiPlateFrame)
 	if kuiPlateFrame.lastMouseClickEvent == "OnMouseDown" then
 		MouselookStart()
+		SetMouseoverUnit()
+		-- CameraOrSelectOrMoveStart()
+		-- kuiPlateFrame.health:EnableMouse(false)
+		-- kuiPlateFrame.typeIcon:EnableMouse(false)
+		-- kuiPlateFrame.power:EnableMouse(false)
+		-- kuiPlateFrame.originalPlateFrame.totem:EnableMouse(false)
+		--MouselookStop()
+		-- kuiPlateFrame:Hide()
 	end
 end
 

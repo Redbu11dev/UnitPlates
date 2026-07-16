@@ -122,6 +122,7 @@ UPLibAuraDurationsByRank = {
   ['Frost Nova']={[0]=8.0,[1]=8.0,[2]=8.0,[3]=8.0,[4]=8.0,}, --!DURATION DEPENDS ON TALENTS?
   ['Cone of Cold']={[0]=8.0,[1]=8.0,[2]=8.0,[3]=8.0,[4]=8.0,[5]=8.0,}, --!DURATION DEPENDS ON TALENTS
   ['Frost Armor']={[0]=1800.0,[1]=1800.0,[2]=1800.0,[3]=1800.0,},
+  ['Mage Armor']={[0]=1800.0,[1]=1800.0,[2]=1800.0,[3]=1800.0,},
   
   --priest
   ['Proudmoore\'s Defense']={[0]=1800.0,},
