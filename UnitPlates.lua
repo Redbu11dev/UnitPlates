@@ -54,7 +54,7 @@ end
 
 local slowUpdateTime, critUpdateTime, aurasUnitUpdateTime = 0.1, 0.01, 0.2
 
-local clickToMoveCameraDelay = 0.11
+local rightClickSimulationDelay = 0.15
 
 --SIZES
 --make all sizes relative to UPConstants.nameplateHealthBarHeight
@@ -1169,6 +1169,17 @@ local function OnFrameUpdate(originalPlateFrame, e)
 		
 		-- UnitPlatesMouselookCatcher:Hide()
 	end
+	
+	-- CustomNameplatesUpdateClickHandler(kuiPlateFrame.health, kuiPlateFrame.originalPlateFrame)
+	
+	--if less than 0.5 passed and NOT mouse is looking and mouse is over (and also did not leave the frame?)
+	--then execute click
+	
+	if (GetTime() - kuiPlateFrame.originalPlateFrame.rightClickStartTime <= rightClickSimulationDelay) 
+		and (not IsMouselooking()) 
+		and (MouseIsOver(kuiPlateFrame.health) or MouseIsOver(kuiPlateFrame.typeIcon) or MouseIsOver(kuiPlateFrame.power) or MouseIsOver(originalPlateFrame.totem)) then
+		originalPlateFrame:Click("RightButton")
+	end
 end
 
 -----------PLATE CREATION
@@ -1187,6 +1198,8 @@ local function InitFrame(originalPlateFrame)
 	-- container for kui objects!
 	originalPlateFrame.kui = CreateFrame("Frame", nil, originalPlateFrame)
 	local kuiPlateFrame = originalPlateFrame.kui
+	
+	originalPlateFrame.rightClickStartTime = 0
 
 	kuiPlateFrame.fontObjects = {}
 
@@ -2480,7 +2493,7 @@ local function InitFrame(originalPlateFrame)
 	kuiPlateFrame.power:EnableMouse(true)
 	originalPlateFrame.totem:EnableMouse(true)
 	
-	-- kuiPlateFrame.lastMouseClickEvent = ""
+	kuiPlateFrame.lastMouseClickEvent = ""
 	
 	kuiPlateFrame.health:SetScript("OnMouseUp", function()
 		kuiPlateFrame.lastMouseClickEvent = "OnMouseUp"
@@ -2517,76 +2530,35 @@ local function InitFrame(originalPlateFrame)
 	
 	kuiPlateFrame.health:SetScript("OnMouseDown", function()
 		kuiPlateFrame.lastMouseClickEvent = "OnMouseDown"
-		-- CameraOrSelectOrMoveStart()
-		-- MouselookStart()
-		--CameraOrSelectOrMoveStart()
-		--print("here1")
-		-- UPCoreDelayCall(
-				-- clickToMoveCameraDelay,
-				-- UnitPlatesStartMouselookingIfNoUpEvent,
-				-- kuiPlateFrame
-			-- )
 		if MouseIsOver(kuiPlateFrame.health) and arg1 == "RightButton" then
-			--print("here")
-			UPCoreDelayCall(
-				clickToMoveCameraDelay,
-				UnitPlatesStartMouselookingIfNoUpEvent,
-				kuiPlateFrame
-			)
+			MouselookStart()
+			SetMouseoverUnit()			
+			originalPlateFrame.rightClickStartTime = GetTime()
 		end
 	end)
 	kuiPlateFrame.typeIcon:SetScript("OnMouseDown", function()
 		kuiPlateFrame.lastMouseClickEvent = "OnMouseDown"
-		--print("here1")
 		if MouseIsOver(kuiPlateFrame.typeIcon) and arg1 == "RightButton" then
-			--print("here")
-			UPCoreDelayCall(
-				clickToMoveCameraDelay,
-				UnitPlatesStartMouselookingIfNoUpEvent,
-				kuiPlateFrame
-			)
+			MouselookStart()
+			SetMouseoverUnit()			
+			originalPlateFrame.rightClickStartTime = GetTime()
 		end
 	end)
 	kuiPlateFrame.power:SetScript("OnMouseDown", function()
 		kuiPlateFrame.lastMouseClickEvent = "OnMouseDown"
-		--print("here1")
 		if MouseIsOver(kuiPlateFrame.power) and arg1 == "RightButton" then
-			--print("here")
-			UPCoreDelayCall(
-				clickToMoveCameraDelay,
-				UnitPlatesStartMouselookingIfNoUpEvent,
-				kuiPlateFrame
-			)
+			MouselookStart()
+			SetMouseoverUnit()			
+			originalPlateFrame.rightClickStartTime = GetTime()
 		end
 	end)
 	originalPlateFrame.totem:SetScript("OnMouseDown", function()
 		kuiPlateFrame.lastMouseClickEvent = "OnMouseDown"
 		-- arg1 contains "LeftButton" or "RightButton"
 		if MouseIsOver(originalPlateFrame.totem) and arg1 == "RightButton" then
-			UPCoreDelayCall(
-				clickToMoveCameraDelay,
-				UnitPlatesStartMouselookingIfNoUpEvent,
-				kuiPlateFrame
-			)
-			
-			-- local function UnitPlatesStartMouselookingIfNoUpEvent(kuiPlateFrame)
-				-- if kuiPlateFrame.lastMouseClickEvent == "OnMouseDown" then
-					-- MouselookStart()
-				-- end
-			-- end
-		
-			-- MouselookStart()
-			
-			--USE CUSTOM LOGIC LATER
-			-- if kuiPlateFrame and kuiPlateFrame.nameTextVariable then
-				-- -- Force selection via the target system instantly
-				-- TargetByName(kuiPlateFrame.nameTextVariable, true)
-				
-				-- -- If right-clicking, start attacking/auto-shotting immediately
-				-- if arg1 == "RightButton" then
-					-- AttackTarget()
-				-- end
-			-- end
+			MouselookStart()
+			SetMouseoverUnit()			
+			originalPlateFrame.rightClickStartTime = GetTime()
 		end
 	end)
 	
@@ -2645,45 +2617,6 @@ local function InitFrame(originalPlateFrame)
 	end
 end
 -----------PLATE CREATION END
-
--- local myFrame = CreateFrame("Frame", "MyMouselookButton", UIParent)
--- -- myFrame:SetWidth(50)
--- -- myFrame:SetHeight(50)
--- -- myFrame:SetPoint("CENTER", 0, 0)
--- myFrame:SetAllPoints(UIParent)
--- -- myFrame:RegisterForClicks("LeftButtonDown", "LeftButtonUp")
--- myFrame:SetFrameStrata("LOW")
--- --myFrame:SetAlpha(0)
--- myFrame:EnableMouse(1)
-
--- myFrame:SetScript("OnMouseDown", function()
-	-- print("OnMouseDown")
-    -- -- if arg1 == "LeftButton" then
-        -- -- MouselookStart()
-    -- -- end
--- end)
-
--- myFrame:SetScript("OnMouseUp", function()
-	-- print("OnMouseUp")
-    -- -- Explicitly stop mouselook when LMB is released
-    -- -- if arg1 == "LeftButton" and IsMouselooking() then
-        -- -- MouselookStop()
-    -- -- end
--- end)
-
-function UnitPlatesStartMouselookingIfNoUpEvent(kuiPlateFrame)
-	if kuiPlateFrame.lastMouseClickEvent == "OnMouseDown" then
-		MouselookStart()
-		SetMouseoverUnit()
-		-- CameraOrSelectOrMoveStart()
-		-- kuiPlateFrame.health:EnableMouse(false)
-		-- kuiPlateFrame.typeIcon:EnableMouse(false)
-		-- kuiPlateFrame.power:EnableMouse(false)
-		-- kuiPlateFrame.originalPlateFrame.totem:EnableMouse(false)
-		--MouselookStop()
-		-- kuiPlateFrame:Hide()
-	end
-end
 
 
 ---------------------------------------------------------------------- Events --
