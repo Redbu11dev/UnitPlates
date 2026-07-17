@@ -83,9 +83,9 @@ local function InitUPConstants()
 
 	UPConstants.questIconSize = UPConstants.nameplateHealthBarHeight * 1.1
 
-	UPConstants.petHappinessIconSize = UPConstants.nameplateHealthBarHeight * 1.4
+	UPConstants.petHappinessIconSize = UPConstants.nameplateHealthBarHeight * 1.1
 
-	UPConstants.combatIconSize = UPConstants.nameplateHealthBarHeight * 1.4
+	UPConstants.combatIconSize = UPConstants.nameplateHealthBarHeight * 1.1
 
 	UPConstants.shootingIconSize = UPConstants.nameplateHealthBarHeight * 0.9
 	
@@ -1742,8 +1742,8 @@ local function InitFrame(originalPlateFrame)
 	kuiPlateFrame.petHappiness = CreateFrame("Frame", nil, kuiPlateFrame)
 	kuiPlateFrame.petHappiness:SetFrameLevel(0)
 	kuiPlateFrame.petHappiness:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", -0, 0)
-	kuiPlateFrame.petHappiness:SetHeight(20)
-	kuiPlateFrame.petHappiness:SetWidth(20)
+	kuiPlateFrame.petHappiness:SetHeight(UPConstants.petHappinessIconSize)
+	kuiPlateFrame.petHappiness:SetWidth(UPConstants.petHappinessIconSize)
 	kuiPlateFrame.petHappiness.icon = kuiPlateFrame.petHappiness:CreateTexture(nil, "OVERLAY")
 	--kuiPlateFrame.rarityIconR.icon:SetTexCoord(1, 0, 0, 1)
 	--kuiPlateFrame.combatIcon.icon:SetVertexColor(1, 1, 0, 1)
@@ -2899,7 +2899,7 @@ UnitPlatesMainFrame:SetScript("OnUpdate", function()
 			end
 			
 			if kuiPlateFrame.pvpIcon then
-				kuiPlateFrame.pvpIcon:SetFrameLevel(targetLevel + 6)
+				kuiPlateFrame.pvpIcon:SetFrameLevel(targetLevel + 5)
 			end
 			
 			if kuiPlateFrame.combopoints then
