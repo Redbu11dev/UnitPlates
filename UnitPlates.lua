@@ -88,6 +88,8 @@ local function InitUPConstants()
 	UPConstants.combatIconSize = UPConstants.nameplateHealthBarHeight * 1.4
 
 	UPConstants.shootingIconSize = UPConstants.nameplateHealthBarHeight * 0.9
+	
+	UPConstants.pvpIconSize = UPConstants.nameplateHealthBarHeight * 1.5
 
 	UPConstants.nameplateTypeIconSize = UPConstants.nameplateHealthBarHeight
 	UPConstants.nameplateClassIconSize = UPConstants.nameplateHealthBarHeight * 1.25
@@ -493,13 +495,17 @@ local function UpdatePlate(kuiPlateFrame)
 	end
 	--RARITY END
 	
-	--combat icon
-	if kuiPlateFrame.isInCombat then
-		kuiPlateFrame.combatIcon:Show()
+	if UnitIsPVP(kuiPlateFrame.guid) then
+		local factionGroup = UnitFactionGroup(kuiPlateFrame.guid)
+		if factionGroup then
+			kuiPlateFrame.pvpIcon.icon:SetTexture("Interface\\TargetingFrame\\UI-PVP-"..factionGroup)
+			kuiPlateFrame.pvpIcon:Show()
+		else
+			kuiPlateFrame.pvpIcon:Hide()
+		end
 	else
-		kuiPlateFrame.combatIcon:Hide()
+		kuiPlateFrame.pvpIcon:Hide()
 	end
-	--
 	
 	--pet happiness
 	if (myPlayerHasPetUI and myPlayerPetIsHunterPet and kuiPlateFrame.guildTextVariable and string.find(kuiPlateFrame.guildTextVariable, UnitName("player").."'s Pet")) then
@@ -507,11 +513,11 @@ local function UpdatePlate(kuiPlateFrame)
 		
 		if (petHappiness == 1) then
 			kuiPlateFrame.petHappiness.icon:SetTexCoord(0.375, 0.5625, 0, 0.359375)
-			kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.petHappiness, "RIGHT", -0, -0)
+			-- kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.petHappiness, "RIGHT", -0, -0)
 			kuiPlateFrame.petHappiness:Show()
 		elseif (petHappiness == 2) then
 			kuiPlateFrame.petHappiness.icon:SetTexCoord(0.1875, 0.375, 0, 0.359375)
-			kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.petHappiness, "RIGHT", -0, -0)
+			-- kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.petHappiness, "RIGHT", -0, -0)
 			kuiPlateFrame.petHappiness:Show()
 		elseif (petHappiness == 3) then
 			-- kuiPlateFrame.petHappiness.icon:SetTexCoord(0, 0.1875, 0, 0.359375)
@@ -523,6 +529,41 @@ local function UpdatePlate(kuiPlateFrame)
 		kuiPlateFrame.petHappiness:Hide()
 	end
 	--pet happiness end
+	-- kuiPlateFrame.petHappiness.icon:SetTexCoord(0.1875, 0.375, 0, 0.359375)
+	-- kuiPlateFrame.petHappiness:Show()
+	
+	--combat icon
+	if kuiPlateFrame.isInCombat then
+		kuiPlateFrame.combatIcon:Show()
+	else
+		kuiPlateFrame.combatIcon:Hide()
+	end
+	--
+	-- kuiPlateFrame.combatIcon:Show()
+	
+	--icon positions
+	if kuiPlateFrame.pvpIcon:IsShown() then		
+		if kuiPlateFrame.petHappiness:IsShown() then
+			--pvpIcon/petHappiness/combatIcon
+			kuiPlateFrame.pvpIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", -UPConstants.pvpIconSize * 0.0, -UPConstants.pvpIconSize/4.5)
+			kuiPlateFrame.petHappiness:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", ((2 * UPConstants.minimalOnePixel)+(UPConstants.pvpIconSize/1.8)), 0)
+			kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.petHappiness, "RIGHT", -0, -0)
+		else
+			--pvpIcon/combatIcon
+			kuiPlateFrame.pvpIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", -UPConstants.pvpIconSize * 0.0, -UPConstants.pvpIconSize/4.5)
+			kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", ((2 * UPConstants.minimalOnePixel)+(UPConstants.pvpIconSize/1.8)), -0)
+		end
+	else
+		if kuiPlateFrame.petHappiness:IsShown() then
+			--petHappiness/combatIcon
+			kuiPlateFrame.petHappiness:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", -0, 0)
+			kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.petHappiness, "RIGHT", -0, -0)
+		else
+			--only combat icon
+			kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", -2 * UPConstants.minimalOnePixel, -0)
+		end
+	end
+	--icon positions end
 	
 	--healthbar with
 	if kuiPlateFrame.isTrivial then
@@ -1562,9 +1603,6 @@ local function InitFrame(originalPlateFrame)
 	
 	
 	
-	
-	
-	
 	-- kuiPlateFrame.levelFrame = CreateFrame("Frame", nil, kuiPlateFrame)
 	-- kuiPlateFrame.levelFrame:SetFrameLevel(2) -- Bumped to match health bar level logic
 	-- -- kuiPlateFrame.levelFrame:SetPoint("TOPRIGHT", kuiPlateFrame.typeIcon, "TOPLEFT", 0, 0)
@@ -1733,7 +1771,19 @@ local function InitFrame(originalPlateFrame)
 	kuiPlateFrame.shootingIcon.icon:SetAllPoints()
 	kuiPlateFrame.shootingIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\combat\\arrow_target_1_32")
 	kuiPlateFrame.shootingIcon.icon:SetDrawLayer("ARTWORK", 2)
-	kuiPlateFrame.shootingIcon:Hide()	
+	kuiPlateFrame.shootingIcon:Hide()
+	
+	kuiPlateFrame.pvpIcon = CreateFrame("Frame", nil, kuiPlateFrame)
+	kuiPlateFrame.pvpIcon:SetFrameLevel(3)
+	kuiPlateFrame.pvpIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", -UPConstants.pvpIconSize/15, -UPConstants.pvpIconSize/4.5)
+	--kuiPlateFrame.shootingIcon:SetPoint("LEFT", kuiPlateFrame.health, "RIGHT", -0, -0)
+	kuiPlateFrame.pvpIcon:SetHeight(UPConstants.pvpIconSize)
+	kuiPlateFrame.pvpIcon:SetWidth(UPConstants.pvpIconSize)
+	kuiPlateFrame.pvpIcon.icon = kuiPlateFrame.pvpIcon:CreateTexture(nil, "ARTWORK")
+	kuiPlateFrame.pvpIcon.icon:SetAllPoints()
+	kuiPlateFrame.pvpIcon.icon:SetTexture("Interface\\TargetingFrame\\UI-PVP-"..UnitFactionGroup("player"))
+	kuiPlateFrame.pvpIcon.icon:SetDrawLayer("ARTWORK", 2)
+	kuiPlateFrame.pvpIcon:Show()	
 	
 	
 	
@@ -2846,6 +2896,10 @@ UnitPlatesMainFrame:SetScript("OnUpdate", function()
 			
 			if kuiPlateFrame.shootingIcon then
 				kuiPlateFrame.shootingIcon:SetFrameLevel(targetLevel + 5)
+			end
+			
+			if kuiPlateFrame.pvpIcon then
+				kuiPlateFrame.pvpIcon:SetFrameLevel(targetLevel + 6)
 			end
 			
 			if kuiPlateFrame.combopoints then
