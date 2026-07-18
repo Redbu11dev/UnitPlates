@@ -28,6 +28,8 @@ Features:
 - Elite dragons on the sides
 - Player race icons
 - Player class icons
+- PVP flag indicator
+- Hunter pet happines indicator (only for your own pet, and only if not happy)
 - "in combat" indicator on an NPC/player nameplate
 - Totem icons
 - Combo points
@@ -35,7 +37,6 @@ Features:
 - Buffs/Debuffs (auras)
 - Shooting range indicator (works only if you have "Auto Shot" or "Throw" or "Shoot Bow" or "Shoot Gun" or "Shoot Crossbow" or "Shoot" somewhere on the action bars), will check against first found action on the action bars, in that order
 - "Tapped" state indicator - when an NPC is tapped by another player (when the kill would not be yours - when you get no loot or xp for killing it)
-- Hunter pet happines indicator (only for your own pet, and only if not happy)
 - Indicates if a mob is attacking you (the mob name becomes red, the health statusbar changes color to brighter red and changes texture)
 - Party/raid colors - party and raid members will have different healthbar and name/guild text colors
 - 
