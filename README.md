@@ -28,6 +28,7 @@ Features:
 - Elite dragons on the sides
 - Player race icons
 - Player class icons
+- Right clicking a nameplate allows moving camera
 - PVP flag indicator
 - Hunter pet happines indicator (only for your own pet, and only if not happy)
 - "in combat" indicator on an NPC/player nameplate
