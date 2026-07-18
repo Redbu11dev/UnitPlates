@@ -507,6 +507,13 @@ local function UpdatePlate(kuiPlateFrame)
 		kuiPlateFrame.pvpIcon:Hide()
 	end
 	
+	--hide pvp icon for your own pet/minion
+	if kuiPlateFrame.isPet
+		and kuiPlateFrame.guildTextVariable
+		and (string.find(kuiPlateFrame.guildTextVariable, UnitName("player").."'s Pet")) then
+		kuiPlateFrame.pvpIcon:Hide()
+	end
+	
 	--pet happiness
 	if (myPlayerHasPetUI and myPlayerPetIsHunterPet and kuiPlateFrame.guildTextVariable and string.find(kuiPlateFrame.guildTextVariable, UnitName("player").."'s Pet")) then
 		local petHappiness, petDamagePercentage, petLoyaltyRate = GetPetHappiness()
