@@ -85,11 +85,11 @@ local function InitUPConstants()
 
 	UPConstants.petHappinessIconSize = UPConstants.nameplateHealthBarHeight * 1.1
 
-	UPConstants.combatIconSize = UPConstants.nameplateHealthBarHeight * 1.1
+	UPConstants.combatIconSize = UPConstants.nameplateHealthBarHeight * 1.4
 
 	UPConstants.shootingIconSize = UPConstants.nameplateHealthBarHeight * 0.9
 	
-	UPConstants.pvpIconSize = UPConstants.nameplateHealthBarHeight * 1.5
+	UPConstants.pvpIconSize = UPConstants.nameplateHealthBarHeight * 1.8
 
 	UPConstants.nameplateTypeIconSize = UPConstants.nameplateHealthBarHeight
 	UPConstants.nameplateClassIconSize = UPConstants.nameplateHealthBarHeight * 1.25
@@ -513,6 +513,7 @@ local function UpdatePlate(kuiPlateFrame)
 		and (string.find(kuiPlateFrame.guildTextVariable, UnitName("player").."'s Pet")) then
 		kuiPlateFrame.pvpIcon:Hide()
 	end
+	-- kuiPlateFrame.pvpIcon:Show()
 	
 	--pet happiness
 	if (myPlayerHasPetUI and myPlayerPetIsHunterPet and kuiPlateFrame.guildTextVariable and string.find(kuiPlateFrame.guildTextVariable, UnitName("player").."'s Pet")) then
@@ -1765,7 +1766,9 @@ local function InitFrame(originalPlateFrame)
 	kuiPlateFrame.combatIcon:SetWidth(UPConstants.combatIconSize)
 	kuiPlateFrame.combatIcon.icon = kuiPlateFrame.combatIcon:CreateTexture(nil, "OVERLAY")
 	kuiPlateFrame.combatIcon.icon:SetAllPoints()
-	kuiPlateFrame.combatIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\combat\\swords_combat_2")
+	-- kuiPlateFrame.combatIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\combat\\swords_combat_2")
+	kuiPlateFrame.combatIcon.icon:SetTexture("Interface\\CharacterFrame\\UI-StateIcon")
+	kuiPlateFrame.combatIcon.icon:SetTexCoord(0.5, 1.0, 0.0, 0.5)
 	kuiPlateFrame.combatIcon:Hide()	
 	
 	kuiPlateFrame.shootingIcon = CreateFrame("Frame", nil, kuiPlateFrame)
