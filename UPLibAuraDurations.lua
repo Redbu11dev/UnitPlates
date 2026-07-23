@@ -39,6 +39,16 @@ UPLibAuraDurationsByRank = {
   --mounts
   ['Riding Turtle']={[0]=-1,},
   ['Summon Charger']={[0]=-1,},
+  ['Black Pounder']={[0]=-1,},
+  ['White Stallion']={[0]=-1,},
+  ['Black Stallion']={[0]=-1,},
+  ['Admiral Grumbleshell']={[0]=-1,},
+  
+  --general
+  ['Argent Dawn Commission']={[0]=-1,},
+  ['Agile Maneuver']={[0]=-1,},
+  ['Unholy Aura']={[0]=-1,},
+  ['Cozy Fire']={[0]=-1,},
   
   --warrior
   ['Battle Stance']={[0]=-1,},
@@ -47,13 +57,35 @@ UPLibAuraDurationsByRank = {
   
   --paladin
   ['Righteous Fury']={[0]=-1,},
+  
+  ['Holy Judgement']={[0]=-1,},
+  
   ['Devotion Aura']={[0]=-1,},
   ['Retribution Aura']={[0]=-1,},
+  ['Retribution Aura']={[0]=-1,},
+  ['Concentration Aura']={[0]=-1,},
+  ['Sanctity Aura']={[0]=-1,},
   
   --hunter
   ['Aspect of the Cheetah']={[0]=-1,},
   ['Aspect of the Hawk']={[0]=-1,},
   ['Aspect of the Wolf']={[0]=-1,},
+  ['Aspect of the Monkey']={[0]=-1,},
+  
+  ['Spirit Bond']={[0]=-1,},
+  ['Trueshot Aura']={[0]=-1,},
+  
+  --druid
+  ['Cat Form']={[0]=-1,},
+  ['Bear Form']={[0]=-1,},
+  ['Travel Form']={[0]=-1,},
+  
+  --hunter
+  ['Terrify']={[0]=-1,},
+  
+  --warlock
+  ['Soulstone Resurrection']={[0]=-1,},
+  ['Blood Pact']={[0]=-1,},
   --infinite auras end
   
   --finite auras
@@ -61,17 +93,47 @@ UPLibAuraDurationsByRank = {
   ['Resurrection Sickness']={[0]=-1,},
   
   --general
-  ['Drink']={[0]=18,},
-  ['Food']={[0]=18,},
+  ['Scrambled Brain']={[0]=600.0,},
+  ['Deserter']={[0]=900.0,},
   
-  ['Sayge\'s Dark Fortune of Agility']={[0]=7200,},
-  ['Sayge\'s Dark Fortune of Armor']={[0]=7200,},
-  ['Sayge\'s Dark Fortune of Damage']={[0]=7200,},
-  ['Sayge\'s Dark Fortune of Intelligence']={[0]=7200,},
-  ['Sayge\'s Dark Fortune of Resistance']={[0]=7200,},
-  ['Sayge\'s Dark Fortune of Spirit']={[0]=7200,},
-  ['Sayge\'s Dark Fortune of Stamina']={[0]=7200,},
-  ['Sayge\'s Dark Fortune of Strength']={[0]=7200,},
+  ['Drink']={[0]=18.0,},
+  ['Food']={[0]=18.0,},
+  ['Well Fed']={[0]=900.0,},
+  
+  ['Stamina']={[0]=1800.0,},
+  ['Agility']={[0]=1800.0,},
+  ['Spirit']={[0]=1800.0,},
+  ['Intellect']={[0]=1800.0,},
+  ['Armor']={[0]=1800.0,},
+  ['Strength']={[0]=1800.0,},
+  
+  ['Greater Stamina']={[0]=1800.0,},
+  ['Greater Agility']={[0]=1800.0,},
+  ['Greater Spirit']={[0]=1800.0,},
+  ['Greater Intellect']={[0]=1800.0,},
+  ['Greater Armor']={[0]=1800.0,},
+  ['Greater Strength']={[0]=1800.0,},
+  
+  ['Regeneration']={[0]=3600.0,}, --will clash with skill?!
+  ['Regeneration II']={[0]=3600.0,},
+  ['Regeneration III']={[0]=3600.0,},
+  ['Regeneration IV']={[0]=3600.0,},
+  
+  ['Elixir of the Giants']={[0]=3600.0,},
+  ['Elixir of the Mongoose']={[0]=3600.0,},
+  ['Winterfall Firewater']={[0]=1200.0,},
+  ['Shadow Power']={[0]=1800.0,},
+  
+  ['Supreme Power']={[0]=7200.0,},
+  
+  ['Sayge\'s Dark Fortune of Agility']={[0]=7200.0,},
+  ['Sayge\'s Dark Fortune of Armor']={[0]=7200.0,},
+  ['Sayge\'s Dark Fortune of Damage']={[0]=7200.0,},
+  ['Sayge\'s Dark Fortune of Intelligence']={[0]=7200.0,},
+  ['Sayge\'s Dark Fortune of Resistance']={[0]=7200.0,},
+  ['Sayge\'s Dark Fortune of Spirit']={[0]=7200.0,},
+  ['Sayge\'s Dark Fortune of Stamina']={[0]=7200.0,},
+  ['Sayge\'s Dark Fortune of Strength']={[0]=7200.0,},
   
   ['Rallying Cry of the Dragonslayer']={[0]=7200.0,},
   
@@ -107,6 +169,8 @@ UPLibAuraDurationsByRank = {
   ['Judgement of Wisdom']={[0]=10.0,},
   ['Judgement of the Crusader']={[0]=1.0,},
   
+  ['Zeal']={[0]=30.0,},
+  
   --warrior
   ['Battle Shout']={[0]=120.0,}, --!DURATION DEPENDS ON TALENTS
   ['Demoralizing Shout']={[0]=30.0,}, --!DURATION DEPENDS ON TALENTS
@@ -119,18 +183,27 @@ UPLibAuraDurationsByRank = {
   
   
   --mage
-  ['Chilled']={[0]=1.5,[1]=5,[2]=5,[3]=5,[4]=5,[5]=5,},--there are 2 spells named "chilled?" --if I receive no rank in combat log, then it's probably not cast by player? --!DURATION DEPENDS ON TALENTS?
+  ['Chilled']={[0]=1.5,[1]=5.0,[2]=5.0,[3]=5.0,[4]=5.0,[5]=5.0,},--there are 2 spells named "chilled?" --if I receive no rank in combat log, then it's probably not cast by player? --!DURATION DEPENDS ON TALENTS?
   ['Frost Nova']={[0]=8.0,[1]=8.0,[2]=8.0,[3]=8.0,[4]=8.0,}, --!DURATION DEPENDS ON TALENTS?
   ['Cone of Cold']={[0]=8.0,[1]=8.0,[2]=8.0,[3]=8.0,[4]=8.0,[5]=8.0,}, --!DURATION DEPENDS ON TALENTS
   ['Frost Armor']={[0]=1800.0,[1]=1800.0,[2]=1800.0,[3]=1800.0,},
   ['Mage Armor']={[0]=1800.0,[1]=1800.0,[2]=1800.0,[3]=1800.0,},
   ['Ice Armor']={[0]=1800.0,[1]=1800.0,[2]=1800.0,[3]=1800.0,[4]=1800.0,},
   ['Arcane Brilliance']={[0]=3600.0,[1]=3600.0,},
+  ['Dampen Magic']={[0]=600.0},
   
   --priest
   ['Proudmoore\'s Defense']={[0]=1800.0,},
   ['Power Word: Fortitude']={[0]=1800.0,},
+  ['Power Word: Shield']={[0]=15.0,},
+  ['Renew']={[0]=15.0,},
+  ['Fear Ward']={[0]=600.0,},
+  ['Divine Spirit']={[0]=1800.0,},
+  ['Inner Fire']={[0]=600.0,},
+  ['Shadow Protection']={[0]=600.0,},
   
+  ['Prayer of Spirit']={[0]=3600.0,},
+  ['Prayer of Fortitude']={[0]=3600.0,},
   
   --rogue
   
@@ -140,9 +213,13 @@ UPLibAuraDurationsByRank = {
   --druid
   ['Mark of the Wild']={[0]=1800.0,},
   ['Thorns']={[0]=600.0,},
+  ['Regrowth']={[0]=21.0,},
+  ['Gift of the Wild']={[0]=3600.0,},
   
   
   --unsorted finite auras
+  ['Burning Wish']={[0]=1800.0,},
+  
   ['AE Charm']={[0]=300.0,},
   ['Abomination Spit']={[0]=10.0,},
   ['Acid Slime']={[0]=30.0,},
@@ -294,7 +371,6 @@ UPLibAuraDurationsByRank = {
   ['Counterspell']={[0]=10.0,},
   ['Counterspell - Silenced']={[0]=4.0,},
   ['Cowering Roar']={[0]=5.0,},
-  ['Cozy Fire']={[0]=60.0,},
   ['Crash of Waves']={[0]=10.0,},
   ['Create Heart of Hakkar Explosion']={[0]=30.0,},
   ['Create Heart of Hakkar Rift']={[0]=30.0,},
@@ -403,7 +479,6 @@ UPLibAuraDurationsByRank = {
   ['Distract Move']={[0]=7.0,},
   ['Distracting Pain']={[0]=15.0,},
   ['Distracting Spit']={[0]=15.0,},
-  ['Divine Spirit']={[0]=1800.0,},
   ['Dominate Mind']={[0]=10.0,},
   ['Domination']={[0]=15.0,},
   ['Dominion of Soul']={[0]=60.0,},
@@ -1080,8 +1155,11 @@ function UPLibAuraDurationsGetAuraDuration(name, rankNumber, isMyAura)
 		--report that name is not in db
 		--print("------ UNITPLATES: aura name not found AT ALL: "..name.." (also requested Rank: "..rankNumber..")")
 		UPDebugStoreUPDebugMissingSpellsEntry(name.."(SPELL NAME NOT FOUND)", rankNumber)
+		
+		return -1 --return as infinite, just to have it
+		
 		--exit early
-		return nil --return nil (not found)
+		--return nil --return nil (not found)
 	end
 	
 	local duration = UPLibAuraDurationsByRank[name][rankNumber]
