@@ -127,6 +127,7 @@ end
 
 local UPComapt_PFQUEST_SWORD_ICON = "Interface\\AddOns\\UnitPlates\\img\\quest\\slay"
 local UPComapt_PFQUEST_BAG_ICON = "Interface\\AddOns\\UnitPlates\\img\\quest\\loot"
+local UPComapt_PFQUEST_TURNIN_ICON = "Interface\\AddOns\\UnitPlates\\img\\quest\\turnin_yellow"
 
 UPCompatPfQuestQuestObjectives = {}
 
@@ -138,41 +139,45 @@ local function UPCompatPfQuestScanQuestObjectives()
     end
 
     local activeQuests = {}
+    local completedQuestTitles = {}
     
     -- 1. Scan the actual Quest Log
     for qid = 1, GetNumQuestLogEntries() do
-        local questTitle, _, _, _, _, _, complete = GetQuestLogTitle(qid)
-        if questTitle and complete ~= 1 then
-            activeQuests[questTitle] = {}
-            local numObjectives = GetNumQuestLeaderBoards(qid)
-			
-			if (numObjectives == nil) or numObjectives < 1 then
-				--do nothing
-			else
-				for i = 1, numObjectives do
-					local text, objType, finished = GetQuestLogLeaderBoard(i, qid)
-					if text and not finished then
-						-- 1.12 regex is picky; we match the name and the numbers
-						local _, _, objName, current, total = string.find(text, "(.*):%s*(%d+)%s*/%s*(%d+)")
-						
-						if objName then
-							objName = string.gsub(objName, "^%s*(.-)%s*$", "%1") -- Trim whitespace
-							table.insert(activeQuests[questTitle], {
-								objective = objName,
-								current = tonumber(current) or 0,
-								total = tonumber(total) or 1
-							})
-						else
-							-- FALLBACK: If it's a "Talk to" or "Special" objective without 0/1 numbers
-							table.insert(activeQuests[questTitle], {
-								objective = text,
-								current = 0,
-								total = 1
-							})
-						end
-					end
-				end
-			end
+        local questTitle, _, _, _, _, complete = GetQuestLogTitle(qid)
+        
+        if questTitle then
+            if complete == 1 then
+                -- Quest is finished, flag for turn-in mapping
+                completedQuestTitles[questTitle] = true
+            else
+                -- Quest is active, fetch objectives
+                activeQuests[questTitle] = {}
+                local numObjectives = GetNumQuestLeaderBoards(qid)
+                
+                if numObjectives and numObjectives > 0 then
+                    for i = 1, numObjectives do
+                        local text, objType, finished = GetQuestLogLeaderBoard(i, qid)
+                        if text and not finished then
+                            local _, _, objName, current, total = string.find(text, "(.*):%s*(%d+)%s*/%s*(%d+)")
+                            
+                            if objName then
+                                objName = string.gsub(objName, "^%s*(.-)%s*$", "%1")
+                                table.insert(activeQuests[questTitle], {
+                                    objective = objName,
+                                    current = tonumber(current) or 0,
+                                    total = tonumber(total) or 1
+                                })
+                            else
+                                table.insert(activeQuests[questTitle], {
+                                    objective = text,
+                                    current = 0,
+                                    total = 1
+                                })
+                            end
+                        end
+                    end
+                end
+            end
         end
     end
 
@@ -180,71 +185,199 @@ local function UPCompatPfQuestScanQuestObjectives()
     for questId, localizedData in pairs(pfDB["quests"]["enUS"]) do
         local questTitle = localizedData["T"]
 
-        if questTitle and activeQuests[questTitle] then
+        if questTitle then
             local questData = pfDB["quests"]["data"][questId]
-            if questData and questData["obj"] then
-                
-				-- CASE A: KILL OBJECTIVES
-				if questData["obj"]["U"] then
-					for _, unitId in pairs(questData["obj"]["U"]) do
-						local targetName = pfDB["units"]["enUS"][unitId]
-						if targetName and activeQuests[questTitle] then
-							for _, activeObj in ipairs(activeQuests[questTitle]) do
-								-- VITAL SAFETY CHECK
-								local objStr = type(activeObj) == "table" and activeObj.objective or activeObj
-								local current = type(activeObj) == "table" and activeObj.current or 0
-								local total   = type(activeObj) == "table" and activeObj.total or 1
+            
+            if questData then
+                -- CASE A: TURN-IN (?)
+                if completedQuestTitles[questTitle] then
+                    -- questData["end"]["U"] contains the NPC IDs to hand the quest into
+                    if questData["end"] and questData["end"]["U"] then
+                        for _, unitId in pairs(questData["end"]["U"]) do
+                            local npcName = pfDB["units"]["enUS"][unitId]
+                            if npcName then
+                                -- Assign the turn-in icon
+                                UPCompatPfQuestQuestObjectives[npcName] = UPComapt_PFQUEST_TURNIN_ICON
+                            end
+                        end
+                    end
 
-								if type(objStr) == "string" then
-									-- FIX: Use string.gsub(string, pattern, replacement) instead of string:gsub()
-									local objNameBase = string.gsub(objStr, " slain$", "")
-									objNameBase = string.gsub(objNameBase, " killed$", "")
-									
-									if objNameBase == targetName or string.find(objStr, targetName, 1, true) then
-										if current < total then
-											UPCompatPfQuestQuestObjectives[targetName] = UPComapt_PFQUEST_SWORD_ICON
-										end
-									end
-								end
-							end
-						end
-					end
-				end
+                -- CASE B: ACTIVE OBJECTIVES (Sword/Bag)
+                elseif activeQuests[questTitle] then
+                    -- KILL OBJECTIVES
+                    if questData["obj"] and questData["obj"]["U"] then
+                        for _, unitId in pairs(questData["obj"]["U"]) do
+                            local targetName = pfDB["units"]["enUS"][unitId]
+                            if targetName then
+                                for _, activeObj in ipairs(activeQuests[questTitle]) do
+                                    local objStr = type(activeObj) == "table" and activeObj.objective or activeObj
+                                    local current = type(activeObj) == "table" and activeObj.current or 0
+                                    local total   = type(activeObj) == "table" and activeObj.total or 1
 
-				-- CASE B: LOOT OBJECTIVES
-				if questData["obj"]["I"] then
-					for _, itemId in pairs(questData["obj"]["I"]) do
-						local itemName = pfDB["items"]["enUS"][itemId]
-						local itemData = pfDB["items"]["data"][itemId]
+                                    if type(objStr) == "string" then
+                                        local objNameBase = string.gsub(objStr, " slain$", "")
+                                        objNameBase = string.gsub(objNameBase, " killed$", "")
+                                        
+                                        if objNameBase == targetName or string.find(objStr, targetName, 1, true) then
+                                            -- Only apply if a higher-priority icon (like turn-in) hasn't already been set for this NPC
+                                            if current < total and not UPCompatPfQuestQuestObjectives[targetName] then
+                                                UPCompatPfQuestQuestObjectives[targetName] = UPComapt_PFQUEST_SWORD_ICON
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
 
-						if itemName and itemData and itemData["U"] then
-							for unitId, _ in pairs(itemData["U"]) do
-								local npcName = pfDB["units"]["enUS"][unitId]
-								if npcName and activeQuests[questTitle] then
-									for _, activeObj in ipairs(activeQuests[questTitle]) do
-										local objStr = type(activeObj) == "table" and activeObj.objective or activeObj
-										local current = type(activeObj) == "table" and activeObj.current or 0
-										local total   = type(activeObj) == "table" and activeObj.total or 1
+                    -- LOOT OBJECTIVES
+                    if questData["obj"] and questData["obj"]["I"] then
+                        for _, itemId in pairs(questData["obj"]["I"]) do
+                            local itemName = pfDB["items"]["enUS"][itemId]
+                            local itemData = pfDB["items"]["data"][itemId]
 
-										-- FIX: Use string.find(string, ...) instead of string:find()
-										if type(objStr) == "string" and string.find(objStr, itemName, 1, true) then
-											if current < total then
-												UPCompatPfQuestQuestObjectives[npcName] = UPComapt_PFQUEST_BAG_ICON
-											end
-										end
-									end
-								end
-							end
-						end
-					end
-				end
-                
+                            if itemName and itemData and itemData["U"] then
+                                for unitId, _ in pairs(itemData["U"]) do
+                                    local npcName = pfDB["units"]["enUS"][unitId]
+                                    if npcName then
+                                        for _, activeObj in ipairs(activeQuests[questTitle]) do
+                                            local objStr = type(activeObj) == "table" and activeObj.objective or activeObj
+                                            local current = type(activeObj) == "table" and activeObj.current or 0
+                                            local total   = type(activeObj) == "table" and activeObj.total or 1
+
+                                            if type(objStr) == "string" and string.find(objStr, itemName, 1, true) then
+                                                -- Only apply if a higher-priority icon hasn't already been set
+                                                if current < total and not UPCompatPfQuestQuestObjectives[npcName] then
+                                                    UPCompatPfQuestQuestObjectives[npcName] = UPComapt_PFQUEST_BAG_ICON
+                                                end
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
             end
         end
     end
-	
-	-- UPCompatIsFirstPfQuestLoad = false
 end
+
+-- local function UPCompatPfQuestScanQuestObjectives()
+    -- UPCompatPfQuestQuestObjectives = {}
+
+    -- if not pfDB or not pfDB["quests"] or not pfDB["quests"]["data"] or not pfDB["quests"]["enUS"] then
+        -- return
+    -- end
+
+    -- local activeQuests = {}
+    
+    -- -- 1. Scan the actual Quest Log
+    -- for qid = 1, GetNumQuestLogEntries() do
+        -- local questTitle, _, _, _, _, _, complete = GetQuestLogTitle(qid)
+        -- if questTitle and complete ~= 1 then
+            -- activeQuests[questTitle] = {}
+            -- local numObjectives = GetNumQuestLeaderBoards(qid)
+			
+			-- if (numObjectives == nil) or numObjectives < 1 then
+				-- --do nothing
+			-- else
+				-- for i = 1, numObjectives do
+					-- local text, objType, finished = GetQuestLogLeaderBoard(i, qid)
+					-- if text and not finished then
+						-- -- 1.12 regex is picky; we match the name and the numbers
+						-- local _, _, objName, current, total = string.find(text, "(.*):%s*(%d+)%s*/%s*(%d+)")
+						
+						-- if objName then
+							-- objName = string.gsub(objName, "^%s*(.-)%s*$", "%1") -- Trim whitespace
+							-- table.insert(activeQuests[questTitle], {
+								-- objective = objName,
+								-- current = tonumber(current) or 0,
+								-- total = tonumber(total) or 1
+							-- })
+						-- else
+							-- -- FALLBACK: If it's a "Talk to" or "Special" objective without 0/1 numbers
+							-- table.insert(activeQuests[questTitle], {
+								-- objective = text,
+								-- current = 0,
+								-- total = 1
+							-- })
+						-- end
+					-- end
+				-- end
+			-- end
+        -- end
+    -- end
+
+    -- -- 2. Match Quest Log against pfDB
+    -- for questId, localizedData in pairs(pfDB["quests"]["enUS"]) do
+        -- local questTitle = localizedData["T"]
+
+        -- if questTitle and activeQuests[questTitle] then
+            -- local questData = pfDB["quests"]["data"][questId]
+            -- if questData and questData["obj"] then
+                
+				-- -- CASE A: KILL OBJECTIVES
+				-- if questData["obj"]["U"] then
+					-- for _, unitId in pairs(questData["obj"]["U"]) do
+						-- local targetName = pfDB["units"]["enUS"][unitId]
+						-- if targetName and activeQuests[questTitle] then
+							-- for _, activeObj in ipairs(activeQuests[questTitle]) do
+								-- -- VITAL SAFETY CHECK
+								-- local objStr = type(activeObj) == "table" and activeObj.objective or activeObj
+								-- local current = type(activeObj) == "table" and activeObj.current or 0
+								-- local total   = type(activeObj) == "table" and activeObj.total or 1
+
+								-- if type(objStr) == "string" then
+									-- -- FIX: Use string.gsub(string, pattern, replacement) instead of string:gsub()
+									-- local objNameBase = string.gsub(objStr, " slain$", "")
+									-- objNameBase = string.gsub(objNameBase, " killed$", "")
+									
+									-- if objNameBase == targetName or string.find(objStr, targetName, 1, true) then
+										-- if current < total then
+											-- UPCompatPfQuestQuestObjectives[targetName] = UPComapt_PFQUEST_SWORD_ICON
+										-- end
+									-- end
+								-- end
+							-- end
+						-- end
+					-- end
+				-- end
+
+				-- -- CASE B: LOOT OBJECTIVES
+				-- if questData["obj"]["I"] then
+					-- for _, itemId in pairs(questData["obj"]["I"]) do
+						-- local itemName = pfDB["items"]["enUS"][itemId]
+						-- local itemData = pfDB["items"]["data"][itemId]
+
+						-- if itemName and itemData and itemData["U"] then
+							-- for unitId, _ in pairs(itemData["U"]) do
+								-- local npcName = pfDB["units"]["enUS"][unitId]
+								-- if npcName and activeQuests[questTitle] then
+									-- for _, activeObj in ipairs(activeQuests[questTitle]) do
+										-- local objStr = type(activeObj) == "table" and activeObj.objective or activeObj
+										-- local current = type(activeObj) == "table" and activeObj.current or 0
+										-- local total   = type(activeObj) == "table" and activeObj.total or 1
+
+										-- -- FIX: Use string.find(string, ...) instead of string:find()
+										-- if type(objStr) == "string" and string.find(objStr, itemName, 1, true) then
+											-- if current < total then
+												-- UPCompatPfQuestQuestObjectives[npcName] = UPComapt_PFQUEST_BAG_ICON
+											-- end
+										-- end
+									-- end
+								-- end
+							-- end
+						-- end
+					-- end
+				-- end
+                
+            -- end
+        -- end
+    -- end
+	
+	-- -- UPCompatIsFirstPfQuestLoad = false
+-- end
 
 -- Variables for pfquest debouncing
 local UPCompatPfQuestPendingScan = false
