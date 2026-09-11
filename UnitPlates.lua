@@ -2702,6 +2702,46 @@ local function OnPlayerEnteringWorld()
 	-- Optional: These are the only other common CVars in 3.3.5
     -- They control how far away plates appear
     -- SetCVar("nameplateMaxDistance", 40)
+	
+	if ShaguTweaks_config then
+		local hasConflicts = false
+		
+		if ShaguTweaks_config["Nameplate Castbar"] == 1 then
+			ShaguTweaks_config["Nameplate Castbar"] = 0
+			hasConflicts = true
+		end
+		
+		if ShaguTweaks_config["Nameplate Scale"] == 1 then
+			ShaguTweaks_config["Nameplate Scale"] = 0
+			hasConflicts = true
+		end
+		
+		if ShaguTweaks_config["Nameplate Class Colors"] == 1 then
+			ShaguTweaks_config["Nameplate Class Colors"] = 0
+			hasConflicts = true
+		end
+		
+		if hasConflicts then
+			print("---------")
+			print("!!!UnitPlates detected ShaguTweaks and disabled conflicting config options, please type /reload or restart the game for the changes to take effect")
+			print("---------")
+		end
+	end
+	
+	if pfQuest_config then
+		local hasConflicts = false
+		
+		if pfQuest_config["nameplatesEnabled"] == "1" then
+			pfQuest_config["nameplatesEnabled"] = "0"
+			hasConflicts = true
+		end
+		
+		if hasConflicts then
+			print("---------")
+			print("!!!UnitPlates detected PfQuest and disabled conflicting config options, please type /reload or restart the game for the changes to take effect")
+			print("---------")
+		end
+	end
 end
 
 --event processing
