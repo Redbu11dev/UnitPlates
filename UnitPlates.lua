@@ -341,6 +341,17 @@ local function UpdatePlate(kuiPlateFrame)
 	kuiPlateFrame.levelDifficultyColor = UPApiGetLevelDifficultyColor(kuiPlateFrame.levelNumber)
 	kuiPlateFrame.isGrayLevel = UPApiIsGrayLevel(kuiPlateFrame.levelNumber)
 	kuiPlateFrame.isPet = UPApiIsPet(kuiPlateFrame.guid)
+	if kuiPlateFrame.isPet and kuiPlateFrame.guildTextVariable ~= "" then
+		kuiPlateFrame.isMyPet = false
+		if string.find(kuiPlateFrame.guildTextVariable, UnitName("player").."'s Pet") then
+			kuiPlateFrame.isMyPet = true
+		end
+		if not kuiPlateFrame.isMyPet then
+			if string.find(kuiPlateFrame.guildTextVariable, UnitName("player").."'s Minion") then
+				kuiPlateFrame.isMyPet = true
+			end
+		end
+	end
 	kuiPlateFrame.isTapped = (UnitIsTapped(kuiPlateFrame.guid) and not (UnitIsTappedByPlayer(kuiPlateFrame.guid)))
 	
 	if kuiPlateFrame.isGrayLevel or kuiPlateFrame.isPet or kuiPlateFrame.creatureType == "CRITTER" then
@@ -510,13 +521,13 @@ local function UpdatePlate(kuiPlateFrame)
 	--hide pvp icon for your own pet/minion
 	if kuiPlateFrame.isPet
 		and kuiPlateFrame.guildTextVariable
-		and (string.find(kuiPlateFrame.guildTextVariable, UnitName("player").."'s Pet")) then
+		and kuiPlateFrame.isMyPet then
 		kuiPlateFrame.pvpIcon:Hide()
 	end
 	-- kuiPlateFrame.pvpIcon:Show()
 	
 	--pet happiness
-	if (myPlayerHasPetUI and myPlayerPetIsHunterPet and kuiPlateFrame.guildTextVariable and string.find(kuiPlateFrame.guildTextVariable, UnitName("player").."'s Pet")) then
+	if (myPlayerHasPetUI and myPlayerPetIsHunterPet and kuiPlateFrame.guildTextVariable and kuiPlateFrame.isMyPet) then
 		local petHappiness, petDamagePercentage, petLoyaltyRate = GetPetHappiness()
 		
 		if (petHappiness == 1) then
@@ -2887,6 +2898,10 @@ UnitPlatesMainFrame:SetScript("OnUpdate", function()
 			--if f.isTarget or (UnitName("target") == kuiPlateFrame.nameTextVariable) then
 			if f.isTarget then
 				targetLevel = 120 -- Safe ceiling just below the Vanilla engine cap of 128
+			end
+			
+			if kuiPlateFrame.isMyPet then
+				targetLevel = 119 -- Safe ceiling just below the Vanilla engine cap of 128
 			end
 			
 			-- 4. Apply the stack without any fear of interleaving
