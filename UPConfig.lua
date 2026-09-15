@@ -111,7 +111,9 @@ function UPConfigLoadUnitPlatesDefaultSettings()
 		aurasInRow = 6,
 		aurasInRowTrivial = 4,
 		nameplateWidthPercent = 65,
-		nameplateWidthPercentTrivial = 45
+		nameplateWidthPercentTrivial = 45,
+		selectionGlowScale = 100,
+		selectionGlowAlpha = 50		
 	}
 end
 
@@ -164,6 +166,12 @@ function UPConfigLoadUnitPlatesSettings()
 		end
 		if UnitPlatesSettings.nameplateWidthPercentTrivial == nil then
 			UnitPlatesSettings.nameplateWidthPercentTrivial=45
+		end
+		if UnitPlatesSettings.selectionGlowScale == nil then
+			UnitPlatesSettings.selectionGlowScale=100
+		end
+		if UnitPlatesSettings.selectionGlowAlpha == nil then
+			UnitPlatesSettings.selectionGlowAlpha=50
 		end
 		print("UnitPlates saved data loaded")
 	end
@@ -533,8 +541,64 @@ function UPConfigInitUnitPlatesSettings()
 		end
 	end)
 	
+	local selectionGlowScaleTitle = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	selectionGlowScaleTitle:SetPoint("TOPLEFT", scaleInput, "BOTTOMLEFT", 0, -16)
+	selectionGlowScaleTitle:SetTextColor(0.999,0.819,0,barAlpha)
+	selectionGlowScaleTitle:SetJustifyH("LEFT")
+	selectionGlowScaleTitle:SetText("Selection glow scale %: ")
+	
+	local selectionGlowScaleSlider = CreateFrame("Slider", "selectionGlowScaleSlider", scrollChild, "OptionsSliderTemplate")
+	selectionGlowScaleSlider:SetPoint("TOPLEFT", selectionGlowScaleTitle, "BOTTOMLEFT", 0, -16)
+	selectionGlowScaleSlider:SetWidth(350)
+	selectionGlowScaleSlider:SetHeight(16)
+	selectionGlowScaleSlider:SetMinMaxValues(100, 300)
+	selectionGlowScaleSlider:SetValueStep(1)
+	selectionGlowScaleSlider:SetValue(UnitPlatesSettings.selectionGlowScale)
+	
+	-- OptionsSliderTemplate creates fontstrings automatically for High, Low, and Text
+	getglobal(selectionGlowScaleSlider:GetName() .. 'Low'):SetText('100%')
+	getglobal(selectionGlowScaleSlider:GetName() .. 'High'):SetText('300%')
+	getglobal(selectionGlowScaleSlider:GetName() .. 'Text'):SetText("Current: " .. UnitPlatesSettings.selectionGlowScale.."%")
+	
+	selectionGlowScaleSlider:SetScript("OnValueChanged", function()
+		-- In 1.12, 'this' refers to the UI element triggering the script
+		local val = math.floor(this:GetValue() + 0.5)
+		UnitPlatesSettings.selectionGlowScale = val
+		getglobal(this:GetName() .. 'Text'):SetText("Current: " .. val.."%")
+		-- applyAllSettings() -- uncomment if you have a function that applies settings in real-time
+	end)
+	--
+	
+	local selectionGlowAlphaTitle = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	selectionGlowAlphaTitle:SetPoint("TOPLEFT", selectionGlowScaleSlider, "BOTTOMLEFT", 0, -16)
+	selectionGlowAlphaTitle:SetTextColor(0.999,0.819,0,barAlpha)
+	selectionGlowAlphaTitle:SetJustifyH("LEFT")
+	selectionGlowAlphaTitle:SetText("Selection glow alpha %: ")
+	
+	local selectionGlowAlphaSlider = CreateFrame("Slider", "selectionGlowAlphaSlider", scrollChild, "OptionsSliderTemplate")
+	selectionGlowAlphaSlider:SetPoint("TOPLEFT", selectionGlowAlphaTitle, "BOTTOMLEFT", 0, -16)
+	selectionGlowAlphaSlider:SetWidth(350)
+	selectionGlowAlphaSlider:SetHeight(16)
+	selectionGlowAlphaSlider:SetMinMaxValues(0, 100)
+	selectionGlowAlphaSlider:SetValueStep(1)
+	selectionGlowAlphaSlider:SetValue(UnitPlatesSettings.selectionGlowAlpha)
+	
+	-- OptionsSliderTemplate creates fontstrings automatically for High, Low, and Text
+	getglobal(selectionGlowAlphaSlider:GetName() .. 'Low'):SetText('0%')
+	getglobal(selectionGlowAlphaSlider:GetName() .. 'High'):SetText('100%')
+	getglobal(selectionGlowAlphaSlider:GetName() .. 'Text'):SetText("Current: " .. UnitPlatesSettings.selectionGlowAlpha.."%")
+	
+	selectionGlowAlphaSlider:SetScript("OnValueChanged", function()
+		-- In 1.12, 'this' refers to the UI element triggering the script
+		local val = math.floor(this:GetValue() + 0.5)
+		UnitPlatesSettings.selectionGlowAlpha = val
+		getglobal(this:GetName() .. 'Text'):SetText("Current: " .. val.."%")
+		-- applyAllSettings() -- uncomment if you have a function that applies settings in real-time
+	end)
+	--
+	
 	local nameplateWidthTitle = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-	nameplateWidthTitle:SetPoint("TOPLEFT", scaleInput, "BOTTOMLEFT", 0, -16)
+	nameplateWidthTitle:SetPoint("TOPLEFT", selectionGlowAlphaSlider, "BOTTOMLEFT", 0, -16)
 	nameplateWidthTitle:SetTextColor(0.999,0.819,0,barAlpha)
 	nameplateWidthTitle:SetJustifyH("LEFT")
 	nameplateWidthTitle:SetText("Nameplate width %: ")
