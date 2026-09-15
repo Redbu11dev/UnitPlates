@@ -136,9 +136,9 @@ local function InitUPConstants()
 end
 
 --COLORS
---local glowColor = {.3, 0.7, 1, 1}
-local glowColor = {.3, 0.7, 1, 1}
-local backgroundGlowColor = {.3, 0.7, 1, 1}
+--local UPglowColor = {.3, 0.7, 1, 1}
+local UPglowColor = {.3, 0.7, 1, 1}
+local UPbackgroundGlowColor = {.3, 0.7, 1, 1}
 local hatedColor = {.7, 0.2, 0.1}
 local neutralColor = {1, 0.8, 0}
 local friendlyColor = {.2, 0.6, 0.1}
@@ -807,15 +807,15 @@ local function UpdatePlate(kuiPlateFrame)
 		kuiPlateFrame.originalPlateFrame.totem.glow:Show()
 		kuiPlateFrame.originalPlateFrame.totem.glow2:Show()
 		
-		-- kuiPlateFrame.health:SetBackdropColor(unpack(glowColor))
-		-- kuiPlateFrame.power:SetBackdropColor(unpack(glowColor))
-		-- kuiPlateFrame.typeIcon:SetBackdropColor(unpack(glowColor))
-		kuiPlateFrame.health:SetBackdropBorderColor(unpack(glowColor))
-		kuiPlateFrame.power:SetBackdropBorderColor(unpack(glowColor))
-		kuiPlateFrame.typeIcon:SetBackdropBorderColor(unpack(glowColor))
+		-- kuiPlateFrame.health:SetBackdropColor(unpack(UPglowColor))
+		-- kuiPlateFrame.power:SetBackdropColor(unpack(UPglowColor))
+		-- kuiPlateFrame.typeIcon:SetBackdropColor(unpack(UPglowColor))
+		kuiPlateFrame.health:SetBackdropBorderColor(unpack(UPglowColor))
+		kuiPlateFrame.power:SetBackdropBorderColor(unpack(UPglowColor))
+		kuiPlateFrame.typeIcon:SetBackdropBorderColor(unpack(UPglowColor))
 		
-		-- kuiPlateFrame.health.bgOffsetFrame:SetBackdropBorderColor(unpack(glowColor)) -- Very dark grey subtle border
-		-- kuiPlateFrame.health.overlayMask:SetBackdropBorderColor(unpack(glowColor)) -- Black masking border
+		-- kuiPlateFrame.health.bgOffsetFrame:SetBackdropBorderColor(unpack(UPglowColor)) -- Very dark grey subtle border
+		-- kuiPlateFrame.health.overlayMask:SetBackdropBorderColor(unpack(UPglowColor)) -- Black masking border
 		
 		--kuiPlateFrame:SetFrameLevel(3)
 		
@@ -1546,25 +1546,25 @@ local function InitFrame(originalPlateFrame)
 	kuiPlateFrame.overlay:SetAllPoints(kuiPlateFrame.health)
 	kuiPlateFrame.overlay:SetFrameLevel(2)
 	
-	originalPlateFrame.selectionGlow = originalPlateFrame:CreateTexture(nil, "BACKGROUND")
-	originalPlateFrame.selectionGlow:SetPoint("CENTER", kuiPlateFrame.health, "CENTER", 0, 0)
-	originalPlateFrame.selectionGlow:SetTexture("Interface\\AddOns\\UnitPlates\\img\\dot")
-	originalPlateFrame.selectionGlow:SetDrawLayer("BACKGROUND")
-	originalPlateFrame.selectionGlow:SetVertexColor(unpack(backgroundGlowColor))
-	originalPlateFrame.selectionGlow:SetAlpha(UPConstants.selectionGlowAlpha)
-	originalPlateFrame.selectionGlow:SetWidth((UPConstants.nameplateHealthBarWidth + 60))
-	originalPlateFrame.selectionGlow:SetHeight((UPConstants.nameplateHealthBarHeight + 60))
-	originalPlateFrame.selectionGlow:Hide()
+	-- originalPlateFrame.selectionGlow = originalPlateFrame:CreateTexture(nil, "BACKGROUND")
+	-- originalPlateFrame.selectionGlow:SetPoint("CENTER", kuiPlateFrame.health, "CENTER", 0, 0)
+	-- originalPlateFrame.selectionGlow:SetTexture("Interface\\AddOns\\UnitPlates\\img\\dot")
+	-- originalPlateFrame.selectionGlow:SetDrawLayer("BACKGROUND")
+	-- originalPlateFrame.selectionGlow:SetVertexColor(unpack(UPbackgroundGlowColor))
+	-- originalPlateFrame.selectionGlow:SetAlpha(UPConstants.selectionGlowAlpha)
+	-- originalPlateFrame.selectionGlow:SetWidth((UPConstants.nameplateHealthBarWidth + 60))
+	-- originalPlateFrame.selectionGlow:SetHeight((UPConstants.nameplateHealthBarHeight + 60))
+	-- originalPlateFrame.selectionGlow:Hide()
 	
-	originalPlateFrame.selectionGlow2 = originalPlateFrame:CreateTexture(nil, "BACKGROUND")
-	originalPlateFrame.selectionGlow2:SetPoint("CENTER", kuiPlateFrame.health, "CENTER", 0, 0)
-	originalPlateFrame.selectionGlow2:SetTexture("Interface\\AddOns\\UnitPlates\\img\\dot")
-	originalPlateFrame.selectionGlow2:SetDrawLayer("BACKGROUND")
-	originalPlateFrame.selectionGlow2:SetVertexColor(unpack(backgroundGlowColor))
-	originalPlateFrame.selectionGlow2:SetAlpha(UPConstants.selectionGlowAlpha)
-	originalPlateFrame.selectionGlow2:SetWidth((UPConstants.nameplateHealthBarWidth + 60))
-	originalPlateFrame.selectionGlow2:SetHeight((UPConstants.nameplateHealthBarHeight + 60))
-	originalPlateFrame.selectionGlow2:Hide()
+	-- originalPlateFrame.selectionGlow2 = originalPlateFrame:CreateTexture(nil, "BACKGROUND")
+	-- originalPlateFrame.selectionGlow2:SetPoint("CENTER", kuiPlateFrame.health, "CENTER", 0, 0)
+	-- originalPlateFrame.selectionGlow2:SetTexture("Interface\\AddOns\\UnitPlates\\img\\dot")
+	-- originalPlateFrame.selectionGlow2:SetDrawLayer("BACKGROUND")
+	-- originalPlateFrame.selectionGlow2:SetVertexColor(unpack(UPbackgroundGlowColor))
+	-- originalPlateFrame.selectionGlow2:SetAlpha(UPConstants.selectionGlowAlpha)
+	-- originalPlateFrame.selectionGlow2:SetWidth((UPConstants.nameplateHealthBarWidth + 60))
+	-- originalPlateFrame.selectionGlow2:SetHeight((UPConstants.nameplateHealthBarHeight + 60))
+	-- originalPlateFrame.selectionGlow2:Hide()
 
 	-- self:CreateHighlight(originalPlateFrame, kuiPlateFrame)
 	-- kuiPlateFrame.highlight = kuiPlateFrame.overlay:CreateTexture(nil, "ARTWORK")
@@ -1878,11 +1878,11 @@ local function InitFrame(originalPlateFrame)
 	kuiPlateFrame.classIcon:Hide()
 	
 	kuiPlateFrame.rarityIcon = CreateFrame("Frame", nil, kuiPlateFrame)
-	kuiPlateFrame.rarityIcon:SetFrameLevel(0)
+	kuiPlateFrame.rarityIcon:SetFrameLevel(2)
 	kuiPlateFrame.rarityIcon:SetPoint("RIGHT", kuiPlateFrame.typeIcon, "LEFT", UPConstants.nameplateRarityXOffset, -1 * UPConstants.minimalOnePixel)
 	kuiPlateFrame.rarityIcon:SetHeight(UPConstants.nameplateRarityH)
 	kuiPlateFrame.rarityIcon:SetWidth(UPConstants.nameplateRarityW)
-	kuiPlateFrame.rarityIcon.icon = kuiPlateFrame.rarityIcon:CreateTexture(nil, "BORDER")
+	kuiPlateFrame.rarityIcon.icon = kuiPlateFrame.rarityIcon:CreateTexture(nil, "ARTWORK") --BORDER
 	kuiPlateFrame.rarityIcon.icon:SetTexCoord(1, 0, 0, 1)
 	kuiPlateFrame.rarityIcon.icon:SetVertexColor(1, 1, 0, 1)
 	kuiPlateFrame.rarityIcon.icon:SetAllPoints()
@@ -1890,16 +1890,40 @@ local function InitFrame(originalPlateFrame)
 	kuiPlateFrame.rarityIcon:Hide()
 
 	kuiPlateFrame.rarityIconR = CreateFrame("Frame", nil, kuiPlateFrame)
-	kuiPlateFrame.rarityIconR:SetFrameLevel(0)
+	kuiPlateFrame.rarityIconR:SetFrameLevel(2)
 	kuiPlateFrame.rarityIconR:SetPoint("LEFT", kuiPlateFrame.health, "RIGHT", -UPConstants.nameplateRarityXOffset, -1 * UPConstants.minimalOnePixel)
 	kuiPlateFrame.rarityIconR:SetHeight(UPConstants.nameplateRarityH)
 	kuiPlateFrame.rarityIconR:SetWidth(UPConstants.nameplateRarityW)
-	kuiPlateFrame.rarityIconR.icon = kuiPlateFrame.rarityIconR:CreateTexture(nil, "BORDER")
+	kuiPlateFrame.rarityIconR.icon = kuiPlateFrame.rarityIconR:CreateTexture(nil, "ARTWORK") --BORDER
 	--nameplate.rarityIconR.icon:SetTexCoord(1, 0, 0, 1)
 	kuiPlateFrame.rarityIconR.icon:SetVertexColor(1, 1, 0, 1)
 	kuiPlateFrame.rarityIconR.icon:SetAllPoints()
 	kuiPlateFrame.rarityIconR.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\frame_elite")
 	kuiPlateFrame.rarityIconR:Hide()
+	
+	
+	
+	originalPlateFrame.selectionGlow = originalPlateFrame:CreateTexture(nil, "BACKGROUND")
+	--originalPlateFrame.selectionGlow:SetFrameLevel(0)
+	originalPlateFrame.selectionGlow:SetPoint("CENTER", kuiPlateFrame.health, "CENTER", 0, 0)
+	originalPlateFrame.selectionGlow:SetTexture("Interface\\AddOns\\UnitPlates\\img\\dot")
+	originalPlateFrame.selectionGlow:SetDrawLayer("BACKGROUND")
+	originalPlateFrame.selectionGlow:SetVertexColor(unpack(UPbackgroundGlowColor))
+	originalPlateFrame.selectionGlow:SetAlpha(UPConstants.selectionGlowAlpha)
+	originalPlateFrame.selectionGlow:SetWidth((UPConstants.nameplateHealthBarWidth + 60))
+	originalPlateFrame.selectionGlow:SetHeight((UPConstants.nameplateHealthBarHeight + 60))
+	originalPlateFrame.selectionGlow:Hide()
+	
+	originalPlateFrame.selectionGlow2 = originalPlateFrame:CreateTexture(nil, "BACKGROUND")
+	--originalPlateFrame.selectionGlow2:SetFrameLevel(0)
+	originalPlateFrame.selectionGlow2:SetPoint("CENTER", kuiPlateFrame.health, "CENTER", 0, 0)
+	originalPlateFrame.selectionGlow2:SetTexture("Interface\\AddOns\\UnitPlates\\img\\dot")
+	originalPlateFrame.selectionGlow2:SetDrawLayer("BACKGROUND")
+	originalPlateFrame.selectionGlow2:SetVertexColor(unpack(UPbackgroundGlowColor))
+	originalPlateFrame.selectionGlow2:SetAlpha(UPConstants.selectionGlowAlpha)
+	originalPlateFrame.selectionGlow2:SetWidth((UPConstants.nameplateHealthBarWidth + 60))
+	originalPlateFrame.selectionGlow2:SetHeight((UPConstants.nameplateHealthBarHeight + 60))
+	originalPlateFrame.selectionGlow2:Hide()
 
 	-- castbar #################################################################
 	-- if self.Castbar then
@@ -1908,26 +1932,47 @@ local function InitFrame(originalPlateFrame)
 	-- self.Castbar:CreateCastbar(kuiPlateFrame)
 
 	-- target highlight --------------------------------------------------------
-	kuiPlateFrame.glow = kuiPlateFrame:CreateTexture(nil, "BACKGROUND")
+	kuiPlateFrame.glow = CreateFrame("Frame", nil, kuiPlateFrame)
 	kuiPlateFrame.glow:SetPoint("LEFT", kuiPlateFrame.typeIcon, "LEFT", -UPConstants.nameplateArrowSize, 0)
-	kuiPlateFrame.glow:SetTexture("Interface\\AddOns\\UnitPlates\\img\\arrow_left")
-	--nameplate.glow:SetFrameLevel(1)
-	kuiPlateFrame.glow:SetDrawLayer("BACKGROUND")
 	kuiPlateFrame.glow:SetWidth(UPConstants.nameplateArrowSize)
 	kuiPlateFrame.glow:SetHeight(UPConstants.nameplateArrowSize)
-	kuiPlateFrame.glow:SetVertexColor(unpack(glowColor))
+	kuiPlateFrame.glow.icon = kuiPlateFrame.glow:CreateTexture(nil, "ARTWORK") --BORDER
+	kuiPlateFrame.glow.icon:SetVertexColor(unpack(UPglowColor))
+	kuiPlateFrame.glow.icon:SetAllPoints()
+	kuiPlateFrame.glow.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\arrow_left")
 	kuiPlateFrame.glow:Hide()
 
-	kuiPlateFrame.glow2 = kuiPlateFrame:CreateTexture(nil, "BACKGROUND")
+	kuiPlateFrame.glow2 = CreateFrame("Frame", nil, kuiPlateFrame)
 	kuiPlateFrame.glow2:SetPoint("RIGHT", kuiPlateFrame.health, "RIGHT", UPConstants.nameplateArrowSize, 0)
-	kuiPlateFrame.glow2:SetTexture("Interface\\AddOns\\UnitPlates\\img\\arrow_right")
-	--nameplate.glow:SetFrameLevel(1)
-	kuiPlateFrame.glow2:SetDrawLayer("BACKGROUND")
-	--nameplate.glow2.texture:SetRotation(2)
 	kuiPlateFrame.glow2:SetWidth(UPConstants.nameplateArrowSize)
 	kuiPlateFrame.glow2:SetHeight(UPConstants.nameplateArrowSize)
-	kuiPlateFrame.glow2:SetVertexColor(unpack(glowColor))
+	kuiPlateFrame.glow2.icon = kuiPlateFrame.glow2:CreateTexture(nil, "ARTWORK") --BORDER
+	kuiPlateFrame.glow2.icon:SetVertexColor(unpack(UPglowColor))
+	kuiPlateFrame.glow2.icon:SetAllPoints()
+	kuiPlateFrame.glow2.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\arrow_right")
 	kuiPlateFrame.glow2:Hide()
+	
+	
+	-- kuiPlateFrame.glow = kuiPlateFrame:CreateTexture(nil, "BACKGROUND")
+	-- kuiPlateFrame.glow:SetPoint("LEFT", kuiPlateFrame.typeIcon, "LEFT", -UPConstants.nameplateArrowSize, 0)
+	-- kuiPlateFrame.glow:SetTexture("Interface\\AddOns\\UnitPlates\\img\\arrow_left")
+	-- --nameplate.glow:SetFrameLevel(1)
+	-- kuiPlateFrame.glow:SetDrawLayer("BORDER")
+	-- kuiPlateFrame.glow:SetWidth(UPConstants.nameplateArrowSize)
+	-- kuiPlateFrame.glow:SetHeight(UPConstants.nameplateArrowSize)
+	-- kuiPlateFrame.glow:SetVertexColor(unpack(UPglowColor))
+	-- kuiPlateFrame.glow:Hide()
+
+	-- kuiPlateFrame.glow2 = kuiPlateFrame:CreateTexture(nil, "BACKGROUND")
+	-- kuiPlateFrame.glow2:SetPoint("RIGHT", kuiPlateFrame.health, "RIGHT", UPConstants.nameplateArrowSize, 0)
+	-- kuiPlateFrame.glow2:SetTexture("Interface\\AddOns\\UnitPlates\\img\\arrow_right")
+	-- --nameplate.glow:SetFrameLevel(1)
+	-- kuiPlateFrame.glow2:SetDrawLayer("BORDER")
+	-- --nameplate.glow2.texture:SetRotation(2)
+	-- kuiPlateFrame.glow2:SetWidth(UPConstants.nameplateArrowSize)
+	-- kuiPlateFrame.glow2:SetHeight(UPConstants.nameplateArrowSize)
+	-- kuiPlateFrame.glow2:SetVertexColor(unpack(UPglowColor))
+	-- kuiPlateFrame.glow2:Hide()
 	
 	
 	--
@@ -2212,7 +2257,7 @@ local function InitFrame(originalPlateFrame)
 	originalPlateFrame.totem.glow:SetDrawLayer("BACKGROUND")
 	originalPlateFrame.totem.glow:SetWidth(UPConstants.nameplateArrowSize)
 	originalPlateFrame.totem.glow:SetHeight(UPConstants.nameplateArrowSize)
-	originalPlateFrame.totem.glow:SetVertexColor(unpack(glowColor))
+	originalPlateFrame.totem.glow:SetVertexColor(unpack(UPglowColor))
 	originalPlateFrame.totem.glow:Hide()
 
 	originalPlateFrame.totem.glow2 = originalPlateFrame.totem:CreateTexture(nil, "BACKGROUND")
@@ -2223,7 +2268,7 @@ local function InitFrame(originalPlateFrame)
 	--nameplate.glow2.texture:SetRotation(2)
 	originalPlateFrame.totem.glow2:SetWidth(UPConstants.nameplateArrowSize)
 	originalPlateFrame.totem.glow2:SetHeight(UPConstants.nameplateArrowSize)
-	originalPlateFrame.totem.glow2:SetVertexColor(unpack(glowColor))
+	originalPlateFrame.totem.glow2:SetVertexColor(unpack(UPglowColor))
 	originalPlateFrame.totem.glow2:Hide()
 	--totem END
 	
@@ -2972,6 +3017,22 @@ UnitPlatesMainFrame:SetScript("OnUpdate", function()
 				if kuiPlateFrame.health.overlayMask then
 					kuiPlateFrame.health.overlayMask:SetFrameLevel(targetLevel + 4)
 				end
+			end
+			
+			if kuiPlateFrame.rarityIcon then
+				kuiPlateFrame.rarityIcon:SetFrameLevel(targetLevel + 3)
+			end
+			
+			if kuiPlateFrame.rarityIconR then
+				kuiPlateFrame.rarityIconR:SetFrameLevel(targetLevel + 3)
+			end
+			
+			if kuiPlateFrame.glow then
+				kuiPlateFrame.glow:SetFrameLevel(targetLevel + 4)
+			end
+			
+			if kuiPlateFrame.glow2 then
+				kuiPlateFrame.glow2:SetFrameLevel(targetLevel + 4)
 			end
 			
 			if kuiPlateFrame.typeIcon then
