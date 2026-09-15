@@ -90,6 +90,8 @@ local function InitUPConstants()
 	UPConstants.shootingIconSize = UPConstants.nameplateHealthBarHeight * 0.9
 	
 	UPConstants.pvpIconSize = UPConstants.nameplateHealthBarHeight * 1.8
+	
+	UPConstants.pvpRankIconSize = UPConstants.nameplateHealthBarHeight * 0.75
 
 	UPConstants.nameplateTypeIconSize = UPConstants.nameplateHealthBarHeight
 	UPConstants.nameplateClassIconSize = UPConstants.nameplateHealthBarHeight * 1.25
@@ -330,6 +332,12 @@ local function UpdatePlate(kuiPlateFrame)
 	kuiPlateFrame.guildTextVariable = UPApiGetGuildText(kuiPlateFrame.guid)
 	kuiPlateFrame.levelNumber = UnitLevel(kuiPlateFrame.guid)
 	kuiPlateFrame.isPlayer = UnitIsPlayer(kuiPlateFrame.guid)	
+	if kuiPlateFrame.isPlayer then
+		local playerrankname, playerrank = GetPVPRankInfo(UnitPVPRank(kuiPlateFrame.guid), kuiPlateFrame.guid)
+		kuiPlateFrame.pvpRank = playerrank
+	else
+		kuiPlateFrame.pvpRank = 0
+	end
 	kuiPlateFrame.isInCombat = UnitAffectingCombat(kuiPlateFrame.guid)
 	kuiPlateFrame.class, kuiPlateFrame.race, kuiPlateFrame.gender = UPApiGetClassRaceGender(kuiPlateFrame.guid)
 	-- print("race: "..tostring(race))
@@ -569,16 +577,27 @@ local function UpdatePlate(kuiPlateFrame)
 	--
 	-- kuiPlateFrame.combatIcon:Show()
 	
+	kuiPlateFrame.pvpRankIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", UPConstants.minimalOnePixel*1, 0)
+	
+	if kuiPlateFrame.pvpRank > 0 then
+		kuiPlateFrame.pvpRankIcon:Show()
+		kuiPlateFrame.pvpRankIcon.icon:SetTexture(string.format("Interface\\PVPRankBadges\\PVPRank%02d", kuiPlateFrame.pvpRank))
+		kuiPlateFrame.pvpIcon:SetPoint("LEFT", kuiPlateFrame.pvpRankIcon, "RIGHT", -UPConstants.pvpIconSize * 0.0, -UPConstants.pvpIconSize/4.5)
+	else
+		kuiPlateFrame.pvpRankIcon:Hide()
+		kuiPlateFrame.pvpIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", -UPConstants.pvpIconSize * 0.0, -UPConstants.pvpIconSize/4.5)
+	end
+	
 	--icon positions
 	if kuiPlateFrame.pvpIcon:IsShown() then		
 		if kuiPlateFrame.petHappiness:IsShown() then
 			--pvpIcon/petHappiness/combatIcon
-			kuiPlateFrame.pvpIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", -UPConstants.pvpIconSize * 0.0, -UPConstants.pvpIconSize/4.5)
+			-- kuiPlateFrame.pvpIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", -UPConstants.pvpIconSize * 0.0, -UPConstants.pvpIconSize/4.5)
 			kuiPlateFrame.petHappiness:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", ((2 * UPConstants.minimalOnePixel)+(UPConstants.pvpIconSize/1.8)), 0)
 			kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.petHappiness, "RIGHT", -0, -0)
 		else
 			--pvpIcon/combatIcon
-			kuiPlateFrame.pvpIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", -UPConstants.pvpIconSize * 0.0, -UPConstants.pvpIconSize/4.5)
+			-- kuiPlateFrame.pvpIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", -UPConstants.pvpIconSize * 0.0, -UPConstants.pvpIconSize/4.5)
 			kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", ((2 * UPConstants.minimalOnePixel)+(UPConstants.pvpIconSize/1.8)), -0)
 		end
 	else
@@ -1647,16 +1666,6 @@ local function InitFrame(originalPlateFrame)
 	
 	
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 	-- kuiPlateFrame.levelFrame = CreateFrame("Frame", nil, kuiPlateFrame)
 	-- kuiPlateFrame.levelFrame:SetFrameLevel(2) -- Bumped to match health bar level logic
 	-- -- kuiPlateFrame.levelFrame:SetPoint("TOPRIGHT", kuiPlateFrame.typeIcon, "TOPLEFT", 0, 0)
@@ -1839,9 +1848,21 @@ local function InitFrame(originalPlateFrame)
 	kuiPlateFrame.pvpIcon.icon:SetAllPoints()
 	kuiPlateFrame.pvpIcon.icon:SetTexture("Interface\\TargetingFrame\\UI-PVP-"..UnitFactionGroup("player"))
 	kuiPlateFrame.pvpIcon.icon:SetDrawLayer("ARTWORK", 2)
-	kuiPlateFrame.pvpIcon:Show()	
+	kuiPlateFrame.pvpIcon:Show()
 	
-	
+	kuiPlateFrame.pvpRankIcon = CreateFrame("Frame", nil, kuiPlateFrame)
+	kuiPlateFrame.pvpRankIcon:SetFrameLevel(3)
+	kuiPlateFrame.pvpRankIcon:SetPoint("LEFT", kuiPlateFrame.pvpIcon, "RIGHT", -(0), (0))
+	-- kuiPlateFrame.pvpRankIcon:SetPoint("LEFT", kuiPlateFrame.health, "RIGHT", -(UPConstants.nameplateTypeIconSize*0.75)/2, -(UPConstants.nameplateTypeIconSize*0.75)/2)
+	--kuiPlateFrame.shootingIcon:SetPoint("LEFT", kuiPlateFrame.health, "RIGHT", -0, -0)
+	kuiPlateFrame.pvpRankIcon:SetHeight(UPConstants.pvpRankIconSize)
+	kuiPlateFrame.pvpRankIcon:SetWidth(UPConstants.pvpRankIconSize)
+	--kuiPlateFrame.pvpRankIcon:SetAlpha(0.5)
+	kuiPlateFrame.pvpRankIcon.icon = kuiPlateFrame.pvpRankIcon:CreateTexture(nil, "ARTWORK")
+	kuiPlateFrame.pvpRankIcon.icon:SetAllPoints()
+	kuiPlateFrame.pvpRankIcon.icon:SetTexture(string.format("Interface\\PVPRankBadges\\PVPRank%02d", 1))
+	kuiPlateFrame.pvpRankIcon.icon:SetDrawLayer("ARTWORK", 2)
+	kuiPlateFrame.pvpRankIcon:Show()
 	
 	kuiPlateFrame.power = CreateFrame("StatusBar", nil, kuiPlateFrame)
 	kuiPlateFrame.power:SetFrameLevel(1) -- keep above glow
@@ -3043,6 +3064,10 @@ UnitPlatesMainFrame:SetScript("OnUpdate", function()
 				if kuiPlateFrame.typeIcon.overlayMask then
 					kuiPlateFrame.typeIcon.overlayMask:SetFrameLevel(targetLevel + 4)
 				end
+			end
+			
+			if kuiPlateFrame.pvpRankIcon then
+				kuiPlateFrame.pvpRankIcon:SetFrameLevel(targetLevel + 4)
 			end
 			
 			-- if kuiPlateFrame.levelFrame then
