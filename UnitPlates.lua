@@ -137,8 +137,8 @@ end
 
 --COLORS
 --local UPglowColor = {.3, 0.7, 1, 1}
-local UPglowColor = {.3, 0.7, 1, 1}
-local UPbackgroundGlowColor = {.3, 0.7, 1, 1}
+UPglowColor = {.3, 0.7, 1, 1}
+UPbackgroundGlowColor = {.3, 0.7, 1, 1}
 local hatedColor = {.7, 0.2, 0.1}
 local neutralColor = {1, 0.8, 0}
 local friendlyColor = {.2, 0.6, 0.1}
