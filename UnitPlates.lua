@@ -136,9 +136,9 @@ local function InitUPConstants()
 end
 
 --COLORS
---local UPglowColor = {.3, 0.7, 1, 1}
-UPglowColor = {.3, 0.7, 1, 1}
-UPbackgroundGlowColor = {.3, 0.7, 1, 1}
+--local glowColor = {.3, 0.7, 1, 1}
+local glowColor = {.3, 0.7, 1, 1}
+local backgroundGlowColor = {.3, 0.7, 1, 1}
 local hatedColor = {.7, 0.2, 0.1}
 local neutralColor = {1, 0.8, 0}
 local friendlyColor = {.2, 0.6, 0.1}
@@ -807,15 +807,15 @@ local function UpdatePlate(kuiPlateFrame)
 		kuiPlateFrame.originalPlateFrame.totem.glow:Show()
 		kuiPlateFrame.originalPlateFrame.totem.glow2:Show()
 		
-		-- kuiPlateFrame.health:SetBackdropColor(unpack(UPglowColor))
-		-- kuiPlateFrame.power:SetBackdropColor(unpack(UPglowColor))
-		-- kuiPlateFrame.typeIcon:SetBackdropColor(unpack(UPglowColor))
-		kuiPlateFrame.health:SetBackdropBorderColor(unpack(UPglowColor))
-		kuiPlateFrame.power:SetBackdropBorderColor(unpack(UPglowColor))
-		kuiPlateFrame.typeIcon:SetBackdropBorderColor(unpack(UPglowColor))
+		-- kuiPlateFrame.health:SetBackdropColor(unpack(glowColor))
+		-- kuiPlateFrame.power:SetBackdropColor(unpack(glowColor))
+		-- kuiPlateFrame.typeIcon:SetBackdropColor(unpack(glowColor))
+		kuiPlateFrame.health:SetBackdropBorderColor(unpack(glowColor))
+		kuiPlateFrame.power:SetBackdropBorderColor(unpack(glowColor))
+		kuiPlateFrame.typeIcon:SetBackdropBorderColor(unpack(glowColor))
 		
-		-- kuiPlateFrame.health.bgOffsetFrame:SetBackdropBorderColor(unpack(UPglowColor)) -- Very dark grey subtle border
-		-- kuiPlateFrame.health.overlayMask:SetBackdropBorderColor(unpack(UPglowColor)) -- Black masking border
+		-- kuiPlateFrame.health.bgOffsetFrame:SetBackdropBorderColor(unpack(glowColor)) -- Very dark grey subtle border
+		-- kuiPlateFrame.health.overlayMask:SetBackdropBorderColor(unpack(glowColor)) -- Black masking border
 		
 		--kuiPlateFrame:SetFrameLevel(3)
 		
@@ -1550,7 +1550,7 @@ local function InitFrame(originalPlateFrame)
 	-- originalPlateFrame.selectionGlow:SetPoint("CENTER", kuiPlateFrame.health, "CENTER", 0, 0)
 	-- originalPlateFrame.selectionGlow:SetTexture("Interface\\AddOns\\UnitPlates\\img\\dot")
 	-- originalPlateFrame.selectionGlow:SetDrawLayer("BACKGROUND")
-	-- originalPlateFrame.selectionGlow:SetVertexColor(unpack(UPbackgroundGlowColor))
+	-- originalPlateFrame.selectionGlow:SetVertexColor(unpack(backgroundGlowColor))
 	-- originalPlateFrame.selectionGlow:SetAlpha(UPConstants.selectionGlowAlpha)
 	-- originalPlateFrame.selectionGlow:SetWidth((UPConstants.nameplateHealthBarWidth + 60))
 	-- originalPlateFrame.selectionGlow:SetHeight((UPConstants.nameplateHealthBarHeight + 60))
@@ -1560,7 +1560,7 @@ local function InitFrame(originalPlateFrame)
 	-- originalPlateFrame.selectionGlow2:SetPoint("CENTER", kuiPlateFrame.health, "CENTER", 0, 0)
 	-- originalPlateFrame.selectionGlow2:SetTexture("Interface\\AddOns\\UnitPlates\\img\\dot")
 	-- originalPlateFrame.selectionGlow2:SetDrawLayer("BACKGROUND")
-	-- originalPlateFrame.selectionGlow2:SetVertexColor(unpack(UPbackgroundGlowColor))
+	-- originalPlateFrame.selectionGlow2:SetVertexColor(unpack(backgroundGlowColor))
 	-- originalPlateFrame.selectionGlow2:SetAlpha(UPConstants.selectionGlowAlpha)
 	-- originalPlateFrame.selectionGlow2:SetWidth((UPConstants.nameplateHealthBarWidth + 60))
 	-- originalPlateFrame.selectionGlow2:SetHeight((UPConstants.nameplateHealthBarHeight + 60))
@@ -1908,7 +1908,7 @@ local function InitFrame(originalPlateFrame)
 	originalPlateFrame.selectionGlow:SetPoint("CENTER", kuiPlateFrame.health, "CENTER", 0, 0)
 	originalPlateFrame.selectionGlow:SetTexture("Interface\\AddOns\\UnitPlates\\img\\dot")
 	originalPlateFrame.selectionGlow:SetDrawLayer("BACKGROUND")
-	originalPlateFrame.selectionGlow:SetVertexColor(unpack(UPbackgroundGlowColor))
+	originalPlateFrame.selectionGlow:SetVertexColor(unpack(backgroundGlowColor))
 	originalPlateFrame.selectionGlow:SetAlpha(UPConstants.selectionGlowAlpha)
 	originalPlateFrame.selectionGlow:SetWidth((UPConstants.nameplateHealthBarWidth + 60))
 	originalPlateFrame.selectionGlow:SetHeight((UPConstants.nameplateHealthBarHeight + 60))
@@ -1919,7 +1919,7 @@ local function InitFrame(originalPlateFrame)
 	originalPlateFrame.selectionGlow2:SetPoint("CENTER", kuiPlateFrame.health, "CENTER", 0, 0)
 	originalPlateFrame.selectionGlow2:SetTexture("Interface\\AddOns\\UnitPlates\\img\\dot")
 	originalPlateFrame.selectionGlow2:SetDrawLayer("BACKGROUND")
-	originalPlateFrame.selectionGlow2:SetVertexColor(unpack(UPbackgroundGlowColor))
+	originalPlateFrame.selectionGlow2:SetVertexColor(unpack(backgroundGlowColor))
 	originalPlateFrame.selectionGlow2:SetAlpha(UPConstants.selectionGlowAlpha)
 	originalPlateFrame.selectionGlow2:SetWidth((UPConstants.nameplateHealthBarWidth + 60))
 	originalPlateFrame.selectionGlow2:SetHeight((UPConstants.nameplateHealthBarHeight + 60))
@@ -1937,7 +1937,7 @@ local function InitFrame(originalPlateFrame)
 	kuiPlateFrame.glow:SetWidth(UPConstants.nameplateArrowSize)
 	kuiPlateFrame.glow:SetHeight(UPConstants.nameplateArrowSize)
 	kuiPlateFrame.glow.icon = kuiPlateFrame.glow:CreateTexture(nil, "ARTWORK") --BORDER
-	kuiPlateFrame.glow.icon:SetVertexColor(unpack(UPglowColor))
+	kuiPlateFrame.glow.icon:SetVertexColor(unpack(glowColor))
 	kuiPlateFrame.glow.icon:SetAllPoints()
 	kuiPlateFrame.glow.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\arrow_left")
 	kuiPlateFrame.glow:Hide()
@@ -1947,7 +1947,7 @@ local function InitFrame(originalPlateFrame)
 	kuiPlateFrame.glow2:SetWidth(UPConstants.nameplateArrowSize)
 	kuiPlateFrame.glow2:SetHeight(UPConstants.nameplateArrowSize)
 	kuiPlateFrame.glow2.icon = kuiPlateFrame.glow2:CreateTexture(nil, "ARTWORK") --BORDER
-	kuiPlateFrame.glow2.icon:SetVertexColor(unpack(UPglowColor))
+	kuiPlateFrame.glow2.icon:SetVertexColor(unpack(glowColor))
 	kuiPlateFrame.glow2.icon:SetAllPoints()
 	kuiPlateFrame.glow2.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\arrow_right")
 	kuiPlateFrame.glow2:Hide()
@@ -1960,7 +1960,7 @@ local function InitFrame(originalPlateFrame)
 	-- kuiPlateFrame.glow:SetDrawLayer("BORDER")
 	-- kuiPlateFrame.glow:SetWidth(UPConstants.nameplateArrowSize)
 	-- kuiPlateFrame.glow:SetHeight(UPConstants.nameplateArrowSize)
-	-- kuiPlateFrame.glow:SetVertexColor(unpack(UPglowColor))
+	-- kuiPlateFrame.glow:SetVertexColor(unpack(glowColor))
 	-- kuiPlateFrame.glow:Hide()
 
 	-- kuiPlateFrame.glow2 = kuiPlateFrame:CreateTexture(nil, "BACKGROUND")
@@ -1971,7 +1971,7 @@ local function InitFrame(originalPlateFrame)
 	-- --nameplate.glow2.texture:SetRotation(2)
 	-- kuiPlateFrame.glow2:SetWidth(UPConstants.nameplateArrowSize)
 	-- kuiPlateFrame.glow2:SetHeight(UPConstants.nameplateArrowSize)
-	-- kuiPlateFrame.glow2:SetVertexColor(unpack(UPglowColor))
+	-- kuiPlateFrame.glow2:SetVertexColor(unpack(glowColor))
 	-- kuiPlateFrame.glow2:Hide()
 	
 	
@@ -2257,7 +2257,7 @@ local function InitFrame(originalPlateFrame)
 	originalPlateFrame.totem.glow:SetDrawLayer("BACKGROUND")
 	originalPlateFrame.totem.glow:SetWidth(UPConstants.nameplateArrowSize)
 	originalPlateFrame.totem.glow:SetHeight(UPConstants.nameplateArrowSize)
-	originalPlateFrame.totem.glow:SetVertexColor(unpack(UPglowColor))
+	originalPlateFrame.totem.glow:SetVertexColor(unpack(glowColor))
 	originalPlateFrame.totem.glow:Hide()
 
 	originalPlateFrame.totem.glow2 = originalPlateFrame.totem:CreateTexture(nil, "BACKGROUND")
@@ -2268,7 +2268,7 @@ local function InitFrame(originalPlateFrame)
 	--nameplate.glow2.texture:SetRotation(2)
 	originalPlateFrame.totem.glow2:SetWidth(UPConstants.nameplateArrowSize)
 	originalPlateFrame.totem.glow2:SetHeight(UPConstants.nameplateArrowSize)
-	originalPlateFrame.totem.glow2:SetVertexColor(unpack(UPglowColor))
+	originalPlateFrame.totem.glow2:SetVertexColor(unpack(glowColor))
 	originalPlateFrame.totem.glow2:Hide()
 	--totem END
 	
