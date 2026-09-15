@@ -333,10 +333,17 @@ local function UpdatePlate(kuiPlateFrame)
 	kuiPlateFrame.levelNumber = UnitLevel(kuiPlateFrame.guid)
 	kuiPlateFrame.isPlayer = UnitIsPlayer(kuiPlateFrame.guid)	
 	if kuiPlateFrame.isPlayer then
+		--local titleId = GetCurrentTitle()
+		--local titleName = GetTitleName(titleId)
+		--local titleName = UnitPVPName(kuiPlateFrame.guid) or ""
+		local titleName = ""
+		kuiPlateFrame.titleName = titleName
+	
 		local playerrankname, playerrank = GetPVPRankInfo(UnitPVPRank(kuiPlateFrame.guid), kuiPlateFrame.guid)
 		kuiPlateFrame.pvpRank = playerrank
 	else
 		kuiPlateFrame.pvpRank = 0
+		kuiPlateFrame.titleName = ""
 	end
 	kuiPlateFrame.isInCombat = UnitAffectingCombat(kuiPlateFrame.guid)
 	kuiPlateFrame.class, kuiPlateFrame.race, kuiPlateFrame.gender = UPApiGetClassRaceGender(kuiPlateFrame.guid)
@@ -437,9 +444,9 @@ local function UpdatePlate(kuiPlateFrame)
 	--setName
 	local nameTranslation = UPCompatWoWTranslateGetCachedNameTranslation(kuiPlateFrame.nameTextVariable)
 	if nameTranslation and (nameTranslation ~= '') then
-		kuiPlateFrame.name:SetText(nameTranslation.."*")
+		kuiPlateFrame.name:SetText(kuiPlateFrame.titleName.." "..nameTranslation.."*")
 	else
-		kuiPlateFrame.name:SetText(kuiPlateFrame.nameTextVariable)
+		kuiPlateFrame.name:SetText(kuiPlateFrame.titleName.." "..kuiPlateFrame.nameTextVariable)
 	end
 	kuiPlateFrame.name:SetTextColor(1,1,1,1)
 	--setName end
@@ -3066,10 +3073,6 @@ UnitPlatesMainFrame:SetScript("OnUpdate", function()
 				end
 			end
 			
-			if kuiPlateFrame.pvpRankIcon then
-				kuiPlateFrame.pvpRankIcon:SetFrameLevel(targetLevel + 4)
-			end
-			
 			-- if kuiPlateFrame.levelFrame then
 				-- if kuiPlateFrame.levelFrame.bgOffsetFrame then
 					-- kuiPlateFrame.levelFrame.bgOffsetFrame:SetFrameLevel(targetLevel + 2)
@@ -3103,6 +3106,10 @@ UnitPlatesMainFrame:SetScript("OnUpdate", function()
 			
 			if kuiPlateFrame.shootingIcon then
 				kuiPlateFrame.shootingIcon:SetFrameLevel(targetLevel + 5)
+			end
+			
+			if kuiPlateFrame.pvpRankIcon then
+				kuiPlateFrame.pvpRankIcon:SetFrameLevel(targetLevel + 5)
 			end
 			
 			if kuiPlateFrame.pvpIcon then
