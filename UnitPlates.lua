@@ -383,7 +383,7 @@ local function UpdatePlate(kuiPlateFrame)
 	--init data end
 	
 	--hide plate early to avoid calculations
-	if (not kuiPlateFrame.isTarget) and kuiPlateFrame.isPet and (kuiPlateFrame.creatureType == "NOT SPECIFIED") then
+	if (not kuiPlateFrame.isTarget) and kuiPlateFrame.isPet and (kuiPlateFrame.levelNumber == 1 or (kuiPlateFrame.creatureType == "NOT SPECIFIED")) then
 		--print(kuiPlateFrame.nameTextVariable.." creaturetype: "..kuiPlateFrame.creatureType)
 		--unknown creature type is NOT SPECIFIED
 		--hide entirely
