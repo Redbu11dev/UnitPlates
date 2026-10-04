@@ -169,6 +169,7 @@ end
 
 function UPApiGetCreatureType(guid)
 	local creatureType = UnitCreatureType(guid)
+	--print("creatureType "..creatureType)
 	--most probably just an unknown type
 	if (guid and (not creatureType)) then
 		creatureType = "UNKNOWN"

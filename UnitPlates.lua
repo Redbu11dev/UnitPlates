@@ -586,6 +586,12 @@ local function UpdatePlate(kuiPlateFrame)
 	
 	kuiPlateFrame.pvpRankIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", UPConstants.minimalOnePixel*1, 0)
 	
+	--kuiPlateFrame.pvpRank = 2
+	--kuiPlateFrame.pvpIcon:Show()
+	--kuiPlateFrame.combatIcon:Show()
+	--kuiPlateFrame.petHappiness.icon:SetTexCoord(0.375, 0.5625, 0, 0.359375)
+	--kuiPlateFrame.petHappiness:Show()
+	
 	if kuiPlateFrame.pvpRank > 0 then
 		kuiPlateFrame.pvpRankIcon:Show()
 		kuiPlateFrame.pvpRankIcon.icon:SetTexture(string.format("Interface\\PVPRankBadges\\PVPRank%02d", kuiPlateFrame.pvpRank))
@@ -605,7 +611,12 @@ local function UpdatePlate(kuiPlateFrame)
 		else
 			--pvpIcon/combatIcon
 			-- kuiPlateFrame.pvpIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", -UPConstants.pvpIconSize * 0.0, -UPConstants.pvpIconSize/4.5)
-			kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", ((2 * UPConstants.minimalOnePixel)+(UPConstants.pvpIconSize/1.8)), -0)
+			if kuiPlateFrame.pvpRankIcon:IsShown() then
+				kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", ((2 * UPConstants.minimalOnePixel)+(UPConstants.pvpIconSize/1.8))+(2 * UPConstants.minimalOnePixel)+(UPConstants.pvpRankIconSize/1.8), -0)
+			else
+				--pvp icon/combat icon
+				kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", ((-2 * UPConstants.minimalOnePixel)+(UPConstants.pvpIconSize/1.8)), -0)
+			end
 		end
 	else
 		if kuiPlateFrame.petHappiness:IsShown() then
@@ -614,7 +625,11 @@ local function UpdatePlate(kuiPlateFrame)
 			kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.petHappiness, "RIGHT", -0, -0)
 		else
 			--only combat icon
-			kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", -2 * UPConstants.minimalOnePixel, -0)
+			if kuiPlateFrame.pvpRankIcon:IsShown() then
+				kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", (5 * UPConstants.minimalOnePixel)+(UPConstants.pvpRankIconSize/1.8), -0)
+			else
+				kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", -2 * UPConstants.minimalOnePixel, -0)
+			end
 		end
 	end
 	--icon positions end
