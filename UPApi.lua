@@ -1,7 +1,7 @@
 local _G = getfenv(0)
 
 local function UPApiGetAdditionalAuraPollingDelaySeconds()
-	return 0
+	return 0.1
 
 	-- local fallbackDelay = 0.2 --0.2 default fallback
     

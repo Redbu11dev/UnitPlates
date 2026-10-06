@@ -180,6 +180,7 @@ UPLibAuraDurationsByRank = {
   
   --warlock
   ['Demon Armor']={[0]=1800.0,[1]=1800.0,[2]=1800.0,[3]=1800.0,[4]=1800.0,[5]=1800.0,},
+  ['Drain Soul']={[0]=6.0,},
   
   
   --mage
@@ -484,7 +485,6 @@ UPLibAuraDurationsByRank = {
   ['Dominion of Soul']={[0]=60.0,},
   ['Drain Life']={[0]=5.0,},
   ['Drain Mana']={[0]=5.0,},
-  ['Drain Soul']={[0]=15.0,},
   ['Draw Spirit']={[0]=5.0,},
   ['Draw of Thistlenettle']={[0]=8.0,},
   ['Dreadful Fright']={[0]=5.0,},
