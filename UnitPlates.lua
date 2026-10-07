@@ -2886,7 +2886,7 @@ local function OnPlayerEnteringWorld()
 	if pfQuest_config then
 		local hasConflicts = false
 		
-		if pfQuest_config["nameplatesEnabled"] == "1" then
+		if (not UPCompatPfQuestHasHearthDB()) and pfQuest_config["nameplatesEnabled"] == "1" then
 			pfQuest_config["nameplatesEnabled"] = "0"
 			hasConflicts = true
 		end

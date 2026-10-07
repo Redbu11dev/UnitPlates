@@ -129,6 +129,10 @@ local UPComapt_PFQUEST_SWORD_ICON = "Interface\\AddOns\\UnitPlates\\img\\quest\\
 local UPComapt_PFQUEST_BAG_ICON = "Interface\\AddOns\\UnitPlates\\img\\quest\\loot"
 local UPComapt_PFQUEST_TURNIN_ICON = "Interface\\AddOns\\UnitPlates\\img\\quest\\turnin_yellow"
 
+function UPCompatPfQuestHasHearthDB()
+	return type(pfQuestHearthDB) == "table" and type(pfQuestHearthDB.GetQuestTargetsAsync) == "function"
+end
+
 UPCompatPfQuestQuestObjectives = {}
 
 local function UPCompatPfQuestScanQuestObjectives()
