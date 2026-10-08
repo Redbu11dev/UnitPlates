@@ -177,6 +177,72 @@ local mainFontPath = "Interface\\AddOns\\UnitPlates\\fonts\\INTERNATIONAL_FRIZQT
 
 ---------------------------CONSTANTS END
 
+-- Hot-path locals: the per-plate and per-frame updaters call these dozens of
+-- times per frame; resolving them as upvalues avoids repeated global lookups.
+local GetTime = GetTime
+local UnitExists = UnitExists
+local UnitName = UnitName
+local UnitLevel = UnitLevel
+local IsMouselooking = IsMouselooking
+local MouseIsOver = MouseIsOver
+local math_floor = math.floor
+local math_mod = math.mod
+local string_find = string.find
+local string_gfind = string.gfind
+local string_upper = string.upper
+local table_insert = table.insert
+local table_sort = table.sort
+local table_getn = table.getn
+
+-- Ignore-lists for aura polling: re-parsed only when the setting text changes
+-- instead of on every plate's every aura poll.
+local UPCachedIgnoredBuffNames = {}
+local UPCachedIgnoredDebuffNames = {}
+local UPCachedIgnoredBuffNamesRaw = nil
+local UPCachedIgnoredDebuffNamesRaw = nil
+
+-- Player state used by every plate update (own guild, pet UI, pet happiness,
+-- own name). Refreshed at most once a second instead of per plate per tick.
+local UPCachedPlayerState = {
+	myGuildName = nil,
+	myPlayerHasPetUI = nil,
+	myPlayerPetIsHunterPet = nil,
+	playerName = nil,
+	petHappiness = nil,
+}
+local UPCachedPlayerStateAt = 0
+
+local function UPGetCachedPlayerState()
+	local now = GetTime()
+	if (now - UPCachedPlayerStateAt) > 1 then
+		UPCachedPlayerStateAt = now
+		UPCachedPlayerState.myGuildName = GetGuildInfo("player")
+		UPCachedPlayerState.myPlayerHasPetUI, UPCachedPlayerState.myPlayerPetIsHunterPet = HasPetUI()
+		UPCachedPlayerState.playerName = UnitName("player")
+		UPCachedPlayerState.petHappiness = GetPetHappiness()
+	end
+	return UPCachedPlayerState
+end
+
+local function UPGetIgnoredAuraNames()
+	if UnitPlatesSettings.ignoredBuffNames ~= UPCachedIgnoredBuffNamesRaw then
+		UPCachedIgnoredBuffNamesRaw = UnitPlatesSettings.ignoredBuffNames
+		UPCachedIgnoredBuffNames = {}
+		for word in string_gfind(UPCachedIgnoredBuffNamesRaw, '([^,]+)') do
+			-- stored uppercase so the aura lookup needs no per-aura string.upper
+			table_insert(UPCachedIgnoredBuffNames, string_upper(UPCoreTrimString(word)))
+		end
+	end
+	if UnitPlatesSettings.ignoredDebuffNames ~= UPCachedIgnoredDebuffNamesRaw then
+		UPCachedIgnoredDebuffNamesRaw = UnitPlatesSettings.ignoredDebuffNames
+		UPCachedIgnoredDebuffNames = {}
+		for word in string_gfind(UPCachedIgnoredDebuffNamesRaw, '([^,]+)') do
+			table_insert(UPCachedIgnoredDebuffNames, string_upper(UPCoreTrimString(word)))
+		end
+	end
+	return UPCachedIgnoredBuffNames, UPCachedIgnoredDebuffNames
+end
+
 --aura
 local function HideAllAuras(kuiPlateFrame)
 	kuiPlateFrame.unitAuras = {}
@@ -239,6 +305,8 @@ local function ResetFrame(kuiPlateFrame, originalPlateFrame)
 	kuiPlateFrame.critElap = 0
 	kuiPlateFrame.aurasUpdateElapsed = 0
 	kuiPlateFrame.clickElapsed = 0
+	-- a freshly (re)shown plate needs the full static rebuild on its next tick
+	kuiPlateFrame.doFullUpdate = true
 	
 	--kuiPlateFrame:SetFrameLevel(0)
 	kuiPlateFrame.glow:Hide() 
@@ -251,6 +319,13 @@ local function ResetFrame(kuiPlateFrame, originalPlateFrame)
 	kuiPlateFrame.castWarning:Hide()
 	HideAllAuras(kuiPlateFrame)
 	kuiPlateFrame.guid = nil
+	-- isBoss is only ever set (never cleared) when the skull region is visible;
+	-- reset it here so a recycled plate doesn't inherit it from a previous unit
+	kuiPlateFrame.isBoss = false
+	-- clear the identity markers so the next UpdatePlate treats this as a new unit
+	kuiPlateFrame.lastFullGuid = nil
+	kuiPlateFrame.lastFullName = nil
+	kuiPlateFrame.lastFullLevel = nil
 end
 
 local function OnFrameShow(originalPlateFrame)
@@ -262,129 +337,149 @@ end
 -------------------------------------------------------
 
 local function UpdatePlate(kuiPlateFrame)
-	--print("here1")
-	kuiPlateFrame.originalPlateFrame.totem:Hide()
-	kuiPlateFrame:Show()
-	kuiPlateFrame.typeIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\loading.tga")
-	kuiPlateFrame.isTrivial = false
-	kuiPlateFrame.guild:SetText("")
-	
-	if not kuiPlateFrame.originalPlateFrame.name then return nil end
-	kuiPlateFrame.oldName = kuiPlateFrame.originalPlateFrame.name
-	kuiPlateFrame.originalPlateFrame.name:Hide()
-	
-	if not kuiPlateFrame.originalPlateFrame.level then return nil end
-	kuiPlateFrame.oldLevel = kuiPlateFrame.originalPlateFrame.level
-	kuiPlateFrame.originalPlateFrame.level:Hide()
-	
-	-- print("here2")
-	
-	--raid icon
-	--adjust aurcasContainer position
-	if kuiPlateFrame.classIcon:IsShown() then
-		kuiPlateFrame.aurasContainer:SetPoint("BOTTOM", kuiPlateFrame.name, "TOP", 0, UPConstants.nameplateClassIconSize / 2)
-	else
-		kuiPlateFrame.aurasContainer:SetPoint("BOTTOM", kuiPlateFrame.name, "TOP", 0, 2 * UPConstants.minimalOnePixel)
-	end
-	
-	if kuiPlateFrame.originalPlateFrame.raidIconRegion then
-		kuiPlateFrame.originalPlateFrame.raidIconRegion:SetParent(kuiPlateFrame.originalPlateFrame)
-		kuiPlateFrame.originalPlateFrame.raidIconRegion:SetWidth(UPConstants.raidIconSize)
-		kuiPlateFrame.originalPlateFrame.raidIconRegion:SetHeight(UPConstants.raidIconSize)
-		kuiPlateFrame.originalPlateFrame.raidIconRegion:ClearAllPoints()
-		
-		--kuiPlateFrame.originalPlateFrame.raidIconRegion:SetPoint("BOTTOM", GetHighestVisibleAuraFrame(kuiPlateFrame), "TOP", 0, 2 * UPConstants.minimalOnePixel)
-		
-		local auraFrame = GetHighestVisibleAuraFrame(kuiPlateFrame)
-		
-		-- 1. Get the Center X and Center Y of the aura frame
-        local auraTopY = auraFrame:GetTop()
-		if not auraTopY then
-			auraTopY = 0
-		end
-		kuiPlateFrame.originalPlateFrame.raidIconRegion:SetPoint("CENTER", kuiPlateFrame.name, "CENTER", 0, 0) -- Align X center with nameplate
-        kuiPlateFrame.originalPlateFrame.raidIconRegion:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, auraTopY + (2 * UPConstants.minimalOnePixel)) -- Align BOTTOM Y with screen coordinate
-	end
-	--raid icon end
-	
-	--own player
-	local isMyPlayerInParty = GetNumPartyMembers() or GetNumPartyMembers()
-	local myPlayerHasPetUI, myPlayerPetIsHunterPet = HasPetUI()
-	local myGuildName, myGuildRankName, myGuildRankIndex = GetGuildInfo("player")
-	--own player end
-	
-	--init data
+	-- The 10ms tick passes doFullUpdate=false and only refreshes fast-changing
+	-- state (health, cast bar, target/glow, power). The 100ms tick passes true
+	-- and additionally rebuilds the expensive mostly-static content (tooltip
+	-- guild/pet scans, texts, icons, colors, trivial sizing).
+	local doFullUpdate = kuiPlateFrame.doFullUpdate
+	kuiPlateFrame.doFullUpdate = false
+
+	-- guid is needed by every fast-path block; keep it current per tick.
 	kuiPlateFrame.guid = kuiPlateFrame.originalPlateFrame:GetName(1)
-	
-	--local isWoWTranslateAvailable = WoWTranslate_API and WoWTranslate_API.IsAvailable()
-	
-	if kuiPlateFrame.bossIconRegion and kuiPlateFrame.bossIconRegion:IsVisible() then
-		-- This unit is a Boss (it has the skull icon active)
-		bossIconRegion:SetTexture(nil)
-		kuiPlateFrame.isBoss = true
+
+	-- The engine recycles nameplate frames between units while they stay
+	-- visible. If the guid changed since the last full rebuild, force one now
+	-- so no stale content from the previous unit is shown. (Only the guid is
+	-- compared: UnitName/UnitLevel can transiently return nil for a valid guid
+	-- and would make this check fire spuriously, flashing the plate.)
+	if not doFullUpdate and kuiPlateFrame.guid
+		and kuiPlateFrame.lastFullGuid
+		and (kuiPlateFrame.guid ~= kuiPlateFrame.lastFullGuid) then
+		doFullUpdate = true
 	end
-	
-	--print("UnitName(kuiPlateFrame.guid): "..tostring(UnitName(kuiPlateFrame.guid)))
-	kuiPlateFrame.nameTextVariable = UnitName(kuiPlateFrame.guid)	
-	
-	kuiPlateFrame.originalPlateFrame.isTotem = UPApiIsTotem(kuiPlateFrame.nameTextVariable)
-	
-	kuiPlateFrame.guildTextVariable = UPApiGetGuildText(kuiPlateFrame.guid)
-	kuiPlateFrame.levelNumber = UnitLevel(kuiPlateFrame.guid)
-	kuiPlateFrame.isPlayer = UnitIsPlayer(kuiPlateFrame.guid)	
-	if kuiPlateFrame.isPlayer then
-		--local titleId = GetCurrentTitle()
-		--local titleName = GetTitleName(titleId)
-		--local titleName = UnitPVPName(kuiPlateFrame.guid) or ""
-		local titleName = ""
-		kuiPlateFrame.titleName = titleName
-	
-		local playerrankname, playerrank = GetPVPRankInfo(UnitPVPRank(kuiPlateFrame.guid), kuiPlateFrame.guid)
-		kuiPlateFrame.pvpRank = playerrank
-	else
-		kuiPlateFrame.pvpRank = 0
-		kuiPlateFrame.titleName = ""
+
+	if doFullUpdate then
+		-- NOTE: no totem:Hide()/kuiPlateFrame:Show() resets here -- totem and
+		-- plate visibility are owned by the TOTEM section in the fast path
+		-- (below), which runs every tick. Resetting them here would flash the
+		-- normal plate over totems once per slow tick.
+		kuiPlateFrame.isTrivial = false
+
+		if not kuiPlateFrame.originalPlateFrame.name then return nil end
+		kuiPlateFrame.oldName = kuiPlateFrame.originalPlateFrame.name
+		kuiPlateFrame.originalPlateFrame.name:Hide()
+
+		if not kuiPlateFrame.originalPlateFrame.level then return nil end
+		kuiPlateFrame.oldLevel = kuiPlateFrame.originalPlateFrame.level
+		kuiPlateFrame.originalPlateFrame.level:Hide()
+
+		--raid icon
+		--adjust aurasContainer position
+		if kuiPlateFrame.classIcon:IsShown() then
+			kuiPlateFrame.aurasContainer:SetPoint("BOTTOM", kuiPlateFrame.name, "TOP", 0, UPConstants.nameplateClassIconSize / 2)
+		else
+			kuiPlateFrame.aurasContainer:SetPoint("BOTTOM", kuiPlateFrame.name, "TOP", 0, 2 * UPConstants.minimalOnePixel)
+		end
+
+		if kuiPlateFrame.originalPlateFrame.raidIconRegion then
+			kuiPlateFrame.originalPlateFrame.raidIconRegion:SetParent(kuiPlateFrame.originalPlateFrame)
+			kuiPlateFrame.originalPlateFrame.raidIconRegion:SetWidth(UPConstants.raidIconSize)
+			kuiPlateFrame.originalPlateFrame.raidIconRegion:SetHeight(UPConstants.raidIconSize)
+			kuiPlateFrame.originalPlateFrame.raidIconRegion:ClearAllPoints()
+
+			local auraFrame = GetHighestVisibleAuraFrame(kuiPlateFrame)
+
+			local auraTopY = auraFrame:GetTop()
+			if not auraTopY then
+				auraTopY = 0
+			end
+			kuiPlateFrame.originalPlateFrame.raidIconRegion:SetPoint("CENTER", kuiPlateFrame.name, "CENTER", 0, 0)
+			kuiPlateFrame.originalPlateFrame.raidIconRegion:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, auraTopY + (2 * UPConstants.minimalOnePixel))
+		end
+		--raid icon end
+
+		--own player state (guild/pet/party): identical for every plate, cached for
+		--a second instead of being fetched per plate per tick.
+		local playerState = UPGetCachedPlayerState()
+		local myGuildName = playerState.myGuildName
+		local myPlayerHasPetUI = playerState.myPlayerHasPetUI
+		local myPlayerPetIsHunterPet = playerState.myPlayerPetIsHunterPet
+		--own player end
+
+		if kuiPlateFrame.originalPlateFrame.bossIconRegion and kuiPlateFrame.originalPlateFrame.bossIconRegion:IsVisible() then
+			-- This unit is a Boss (it has the skull icon active)
+			kuiPlateFrame.originalPlateFrame.bossIconRegion:SetTexture(nil)
+			kuiPlateFrame.isBoss = true
+		end
+
+		kuiPlateFrame.nameTextVariable = UnitName(kuiPlateFrame.guid)
+
+		kuiPlateFrame.originalPlateFrame.isTotem = UPApiIsTotem(kuiPlateFrame.nameTextVariable)
+
+		kuiPlateFrame.guildTextVariable = UPApiGetGuildText(kuiPlateFrame.guid)
+		kuiPlateFrame.levelNumber = UnitLevel(kuiPlateFrame.guid)
+		kuiPlateFrame.isPlayer = UnitIsPlayer(kuiPlateFrame.guid)
+		-- remember the identity this static rebuild was based on (see the
+		-- frame-recycling guard at the top of UpdatePlate). These markers are
+		-- only written when the reads actually succeeded, so a transient nil
+		-- can never poison the guard into re-firing every tick.
+		if kuiPlateFrame.guid and kuiPlateFrame.nameTextVariable then
+			kuiPlateFrame.lastFullGuid = kuiPlateFrame.guid
+			kuiPlateFrame.lastFullName = kuiPlateFrame.nameTextVariable
+			kuiPlateFrame.lastFullLevel = kuiPlateFrame.levelNumber
+		end
+		if kuiPlateFrame.isPlayer then
+			local titleName = ""
+			kuiPlateFrame.titleName = titleName
+
+			local playerrankname, playerrank = GetPVPRankInfo(UnitPVPRank(kuiPlateFrame.guid), kuiPlateFrame.guid)
+			kuiPlateFrame.pvpRank = playerrank
+		else
+			kuiPlateFrame.pvpRank = 0
+			kuiPlateFrame.titleName = ""
+		end
+		kuiPlateFrame.class, kuiPlateFrame.race, kuiPlateFrame.gender = UPApiGetClassRaceGender(kuiPlateFrame.guid)
+		kuiPlateFrame.classification = UnitClassification(kuiPlateFrame.guid)
+		kuiPlateFrame.isPlusMob = UnitIsPlusMob(kuiPlateFrame.guid)
+		kuiPlateFrame.creatureType = UPApiGetCreatureType(kuiPlateFrame.guid)
+		kuiPlateFrame.levelDifficultyColor = UPApiGetLevelDifficultyColor(kuiPlateFrame.levelNumber)
+		kuiPlateFrame.isGrayLevel = UPApiIsGrayLevel(kuiPlateFrame.levelNumber)
+		kuiPlateFrame.isPet = UPApiIsPet(kuiPlateFrame.guid)
+		if kuiPlateFrame.isPet and kuiPlateFrame.guildTextVariable ~= "" then
+			kuiPlateFrame.isMyPet = false
+			if string_find(kuiPlateFrame.guildTextVariable, playerState.playerName.."'s Pet") then
+				kuiPlateFrame.isMyPet = true
+			end
+			if not kuiPlateFrame.isMyPet then
+				if string_find(kuiPlateFrame.guildTextVariable, playerState.playerName.."'s Minion") then
+					kuiPlateFrame.isMyPet = true
+				end
+			end
+		end
+
+		if kuiPlateFrame.isGrayLevel or kuiPlateFrame.isPet or kuiPlateFrame.creatureType == "CRITTER" then
+			kuiPlateFrame.isTrivial = true
+		end
+		--static data end
 	end
+
+	-- fast-path state, refreshed every tick ------------------------------
 	kuiPlateFrame.isInCombat = UnitAffectingCombat(kuiPlateFrame.guid)
-	kuiPlateFrame.class, kuiPlateFrame.race, kuiPlateFrame.gender = UPApiGetClassRaceGender(kuiPlateFrame.guid)
-	-- print("race: "..tostring(race))
-	-- print("gender: "..tostring(gender))
-	kuiPlateFrame.classification = UnitClassification(kuiPlateFrame.guid)
-	kuiPlateFrame.isPlusMob = UnitIsPlusMob(kuiPlateFrame.guid)
-	kuiPlateFrame.creatureType = UPApiGetCreatureType(kuiPlateFrame.guid)	
 	kuiPlateFrame.unitMaxPower = UnitManaMax(kuiPlateFrame.guid)
 	if kuiPlateFrame.unitMaxPower > 0 then
 		kuiPlateFrame.unitPower = UnitMana(kuiPlateFrame.guid)
-		kuiPlateFrame.unitPowerType = UnitPowerType(kuiPlateFrame.guid)	
+		kuiPlateFrame.unitPowerType = UnitPowerType(kuiPlateFrame.guid)
 	else
 		kuiPlateFrame.unitPower = 0
 		kuiPlateFrame.unitPowerType = 0
 	end
 	kuiPlateFrame.isTarget = UPApiIsTarget(kuiPlateFrame.guid)
-	kuiPlateFrame.levelDifficultyColor = UPApiGetLevelDifficultyColor(kuiPlateFrame.levelNumber)
-	kuiPlateFrame.isGrayLevel = UPApiIsGrayLevel(kuiPlateFrame.levelNumber)
-	kuiPlateFrame.isPet = UPApiIsPet(kuiPlateFrame.guid)
-	if kuiPlateFrame.isPet and kuiPlateFrame.guildTextVariable ~= "" then
-		kuiPlateFrame.isMyPet = false
-		if string.find(kuiPlateFrame.guildTextVariable, UnitName("player").."'s Pet") then
-			kuiPlateFrame.isMyPet = true
-		end
-		if not kuiPlateFrame.isMyPet then
-			if string.find(kuiPlateFrame.guildTextVariable, UnitName("player").."'s Minion") then
-				kuiPlateFrame.isMyPet = true
-			end
-		end
-	end
 	kuiPlateFrame.isTapped = (UnitIsTapped(kuiPlateFrame.guid) and not (UnitIsTappedByPlayer(kuiPlateFrame.guid)))
-	
-	if kuiPlateFrame.isGrayLevel or kuiPlateFrame.isPet or kuiPlateFrame.creatureType == "CRITTER" then
-		kuiPlateFrame.isTrivial = true
-	end
-	--init data end
-	
-	--hide plate early to avoid calculations
+
+	--hide plate early to avoid calculations (every tick: on the full tick the
+	--fresh static data decides, and on fast ticks we must keep re-hiding so the
+	--TOTEM section's kuiPlateFrame:Show() below can't resurrect a hidden plate)
 	if (not kuiPlateFrame.isTarget) and kuiPlateFrame.isPet and (kuiPlateFrame.levelNumber == 1 or (kuiPlateFrame.creatureType == "NOT SPECIFIED")) then
-		--print(kuiPlateFrame.nameTextVariable.." creaturetype: "..kuiPlateFrame.creatureType)
 		--unknown creature type is NOT SPECIFIED
 		--hide entirely
 		kuiPlateFrame.originalPlateFrame.selectionGlow:Hide()
@@ -393,19 +488,13 @@ local function UpdatePlate(kuiPlateFrame)
 		kuiPlateFrame:Hide()
 		return
 	end
-	--
-	
-	
-	
-	-- print("here3")
-	
+
 	--combo points update
 	if kuiPlateFrame.isTarget then
 		kuiPlateFrame.combopoints.points = GetComboPoints("player", "target")
 		if not kuiPlateFrame.combopoints.points or kuiPlateFrame.combopoints.points < 1 then
 			kuiPlateFrame.combopoints:Hide()
 		else
-			--kuiPlateFrame.combopoints.color = combopointsColors.full
 			for i = 1, 5 do
 				if i <= kuiPlateFrame.combopoints.points then
 					kuiPlateFrame.combopoints[i]:SetAlpha(1)
@@ -422,266 +511,266 @@ local function UpdatePlate(kuiPlateFrame)
 		kuiPlateFrame.combopoints:Hide()
 	end
 	--combo points update end
-	
-	
-	--setGuild
-	if kuiPlateFrame.guildTextVariable then
-		local guildTranslation = UPCompatWoWTranslateGetCachedGuildTranslation(kuiPlateFrame.guildTextVariable)
-		if guildTranslation and (guildTranslation ~= '') then
-			kuiPlateFrame.guild:SetText("<"..guildTranslation.."*"..">")
+
+	if doFullUpdate then
+		--setGuild
+		if kuiPlateFrame.guildTextVariable then
+			local guildTranslation = UPCompatWoWTranslateGetCachedGuildTranslation(kuiPlateFrame.guildTextVariable)
+			if guildTranslation and (guildTranslation ~= '') then
+				kuiPlateFrame.guild:SetText("<"..guildTranslation.."*"..">")
+			else
+				kuiPlateFrame.guild:SetText("<"..kuiPlateFrame.guildTextVariable..">")
+			end
 		else
-			kuiPlateFrame.guild:SetText("<"..kuiPlateFrame.guildTextVariable..">")
+			-- no guild/subtitle on this unit: clear the text so a recycled
+			-- plate doesn't keep showing the previous unit's guild
+			kuiPlateFrame.guild:SetText("")
 		end
-	end
-	--coloring
-	if (kuiPlateFrame.isPlayer and myGuildName and (kuiPlateFrame.guildTextVariable == myGuildName)) then
-		kuiPlateFrame.guild:SetTextColor(0,0.999,0,1)
-	else
-		kuiPlateFrame.guild:SetTextColor(1,1,1,1)
-	end
-	--setGuild end
-	
-	--setName
-	local nameTranslation = UPCompatWoWTranslateGetCachedNameTranslation(kuiPlateFrame.nameTextVariable)
-	if nameTranslation and (nameTranslation ~= '') then
-		kuiPlateFrame.name:SetText(kuiPlateFrame.titleName.." "..nameTranslation.."*")
-	else
-		kuiPlateFrame.name:SetText(kuiPlateFrame.titleName.." "..kuiPlateFrame.nameTextVariable)
-	end
-	kuiPlateFrame.name:SetTextColor(1,1,1,1)
-	--setName end
-	
-	--set name and guild positions
-	--reset
+		--coloring
+		if (kuiPlateFrame.isPlayer and myGuildName and (kuiPlateFrame.guildTextVariable == myGuildName)) then
+			kuiPlateFrame.guild:SetTextColor(0,0.999,0,1)
+		else
+			kuiPlateFrame.guild:SetTextColor(1,1,1,1)
+		end
+		--setGuild end
+
+		--setName
+		local nameTranslation = UPCompatWoWTranslateGetCachedNameTranslation(kuiPlateFrame.nameTextVariable)
+		if nameTranslation and (nameTranslation ~= '') then
+			kuiPlateFrame.name:SetText(kuiPlateFrame.titleName.." "..nameTranslation.."*")
+		else
+			kuiPlateFrame.name:SetText(kuiPlateFrame.titleName.." "..kuiPlateFrame.nameTextVariable)
+		end
+		kuiPlateFrame.name:SetTextColor(1,1,1,1)
+		--setName end
+
+		--set name and guild positions
 		kuiPlateFrame.name:SetPoint("BOTTOM", kuiPlateFrame.health, "TOP", 0, 2 * UPConstants.minimalOnePixel)
 		kuiPlateFrame.guild:SetPoint("BOTTOM", kuiPlateFrame.health, "TOP", 0, 2 * UPConstants.minimalOnePixel)
-	--
-	if (kuiPlateFrame.guild:GetText() == nil or kuiPlateFrame.guild:GetText() == '') then
-		if kuiPlateFrame.combopoints:IsShown() then
-			kuiPlateFrame.name:SetPoint("BOTTOM", kuiPlateFrame.combopoints[3], "TOP", 0, 2 * UPConstants.minimalOnePixel * 2)
+		if (kuiPlateFrame.guild:GetText() == nil or kuiPlateFrame.guild:GetText() == '') then
+			if kuiPlateFrame.combopoints:IsShown() then
+				kuiPlateFrame.name:SetPoint("BOTTOM", kuiPlateFrame.combopoints[3], "TOP", 0, 2 * UPConstants.minimalOnePixel * 2)
+			else
+				kuiPlateFrame.name:SetPoint("BOTTOM", kuiPlateFrame.health, "TOP", 0, 2 * UPConstants.minimalOnePixel)
+			end
 		else
-			kuiPlateFrame.name:SetPoint("BOTTOM", kuiPlateFrame.health, "TOP", 0, 2 * UPConstants.minimalOnePixel)
+			if kuiPlateFrame.combopoints:IsShown() then
+				kuiPlateFrame.guild:SetPoint("BOTTOM", kuiPlateFrame.combopoints[3], "TOP", 0, 2 * UPConstants.minimalOnePixel * 2)
+			else
+				kuiPlateFrame.guild:SetPoint("BOTTOM", kuiPlateFrame.health, "TOP", 0, 2 * UPConstants.minimalOnePixel)
+			end
+			kuiPlateFrame.name:SetPoint("BOTTOM", kuiPlateFrame.guild, "TOP", 0, 2 * UPConstants.minimalOnePixel)
 		end
-	else
-		if kuiPlateFrame.combopoints:IsShown() then
-			kuiPlateFrame.guild:SetPoint("BOTTOM", kuiPlateFrame.combopoints[3], "TOP", 0, 2 * UPConstants.minimalOnePixel * 2)
-		else
-			kuiPlateFrame.guild:SetPoint("BOTTOM", kuiPlateFrame.health, "TOP", 0, 2 * UPConstants.minimalOnePixel)
-		end
-		
-		kuiPlateFrame.name:SetPoint("BOTTOM", kuiPlateFrame.guild, "TOP", 0, 2 * UPConstants.minimalOnePixel)
-	end
-	--set name and guild positions end
-	
-	--level
-	if kuiPlateFrame.levelNumber > 0 then
-		kuiPlateFrame.level:SetText(kuiPlateFrame.oldLevel:GetText())
-		kuiPlateFrame.level:SetTextColor(kuiPlateFrame.oldLevel:GetTextColor())
-	else
-		if kuiPlateFrame.isBoss then
-			kuiPlateFrame.level:SetText("??")
+		--set name and guild positions end
+
+		--level
+		if kuiPlateFrame.levelNumber > 0 then
+			kuiPlateFrame.level:SetText(kuiPlateFrame.oldLevel:GetText())
+			kuiPlateFrame.level:SetTextColor(kuiPlateFrame.oldLevel:GetTextColor())
 		else
 			kuiPlateFrame.level:SetText("??")
+			kuiPlateFrame.level:SetTextColor(kuiPlateFrame.levelDifficultyColor.r, kuiPlateFrame.levelDifficultyColor.g, kuiPlateFrame.levelDifficultyColor.b)
 		end
-		kuiPlateFrame.level:SetTextColor(kuiPlateFrame.levelDifficultyColor.r, kuiPlateFrame.levelDifficultyColor.g, kuiPlateFrame.levelDifficultyColor.b)
-	end
-	kuiPlateFrame.level:Show()
-	--level end
-	
-	--RARITY
-	if (kuiPlateFrame.isPlayer) then
-		kuiPlateFrame.rarityIcon:Hide()
-		kuiPlateFrame.rarityIconR:Hide()
-	else
-		kuiPlateFrame.rarityIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\frame_elite")
-		kuiPlateFrame.rarityIconR.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\frame_elite")
-		if kuiPlateFrame.classification == "elite" then
-			kuiPlateFrame.rarityIcon.icon:SetVertexColor(1, 1, 0, 1)
-			kuiPlateFrame.rarityIcon:Show()
-			kuiPlateFrame.rarityIconR.icon:SetVertexColor(1, 1, 0, 1)
-			kuiPlateFrame.rarityIconR:Show()
-		elseif kuiPlateFrame.classification == "rareelite" then
-			kuiPlateFrame.rarityIcon.icon:SetVertexColor(1, 1, 1, 1)
-			kuiPlateFrame.rarityIcon:Show()
-			kuiPlateFrame.rarityIconR.icon:SetVertexColor(1, 1, 1, 1)
-			kuiPlateFrame.rarityIconR:Show()
-		elseif kuiPlateFrame.classification == "rare" then
-			kuiPlateFrame.rarityIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\frame_rare")
-			kuiPlateFrame.rarityIconR.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\frame_rare")
-			kuiPlateFrame.rarityIcon.icon:SetVertexColor(1, 1, 1, 1)
-			kuiPlateFrame.rarityIcon:Show()
-			kuiPlateFrame.rarityIconR.icon:SetVertexColor(1, 1, 1, 1)
-			kuiPlateFrame.rarityIconR:Show()
-		elseif (kuiPlateFrame.classification == "boss") or kuiPlateFrame.isBoss then
-		--TODO should set boss icon?
-			if kuiPlateFrame.isPlusMob then
-				kuiPlateFrame.rarityIcon.icon:SetVertexColor(0.5, 0, 0, 1)
+		kuiPlateFrame.level:Show()
+		--level end
+
+		--RARITY
+		if (kuiPlateFrame.isPlayer) then
+			kuiPlateFrame.rarityIcon:Hide()
+			kuiPlateFrame.rarityIconR:Hide()
+		else
+			kuiPlateFrame.rarityIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\frame_elite")
+			kuiPlateFrame.rarityIconR.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\frame_elite")
+			if kuiPlateFrame.classification == "elite" then
+				kuiPlateFrame.rarityIcon.icon:SetVertexColor(1, 1, 0, 1)
 				kuiPlateFrame.rarityIcon:Show()
-				kuiPlateFrame.rarityIconR.icon:SetVertexColor(0.5, 0, 0, 1)
+				kuiPlateFrame.rarityIconR.icon:SetVertexColor(1, 1, 0, 1)
 				kuiPlateFrame.rarityIconR:Show()
+			elseif kuiPlateFrame.classification == "rareelite" then
+				kuiPlateFrame.rarityIcon.icon:SetVertexColor(1, 1, 1, 1)
+				kuiPlateFrame.rarityIcon:Show()
+				kuiPlateFrame.rarityIconR.icon:SetVertexColor(1, 1, 1, 1)
+				kuiPlateFrame.rarityIconR:Show()
+			elseif kuiPlateFrame.classification == "rare" then
+				kuiPlateFrame.rarityIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\frame_rare")
+				kuiPlateFrame.rarityIconR.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\frame_rare")
+				kuiPlateFrame.rarityIcon.icon:SetVertexColor(1, 1, 1, 1)
+				kuiPlateFrame.rarityIcon:Show()
+				kuiPlateFrame.rarityIconR.icon:SetVertexColor(1, 1, 1, 1)
+				kuiPlateFrame.rarityIconR:Show()
+			elseif (kuiPlateFrame.classification == "boss") or kuiPlateFrame.isBoss then
+				if kuiPlateFrame.isPlusMob then
+					kuiPlateFrame.rarityIcon.icon:SetVertexColor(0.5, 0, 0, 1)
+					kuiPlateFrame.rarityIcon:Show()
+					kuiPlateFrame.rarityIconR.icon:SetVertexColor(0.5, 0, 0, 1)
+					kuiPlateFrame.rarityIconR:Show()
+				else
+					kuiPlateFrame.rarityIcon:Hide()
+					kuiPlateFrame.rarityIconR:Hide()
+				end
 			else
 				kuiPlateFrame.rarityIcon:Hide()
 				kuiPlateFrame.rarityIconR:Hide()
 			end
-		else
-			kuiPlateFrame.rarityIcon:Hide()
-			kuiPlateFrame.rarityIconR:Hide()
 		end
-	end
-	--RARITY END
-	
-	if UnitIsPVP(kuiPlateFrame.guid) then
-		local factionGroup = UnitFactionGroup(kuiPlateFrame.guid)
-		if factionGroup then
-			kuiPlateFrame.pvpIcon.icon:SetTexture("Interface\\TargetingFrame\\UI-PVP-"..factionGroup)
-			kuiPlateFrame.pvpIcon:Show()
+		--RARITY END
+
+		if UnitIsPVP(kuiPlateFrame.guid) then
+			local factionGroup = UnitFactionGroup(kuiPlateFrame.guid)
+			if factionGroup then
+				kuiPlateFrame.pvpIcon.icon:SetTexture("Interface\\TargetingFrame\\UI-PVP-"..factionGroup)
+				kuiPlateFrame.pvpIcon:Show()
+			else
+				kuiPlateFrame.pvpIcon:Hide()
+			end
 		else
 			kuiPlateFrame.pvpIcon:Hide()
 		end
-	else
-		kuiPlateFrame.pvpIcon:Hide()
-	end
-	
-	--hide pvp icon for your own pet/minion
-	if kuiPlateFrame.isPet
-		and kuiPlateFrame.guildTextVariable
-		and kuiPlateFrame.isMyPet then
-		kuiPlateFrame.pvpIcon:Hide()
-	end
-	-- kuiPlateFrame.pvpIcon:Show()
-	
-	--pet happiness
-	if (myPlayerHasPetUI and myPlayerPetIsHunterPet and kuiPlateFrame.guildTextVariable and kuiPlateFrame.isMyPet) then
-		local petHappiness, petDamagePercentage, petLoyaltyRate = GetPetHappiness()
-		
-		if (petHappiness == 1) then
-			kuiPlateFrame.petHappiness.icon:SetTexCoord(0.375, 0.5625, 0, 0.359375)
-			-- kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.petHappiness, "RIGHT", -0, -0)
-			kuiPlateFrame.petHappiness:Show()
-		elseif (petHappiness == 2) then
-			kuiPlateFrame.petHappiness.icon:SetTexCoord(0.1875, 0.375, 0, 0.359375)
-			-- kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.petHappiness, "RIGHT", -0, -0)
-			kuiPlateFrame.petHappiness:Show()
-		elseif (petHappiness == 3) then
-			-- kuiPlateFrame.petHappiness.icon:SetTexCoord(0, 0.1875, 0, 0.359375)
-			-- kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.petHappiness, "RIGHT", -0, -0)
-			-- kuiPlateFrame.petHappiness:Show()
+
+		--hide pvp icon for your own pet/minion
+		if kuiPlateFrame.isPet
+			and kuiPlateFrame.guildTextVariable
+			and kuiPlateFrame.isMyPet then
+			kuiPlateFrame.pvpIcon:Hide()
+		end
+
+		--pet happiness
+		if (myPlayerHasPetUI and myPlayerPetIsHunterPet and kuiPlateFrame.guildTextVariable and kuiPlateFrame.isMyPet) then
+			local petHappiness = playerState.petHappiness
+			if (petHappiness == 1) then
+				kuiPlateFrame.petHappiness.icon:SetTexCoord(0.375, 0.5625, 0, 0.359375)
+				kuiPlateFrame.petHappiness:Show()
+			elseif (petHappiness == 2) then
+				kuiPlateFrame.petHappiness.icon:SetTexCoord(0.1875, 0.375, 0, 0.359375)
+				kuiPlateFrame.petHappiness:Show()
+			elseif (petHappiness == 3) then
+				kuiPlateFrame.petHappiness:Hide()
+			end
+		else
 			kuiPlateFrame.petHappiness:Hide()
 		end
-	else
-		kuiPlateFrame.petHappiness:Hide()
+		--pet happiness end
+
+		kuiPlateFrame.pvpRankIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", UPConstants.minimalOnePixel*1, 0)
+
+		if kuiPlateFrame.pvpRank > 0 then
+			kuiPlateFrame.pvpRankIcon:Show()
+			kuiPlateFrame.pvpRankIcon.icon:SetTexture(string.format("Interface\\PVPRankBadges\\PVPRank%02d", kuiPlateFrame.pvpRank))
+			kuiPlateFrame.pvpIcon:SetPoint("LEFT", kuiPlateFrame.pvpRankIcon, "RIGHT", -UPConstants.pvpIconSize * 0.0, -UPConstants.pvpIconSize/4.5)
+		else
+			kuiPlateFrame.pvpRankIcon:Hide()
+			kuiPlateFrame.pvpIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", -UPConstants.pvpIconSize * 0.0, -UPConstants.pvpIconSize/4.5)
+		end
+
+		--icon positions
+		if kuiPlateFrame.pvpIcon:IsShown() then
+			if kuiPlateFrame.petHappiness:IsShown() then
+				kuiPlateFrame.petHappiness:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", ((2 * UPConstants.minimalOnePixel)+(UPConstants.pvpIconSize/1.8)), 0)
+				kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.petHappiness, "RIGHT", -0, -0)
+			else
+				if kuiPlateFrame.pvpRankIcon:IsShown() then
+					kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", ((2 * UPConstants.minimalOnePixel)+(UPConstants.pvpIconSize/1.8))+(2 * UPConstants.minimalOnePixel)+(UPConstants.pvpRankIconSize/1.8), -0)
+				else
+					kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", ((-2 * UPConstants.minimalOnePixel)+(UPConstants.pvpIconSize/1.8)), -0)
+				end
+			end
+		else
+			if kuiPlateFrame.petHappiness:IsShown() then
+				kuiPlateFrame.petHappiness:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", -0, 0)
+				kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.petHappiness, "RIGHT", -0, -0)
+			else
+				if kuiPlateFrame.pvpRankIcon:IsShown() then
+					kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", (5 * UPConstants.minimalOnePixel)+(UPConstants.pvpRankIconSize/1.8), -0)
+				else
+					kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", -2 * UPConstants.minimalOnePixel, -0)
+				end
+			end
+		end
+		--icon positions end
+
+		--healthbar width (trivial vs normal sizing)
+		if kuiPlateFrame.isTrivial then
+			kuiPlateFrame.originalPlateFrame.selectionGlow:SetWidth(UPConstants.glowWidthGrayLevel)
+			kuiPlateFrame.originalPlateFrame.selectionGlow:SetHeight(UPConstants.glowHeight)
+			kuiPlateFrame.originalPlateFrame.selectionGlow:SetPoint("CENTER", kuiPlateFrame.health, "CENTER", -UPConstants.nameplateTypeIconSize/2, 0)
+			kuiPlateFrame.originalPlateFrame.selectionGlow2:SetWidth(UPConstants.glowWidthGrayLevel)
+			kuiPlateFrame.originalPlateFrame.selectionGlow2:SetHeight(UPConstants.glowHeight)
+			kuiPlateFrame.originalPlateFrame.selectionGlow2:SetPoint("CENTER", kuiPlateFrame.health, "CENTER", -UPConstants.nameplateTypeIconSize/2, 0)
+			kuiPlateFrame.originalPlateFrame:SetWidth(UPConstants.nameplateWidthGrayLevel)
+			kuiPlateFrame.originalPlateFrame:SetHeight(UPConstants.nameplateHealthBarHeight)
+			SetFrameCenter(kuiPlateFrame)
+			kuiPlateFrame.health:SetWidth(UPConstants.nameplateWidthGrayLevel)
+			kuiPlateFrame.health:SetHeight(UPConstants.nameplateHealthBarHeight)
+			kuiPlateFrame.health:SetPoint("BOTTOMLEFT", kuiPlateFrame.x, kuiPlateFrame.y)
+			kuiPlateFrame.power:SetWidth(UPConstants.nameplateWidthGrayLevel)
+			kuiPlateFrame.castWarning.bar:SetWidth(UPConstants.nameplateWidthGrayLevel)
+			kuiPlateFrame.aurasContainer:SetWidth(UPConstants.nameplateWidthGrayLevel)
+		else
+			kuiPlateFrame.originalPlateFrame.selectionGlow:SetWidth(UPConstants.glowWidth)
+			kuiPlateFrame.originalPlateFrame.selectionGlow:SetHeight(UPConstants.glowHeight)
+			kuiPlateFrame.originalPlateFrame.selectionGlow:SetPoint("CENTER", kuiPlateFrame.health, "CENTER", -UPConstants.nameplateTypeIconSize/2, 0)
+			kuiPlateFrame.originalPlateFrame.selectionGlow2:SetWidth(UPConstants.glowWidth)
+			kuiPlateFrame.originalPlateFrame.selectionGlow2:SetHeight(UPConstants.glowHeight)
+			kuiPlateFrame.originalPlateFrame.selectionGlow2:SetPoint("CENTER", kuiPlateFrame.health, "CENTER", -UPConstants.nameplateTypeIconSize/2, 0)
+			kuiPlateFrame.originalPlateFrame:SetWidth(UPConstants.nameplateHealthBarWidth)
+			kuiPlateFrame.originalPlateFrame:SetHeight(UPConstants.nameplateHealthBarHeight)
+			SetFrameCenter(kuiPlateFrame)
+			kuiPlateFrame.health:SetWidth(UPConstants.nameplateHealthBarWidth)
+			kuiPlateFrame.health:SetHeight(UPConstants.nameplateHealthBarHeight)
+			kuiPlateFrame.health:SetPoint("BOTTOMLEFT", kuiPlateFrame.x, kuiPlateFrame.y)
+			kuiPlateFrame.power:SetWidth(UPConstants.nameplateHealthBarWidth)
+			kuiPlateFrame.castWarning.bar:SetWidth(UPConstants.nameplateHealthBarWidth)
+			kuiPlateFrame.aurasContainer:SetWidth(UPConstants.nameplateHealthBarWidth)
+		end
+		--healthbar width end
+
+		--class, race, gender icons
+		if kuiPlateFrame.isPlayer then
+			if kuiPlateFrame.class then
+				local classr, classl, classt, classb = getClassPos(string.upper(kuiPlateFrame.class))
+				kuiPlateFrame.classIcon.icon:SetTexCoord(classr, classl, classt, classb)
+				kuiPlateFrame.classIcon:Show()
+			else
+				kuiPlateFrame.classIcon:Hide()
+			end
+
+			if kuiPlateFrame.gender and kuiPlateFrame.race then
+				if kuiPlateFrame.gender == 3 then
+					kuiPlateFrame.typeIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\races\\"..kuiPlateFrame.race.."_female.tga")
+				else
+					kuiPlateFrame.typeIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\races\\"..kuiPlateFrame.race.."_male.tga")
+				end
+			else
+				kuiPlateFrame.typeIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\loading.tga")
+			end
+		else
+			kuiPlateFrame.classIcon:Hide()
+		end
+		--class, race, gender end
+
+		--set creature type
+		if not kuiPlateFrame.isPlayer then
+			if kuiPlateFrame.creatureType then
+				local success = kuiPlateFrame.typeIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\creaturetypes\\"..kuiPlateFrame.creatureType..".tga")
+				if not success then
+					local success = kuiPlateFrame.typeIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\creaturetypes\\UNKNOWN.tga")
+				end
+			else
+				kuiPlateFrame.typeIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\loading.tga")
+			end
+		end
+		--set creature type end
 	end
-	--pet happiness end
-	-- kuiPlateFrame.petHappiness.icon:SetTexCoord(0.1875, 0.375, 0, 0.359375)
-	-- kuiPlateFrame.petHappiness:Show()
-	
-	--combat icon
+
+	--combat icon (dynamic)
 	if kuiPlateFrame.isInCombat then
 		kuiPlateFrame.combatIcon:Show()
 	else
 		kuiPlateFrame.combatIcon:Hide()
 	end
-	--
-	-- kuiPlateFrame.combatIcon:Show()
-	
-	kuiPlateFrame.pvpRankIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", UPConstants.minimalOnePixel*1, 0)
-	
-	--kuiPlateFrame.pvpRank = 2
-	--kuiPlateFrame.pvpIcon:Show()
-	--kuiPlateFrame.combatIcon:Show()
-	--kuiPlateFrame.petHappiness.icon:SetTexCoord(0.375, 0.5625, 0, 0.359375)
-	--kuiPlateFrame.petHappiness:Show()
-	
-	if kuiPlateFrame.pvpRank > 0 then
-		kuiPlateFrame.pvpRankIcon:Show()
-		kuiPlateFrame.pvpRankIcon.icon:SetTexture(string.format("Interface\\PVPRankBadges\\PVPRank%02d", kuiPlateFrame.pvpRank))
-		kuiPlateFrame.pvpIcon:SetPoint("LEFT", kuiPlateFrame.pvpRankIcon, "RIGHT", -UPConstants.pvpIconSize * 0.0, -UPConstants.pvpIconSize/4.5)
-	else
-		kuiPlateFrame.pvpRankIcon:Hide()
-		kuiPlateFrame.pvpIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", -UPConstants.pvpIconSize * 0.0, -UPConstants.pvpIconSize/4.5)
-	end
-	
-	--icon positions
-	if kuiPlateFrame.pvpIcon:IsShown() then		
-		if kuiPlateFrame.petHappiness:IsShown() then
-			--pvpIcon/petHappiness/combatIcon
-			-- kuiPlateFrame.pvpIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", -UPConstants.pvpIconSize * 0.0, -UPConstants.pvpIconSize/4.5)
-			kuiPlateFrame.petHappiness:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", ((2 * UPConstants.minimalOnePixel)+(UPConstants.pvpIconSize/1.8)), 0)
-			kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.petHappiness, "RIGHT", -0, -0)
-		else
-			--pvpIcon/combatIcon
-			-- kuiPlateFrame.pvpIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", -UPConstants.pvpIconSize * 0.0, -UPConstants.pvpIconSize/4.5)
-			if kuiPlateFrame.pvpRankIcon:IsShown() then
-				kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", ((2 * UPConstants.minimalOnePixel)+(UPConstants.pvpIconSize/1.8))+(2 * UPConstants.minimalOnePixel)+(UPConstants.pvpRankIconSize/1.8), -0)
-			else
-				--pvp icon/combat icon
-				kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", ((-2 * UPConstants.minimalOnePixel)+(UPConstants.pvpIconSize/1.8)), -0)
-			end
-		end
-	else
-		if kuiPlateFrame.petHappiness:IsShown() then
-			--petHappiness/combatIcon
-			kuiPlateFrame.petHappiness:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", -0, 0)
-			kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.petHappiness, "RIGHT", -0, -0)
-		else
-			--only combat icon
-			if kuiPlateFrame.pvpRankIcon:IsShown() then
-				kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", (5 * UPConstants.minimalOnePixel)+(UPConstants.pvpRankIconSize/1.8), -0)
-			else
-				kuiPlateFrame.combatIcon:SetPoint("LEFT", kuiPlateFrame.name, "RIGHT", -2 * UPConstants.minimalOnePixel, -0)
-			end
-		end
-	end
-	--icon positions end
-	
-	--healthbar with
-	if kuiPlateFrame.isTrivial then
-		-- if not UnitAffectingCombat("player") then
-			-- --can't call this while in combat
-			-- kuiPlateFrame.originalPlateFrame:SetWidth(UPConstants.nameplateWidthGrayLevel)
-			-- kuiPlateFrame.originalPlateFrame:SetHeight(UPConstants.nameplateHealthBarHeight)
-		-- end
-		kuiPlateFrame.originalPlateFrame.selectionGlow:SetWidth(UPConstants.glowWidthGrayLevel)
-		kuiPlateFrame.originalPlateFrame.selectionGlow:SetHeight(UPConstants.glowHeight)
-		kuiPlateFrame.originalPlateFrame.selectionGlow:SetPoint("CENTER", kuiPlateFrame.health, "CENTER", -UPConstants.nameplateTypeIconSize/2, 0)
-		kuiPlateFrame.originalPlateFrame.selectionGlow2:SetWidth(UPConstants.glowWidthGrayLevel)
-		kuiPlateFrame.originalPlateFrame.selectionGlow2:SetHeight(UPConstants.glowHeight)
-		kuiPlateFrame.originalPlateFrame.selectionGlow2:SetPoint("CENTER", kuiPlateFrame.health, "CENTER", -UPConstants.nameplateTypeIconSize/2, 0)
-		kuiPlateFrame.originalPlateFrame:SetWidth(UPConstants.nameplateWidthGrayLevel)
-		kuiPlateFrame.originalPlateFrame:SetHeight(UPConstants.nameplateHealthBarHeight)
-		SetFrameCenter(kuiPlateFrame)
-		kuiPlateFrame.health:SetWidth(UPConstants.nameplateWidthGrayLevel)
-		kuiPlateFrame.health:SetHeight(UPConstants.nameplateHealthBarHeight)
-		kuiPlateFrame.health:SetPoint("BOTTOMLEFT", kuiPlateFrame.x, kuiPlateFrame.y)
-		kuiPlateFrame.power:SetWidth(UPConstants.nameplateWidthGrayLevel)
-		kuiPlateFrame.castWarning.bar:SetWidth(UPConstants.nameplateWidthGrayLevel)
-		kuiPlateFrame.aurasContainer:SetWidth(UPConstants.nameplateWidthGrayLevel)
-	else
-		-- if not UnitAffectingCombat("player") then
-			-- --can't call this while in combat
-			-- kuiPlateFrame.originalPlateFrame:SetWidth(UPConstants.nameplateHealthBarWidth)
-			-- kuiPlateFrame.originalPlateFrame:SetHeight(UPConstants.nameplateHealthBarHeight)
-		-- end
-		kuiPlateFrame.originalPlateFrame.selectionGlow:SetWidth(UPConstants.glowWidth)
-		kuiPlateFrame.originalPlateFrame.selectionGlow:SetHeight(UPConstants.glowHeight)
-		kuiPlateFrame.originalPlateFrame.selectionGlow:SetPoint("CENTER", kuiPlateFrame.health, "CENTER", -UPConstants.nameplateTypeIconSize/2, 0)
-		kuiPlateFrame.originalPlateFrame.selectionGlow2:SetWidth(UPConstants.glowWidth)
-		kuiPlateFrame.originalPlateFrame.selectionGlow2:SetHeight(UPConstants.glowHeight)
-		kuiPlateFrame.originalPlateFrame.selectionGlow2:SetPoint("CENTER", kuiPlateFrame.health, "CENTER", -UPConstants.nameplateTypeIconSize/2, 0)
-		kuiPlateFrame.originalPlateFrame:SetWidth(UPConstants.nameplateHealthBarWidth)
-		kuiPlateFrame.originalPlateFrame:SetHeight(UPConstants.nameplateHealthBarHeight)
-		SetFrameCenter(kuiPlateFrame)
-		kuiPlateFrame.health:SetWidth(UPConstants.nameplateHealthBarWidth)
-		kuiPlateFrame.health:SetHeight(UPConstants.nameplateHealthBarHeight)
-		kuiPlateFrame.health:SetPoint("BOTTOMLEFT", kuiPlateFrame.x, kuiPlateFrame.y)
-		kuiPlateFrame.power:SetWidth(UPConstants.nameplateHealthBarWidth)
-		kuiPlateFrame.castWarning.bar:SetWidth(UPConstants.nameplateHealthBarWidth)
-		kuiPlateFrame.aurasContainer:SetWidth(UPConstants.nameplateHealthBarWidth)
-	end
-	--healthbar with end
-	
+
 	--health color
-	local r, g, b = kuiPlateFrame.oldHealth:GetStatusBarColor()	
+	local r, g, b = kuiPlateFrame.oldHealth:GetStatusBarColor()
 	kuiPlateFrame.health.r, kuiPlateFrame.health.g, kuiPlateFrame.health.b = r, g, b
 	if g > 0.9 and r == 0 and b == 0 then
 		-- friendly NPC
@@ -715,7 +804,7 @@ local function UpdatePlate(kuiPlateFrame)
 	
 	--update health
 	kuiPlateFrame.health.min, kuiPlateFrame.health.max = kuiPlateFrame.oldHealth:GetMinMaxValues()
-	kuiPlateFrame.health.curr = curval or kuiPlateFrame.oldHealth:GetValue()
+	kuiPlateFrame.health.curr = kuiPlateFrame.oldHealth:GetValue()
 	kuiPlateFrame.health.percent = 100 * kuiPlateFrame.health.curr / kuiPlateFrame.health.max
 	kuiPlateFrame.health:SetMinMaxValues(kuiPlateFrame.health.min, kuiPlateFrame.health.max)
 	kuiPlateFrame.health:SetValue(kuiPlateFrame.health.curr)
@@ -723,18 +812,18 @@ local function UpdatePlate(kuiPlateFrame)
 		--most likely it is unknown hp
 		--try to get from shaguTweaks
 		local current, max = UPCompatGetHealthFromShaguTweaks(kuiPlateFrame.guid)
-		
+
 		if not current then
 			--try MobHealth fallback
 			current, max = UPCompatGetHealthFromMobHealth(kuiPlateFrame.guid)
 		end
-		
+
 		if current then
-			kuiPlateFrame.health.p:SetText(UPCoreNum(tonumber(string.format("%d", current))))
+			kuiPlateFrame.health.p:SetText(UPCoreNum(math_floor(current + 0.5)))
 		else
 			--most likely it is unknown hp
 			kuiPlateFrame.health.p:SetText(UPCoreNum(kuiPlateFrame.health.curr).."%")
-		end	
+		end
 	else
 		--most likely has real hp
 		kuiPlateFrame.health.p:SetText(UPCoreNum(kuiPlateFrame.health.curr))
@@ -771,49 +860,7 @@ local function UpdatePlate(kuiPlateFrame)
 		kuiPlateFrame.power:Hide()
 	end
 	--power end
-	
-	--class, race, gender
-	if kuiPlateFrame.isPlayer then
-		if kuiPlateFrame.class then
-			local classr, classl, classt, classb = getClassPos(string.upper(kuiPlateFrame.class))
-			kuiPlateFrame.classIcon.icon:SetTexCoord(classr, classl, classt, classb)
-			kuiPlateFrame.classIcon:Show()
-		else
-			--empty
-			kuiPlateFrame.classIcon:Hide()
-		end
-		
-		--set gender icon
-		if kuiPlateFrame.gender and kuiPlateFrame.race then
-			if kuiPlateFrame.gender == 3 then
-				kuiPlateFrame.typeIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\races\\"..kuiPlateFrame.race.."_female.tga")
-			else
-				kuiPlateFrame.typeIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\races\\"..kuiPlateFrame.race.."_male.tga")
-			end
-		else
-			--empty
-			kuiPlateFrame.typeIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\loading.tga")
-		end
-	else
-		kuiPlateFrame.classIcon:Hide()
-	end
-	--class, race, gender end
-	
-	--set creature type
-	if not kuiPlateFrame.isPlayer then
-		if kuiPlateFrame.creatureType then
-			--print("creatureType: "..kuiPlateFrame.creatureType)
-			local success = kuiPlateFrame.typeIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\creaturetypes\\"..kuiPlateFrame.creatureType..".tga")
-			if not success then
-				local success = kuiPlateFrame.typeIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\creaturetypes\\UNKNOWN.tga")
-			end
-		else
-			--empty
-			kuiPlateFrame.typeIcon.icon:SetTexture("Interface\\AddOns\\UnitPlates\\img\\loading.tga")
-		end
-	end
-	--set creature type end
-	
+
 	--tapped
 	if kuiPlateFrame.isTapped then
 		--print("----------name3: "..kuiPlateFrame.guid)
@@ -913,7 +960,22 @@ local function UpdatePlate(kuiPlateFrame)
 	--shooting range icon end
 	
 	--TOTEM
-	if kuiPlateFrame.originalPlateFrame.isTotem then
+	-- Re-evaluate totem-ness every tick from the current name instead of
+	-- trusting the 100ms-cached originalPlateFrame.isTotem: when a plate is
+	-- recycled between units (or a totem expires) the stale flag would keep
+	-- the totem icon visible on a unit that is no longer a totem. This is a
+	-- handful of string.find calls on one short name -- cheap.
+	-- guid is refreshed at the top of UpdatePlate; the name is read here when
+	-- needed (UnitName on a valid guid is one API call).
+	local liveIsTotem = false
+	if kuiPlateFrame.guid then
+		local liveName = UnitName(kuiPlateFrame.guid)
+		if liveName then
+			liveIsTotem = UPApiIsTotem(liveName)
+		end
+	end
+	kuiPlateFrame.originalPlateFrame.isTotem = liveIsTotem
+	if liveIsTotem then
 		kuiPlateFrame.originalPlateFrame.totem.icon:SetTexture(UpApiGetTotemIconForName(kuiPlateFrame.nameTextVariable))
 		local totemR,totemG,totemB,totemA = kuiPlateFrame.health:GetStatusBarColor()
 		kuiPlateFrame.originalPlateFrame.totem:SetBackdropColor(totemR,totemG,totemB,totemA)
@@ -1130,19 +1192,10 @@ local function UpdatePlate(kuiPlateFrame)
 	--AURA POLLING
 	if kuiPlateFrame.aurasUpdateElapsed <= 0 then
 		kuiPlateFrame.aurasUpdateElapsed = aurasUnitUpdateTime
-		--print("here")
-		
-		ignoredBuffNames = {}
-		for word in string.gfind(UnitPlatesSettings.ignoredBuffNames, '([^,]+)') do
-			table.insert(ignoredBuffNames, UPCoreTrimString(word))
-		end
-		
-		ignoredDebuffNames = {}
-		for word in string.gfind(UnitPlatesSettings.ignoredDebuffNames, '([^,]+)') do
-			table.insert(ignoredDebuffNames, UPCoreTrimString(word))
-		end
-		
-		--print("here")
+
+		-- ignore-lists are re-parsed only when the setting text changes
+		local ignoredBuffNames, ignoredDebuffNames = UPGetIgnoredAuraNames()
+
 		local polledUnitAuras = UpApiGetUnitAuras(
 			kuiPlateFrame.guid,
 			UnitPlatesSettings.showBuffs,
@@ -1172,23 +1225,26 @@ local function OnFrameUpdate(originalPlateFrame, e)
 	kuiPlateFrame.aurasUpdateElapsed = kuiPlateFrame.aurasUpdateElapsed - e
 	kuiPlateFrame.clickElapsed = kuiPlateFrame.clickElapsed - e
 	
-	--ensure mouse enabled
-	if (not IsMouselooking()) then
-		--to allow recovery from clickthrough
-		-- kuiPlateFrame.health:EnableMouse(true)
-		-- kuiPlateFrame.typeIcon:EnableMouse(true)
-		-- kuiPlateFrame.power:EnableMouse(true)
-		-- originalPlateFrame.totem:EnableMouse(true)
-	end
-	
 	------------------------------------------------------------------- Alpha --
-	kuiPlateFrame.defaultAlpha = originalPlateFrame:GetAlpha()
-	kuiPlateFrame.currentAlpha = 1
-	-- if UnitExists("target") and (not kuiPlateFrame.isTarget) then
-		-- kuiPlateFrame.currentAlpha = 0.6
-	-- end	
 	--IMPORTANT - DISABLES NON_TARGETED PLATE TRANSPARENCY
-	kuiPlateFrame:SetAlpha(kuiPlateFrame.currentAlpha)
+	-- The engine fades the original plate for non-targets and that alpha
+	-- propagates to this child frame; force it back to full alpha every frame
+	-- so plates never go transparent. When the "Keep original nameplate alpha"
+	-- config option is enabled we instead re-apply the original behavior
+	-- ourselves every frame (the engine misses recycled/returning plates, which
+	-- would otherwise keep whatever alpha they had before).
+	if UnitPlatesSettings.keepOriginalNameplateAlpha then
+		local plateGuid = kuiPlateFrame.originalPlateFrame:GetName(1)
+		-- no target at all -> everything full alpha; with a target, the target
+		-- is full alpha and everything else uses the engine's non-target fade
+		if not UPApiGetTargetGuid() or UPApiIsTarget(plateGuid) then
+			kuiPlateFrame:SetAlpha(1)
+		else
+			kuiPlateFrame:SetAlpha(UPApiGetNonTargetAlpha())
+		end
+	else
+		kuiPlateFrame:SetAlpha(1)
+	end
 	
 	------------------------------------------------------------------ Fading --
 	-- call delayed updates
@@ -1201,7 +1257,10 @@ local function OnFrameUpdate(originalPlateFrame, e)
 	
 	if kuiPlateFrame.elapsed <= 0 then
 		kuiPlateFrame.elapsed = slowUpdateTime
-		
+
+		-- trigger the full static rebuild on the next UpdatePlate call
+		kuiPlateFrame.doFullUpdate = true
+
 		--pfquest compatibility
 		if not kuiPlateFrame.isPlayer then
 			local icon = UPCompatPfQuestQuestObjectives[kuiPlateFrame.nameTextVariable]
@@ -2240,7 +2299,13 @@ local function InitFrame(originalPlateFrame)
 	-- Initialize the Totem container frame
 	kuiPlateFrame.originalPlateFrame.totem = CreateFrame("Frame", nil, originalPlateFrame)
 	kuiPlateFrame.originalPlateFrame.totem:SetFrameLevel(3) -- Middle layer for the icon
-	kuiPlateFrame.originalPlateFrame.totem:SetPoint("TOP", kuiPlateFrame.health, "TOP", 0, 0)
+	-- Anchor to the engine plate itself, NOT to kuiPlateFrame.health: in totem
+	-- mode the kui frame is hidden, and a hidden frame stops tracking its
+	-- anchor on camera moves, which would leave the totem glued to a stale
+	-- screen position (ghost totems). The engine plate always tracks the unit.
+	-- The health bar is vertically centered on the plate, so health's TOP is
+	-- plate CENTER + half the bar height -- reproduce that offset here.
+	kuiPlateFrame.originalPlateFrame.totem:SetPoint("TOP", originalPlateFrame, "CENTER", 0, UPConstants.nameplateHealthBarHeight / 2)
 	kuiPlateFrame.originalPlateFrame.totem:SetHeight(UPConstants.totemIconSize)
 	kuiPlateFrame.originalPlateFrame.totem:SetWidth(UPConstants.totemIconSize)
 	
@@ -2329,72 +2394,62 @@ local function InitFrame(originalPlateFrame)
 		local self = kuiPlateFrame.aurasContainer
 		if not self then return nil end
 		local elapsed = arg1
-	
+
 		self.nextUpdate = (self.nextUpdate or 0) - elapsed
 		if self.nextUpdate > 0 then return end
-		self.nextUpdate = 0.1 
-		
+		self.nextUpdate = 0.1
+
 		--THIS IS AURAS FRAMES UPDATE
-		--print("here")
-		
 		local currentTime = GetTime()
-		
-		-- Safely remove expired auras by iterating backwards
-		for i = table.getn(kuiPlateFrame.unitAuras), 1, -1 do
-			local aura = kuiPlateFrame.unitAuras[i]
-			-- Check if it has an expiration time and if that time has passed
-			--print("aura name1: "..tostring(aura.name))
-			if not (aura.duration == -1) then
-				local timeLeftSeconds = aura.expirationTime - currentTime
-				if timeLeftSeconds <= 0 then
-					--should remove only if it is not in the actual aura list
-					-- or maybe do not even manually remove at all? since I frequently update it anyways
-					--just know/notify somehow that it seems that db duration is wrong on this one
-					--table.remove(kuiPlateFrame.unitAuras, i)
-				end
-			end
+
+		-- layout values are identical for every icon on this plate, so compute
+		-- them once instead of per icon.
+		local maxAuras = UPConstants.maxAurasInRow
+		if kuiPlateFrame.isTrivial then
+			maxAuras = UPConstants.maxAurasInRowGrayLevel
 		end
-		--
-		
-		local activeUnitAurasCount = table.getn(kuiPlateFrame.unitAuras)
-		
-		local hasDebuffRow = false
+		local iconSize = (UPConstants.nameplateHealthBarWidth / maxAuras) - UPConstants.auraIconOffset
+		if kuiPlateFrame.isGrayLevel or kuiPlateFrame.isPet then
+			iconSize = (UPConstants.nameplateWidthGrayLevel / maxAuras) - UPConstants.auraIconOffset
+		end
+		local cdFontSizeLong = iconSize / 2.6
+		local cdFontSizeShort = iconSize / 2
+		local countFontSize = iconSize / 3
+
 		local firstDebuffIndex = 1
-		local firstDebuffRow = 1
 		local buffrows = 0
-		local lastBuffYOffset = 0
 		local hadAnyBuffs = false
-		
+
 		--iterating through stored list
-		local iconIndex = 1    
+		local iconIndex = 1
 		for _, aura in ipairs(kuiPlateFrame.unitAuras) do
 			local name = aura.name
-			local texture = aura.texture
-			local count = aura.count
-			local duration = aura.duration
-			local expirationTime = aura.expirationTime
-			
+
 			-- Stop if no more auras OR if we ran out of our MAX icons
 			if not name or iconIndex > UPConstants.maxAuras then
-				break 
+				break
 			end
-			
+
 			--setup icon
 			local icon = self.auraIcons[iconIndex]
-			
+
 			icon.isDebuff = aura.isDebuff
-			
-			-- Set Texture
-			icon.tex:SetTexture(texture)
-			
+
+			-- Set Texture (only when it actually changed)
+			if icon.lastTexture ~= aura.texture then
+				icon.lastTexture = aura.texture
+				icon.tex:SetTexture(aura.texture)
+			end
+
 			--set count
-			icon.count = count
-			
+			icon.count = aura.count
+
 			-- Set Cooldown
+			local duration = aura.duration
 			if duration > 0 then
-				icon.expirationTime = expirationTime
+				icon.expirationTime = aura.expirationTime
 				icon.duration = duration
-				icon.startTime = expirationTime - duration
+				icon.startTime = aura.expirationTime - duration
 			elseif duration == -1 then
 				icon.expirationTime = -1
 				icon.duration = -1
@@ -2404,92 +2459,53 @@ local function InitFrame(originalPlateFrame)
 				icon.duration = 0
 				icon.startTime = 0
 			end
-			
-			-- Position the icon dynamically
-			--determine icon size based on active count and max in row
-			
-			-- if activeUnitAurasCount <= 8 then
-				-- if UnitPlatesSettings.smallerAuras then
-					-- UPConstants.maxAurasInRow = 6
-				-- else
-					-- UPConstants.maxAurasInRow = 4
-				-- end
-			-- elseif activeUnitAurasCount <= 16 then
-				-- if UnitPlatesSettings.smallerAuras then
-					-- UPConstants.maxAurasInRow = 6
-				-- else
-					-- UPConstants.maxAurasInRow = 5
-				-- end
-			-- elseif activeUnitAurasCount <= 24 then
-				-- UPConstants.maxAurasInRow = 6
-			-- else
-				-- UPConstants.maxAurasInRow = 7
-			-- end
-			
-			-- if activeUnitAurasCount <= 8 then
-				-- UPConstants.maxAurasInRow = maxAurasInRowSetting - 1
-			-- elseif activeUnitAurasCount <= 16 then
-				-- UPConstants.maxAurasInRow = maxAurasInRowSetting - 1
-			-- elseif activeUnitAurasCount <= 24 then
-				-- UPConstants.maxAurasInRow = maxAurasInRowSetting - 1
-			-- else
-				-- UPConstants.maxAurasInRow = maxAurasInRowSetting - 1
-			-- end
-			
-			local maxAuras = UPConstants.maxAurasInRow
-			if kuiPlateFrame.isTrivial then
-				maxAuras = UPConstants.maxAurasInRowGrayLevel
-			end
-			
-			
-			local iconSize = (UPConstants.nameplateHealthBarWidth / maxAuras) - UPConstants.auraIconOffset
-			if kuiPlateFrame.isGrayLevel or kuiPlateFrame.isPet then
-				iconSize = (UPConstants.nameplateWidthGrayLevel / maxAuras) - UPConstants.auraIconOffset
-			end
-			
-			local column = math.mod((iconIndex - 1), maxAuras)          -- Results in 0, 1, 2, 3
-			local row = math.floor((iconIndex - 1) / maxAuras) -- Results in 0, 1, 2...
-			
+
+			local column = math_mod((iconIndex - 1), maxAuras)          -- Results in 0, 1, 2, 3
+			local row = math_floor((iconIndex - 1) / maxAuras) -- Results in 0, 1, 2...
+
 			if not aura.isDebuff then
 				hadAnyBuffs = true
 			end
 			if hadAnyBuffs and aura.isDebuff and firstDebuffIndex == 1 then
-				buffrows = (math.floor((iconIndex - 1 - 1) / maxAuras))
+				buffrows = (math_floor((iconIndex - 1 - 1) / maxAuras))
 				firstDebuffIndex = iconIndex
-				firstDebuffRow = row
 			end
-			
+
 			if firstDebuffIndex > 1 then
-				-- row = row + 1
-				column = math.mod((iconIndex - firstDebuffIndex), maxAuras)
-				row = math.floor((iconIndex - firstDebuffIndex) / maxAuras)
+				column = math_mod((iconIndex - firstDebuffIndex), maxAuras)
+				row = math_floor((iconIndex - firstDebuffIndex) / maxAuras)
 			end
-			
+
 			local xOffset = column * (iconSize + UPConstants.auraIconOffset)
 			local yOffset = row * (iconSize + UPConstants.auraIconOffset)
-			
+
 			if firstDebuffIndex > 1 then
 				yOffset = (buffrows * (iconSize + UPConstants.auraIconOffset)) + (row * (iconSize + UPConstants.auraIconOffset)) + (iconSize * 1.3)
 			end
-			
+
 			icon:SetWidth(iconSize)
 			icon:SetHeight(iconSize)
+
+			-- SetFont is expensive; only re-apply when the size bucket changes.
 			local timeLeftSeconds = aura.expirationTime - currentTime
-			if timeLeftSeconds >= 60 then
-				icon.cdText:SetFont(mainFontPath, iconSize/2.6, "OUTLINE")
-			else
-				icon.cdText:SetFont(mainFontPath, iconSize/2, "OUTLINE")
+			local cdFontSize = (timeLeftSeconds >= 60) and cdFontSizeLong or cdFontSizeShort
+			if icon.lastCdFontSize ~= cdFontSize then
+				icon.lastCdFontSize = cdFontSize
+				icon.cdText:SetFont(mainFontPath, cdFontSize, "OUTLINE")
 			end
-			icon.countText:SetFont(mainFontPath, iconSize/3, "OUTLINE")
-			
+			if icon.lastCountFontSize ~= countFontSize then
+				icon.lastCountFontSize = countFontSize
+				icon.countText:SetFont(mainFontPath, countFontSize, "OUTLINE")
+			end
+
 			icon:ClearAllPoints()
 			-- We use BOTTOMLEFT so that as 'row' increases, icons move UP (on top)
 			icon:SetPoint("BOTTOMLEFT", self, "BOTTOMLEFT", xOffset, yOffset)
-			
+
 			icon:Show()
 			iconIndex = iconIndex + 1
 		end
-		
+
 		--Hide any remaining icons in our pool that aren't being used
 		for i = iconIndex, UPConstants.maxAuras do
 			if self.auraIcons[i] then
@@ -2531,25 +2547,27 @@ local function InitFrame(originalPlateFrame)
 		icon:SetScript("OnUpdate", function()
 			local self = icon
 			local elapsed = arg1
-		
-			if self:IsShown() then
+
+			-- IsVisible also covers the plate being hidden or off-screen; the
+			-- old IsShown check kept 80 scripts per plate firing on hidden
+			-- plates in crowded areas.
+			if self:IsVisible() then
 				self.nextUpdate = (self.nextUpdate or 0) - elapsed
 				if self.nextUpdate > 0 then return end
-				self.nextUpdate = 0.1 
-				
+				self.nextUpdate = 0.1
+
 				--count
-				if self.count and self.count > 1 then
-					self.countText:SetText(""..self.count)
-				else
-					self.countText:SetText("")
+				local countText = (self.count and self.count > 1) and (""..self.count) or ""
+				if self.lastCountText ~= countText then
+					self.lastCountText = countText
+					self.countText:SetText(countText)
 				end
 				
 				--time left
 				if self.duration == -1 then
 					self.cdText:SetText("")
-					for _, q in pairs(self.quads) do
-						q:Hide()
-					end
+					self.quads.TR:Hide() self.quads.BR:Hide()
+					self.quads.BL:Hide() self.quads.TL:Hide()
 					return nil
 				end
 				
@@ -2616,35 +2634,34 @@ local function InitFrame(originalPlateFrame)
 				end
 				local size = self:GetWidth() / 2 -- Half the icon size (e.g., 18)
 
-				-- Reset state
-				for _, q in pairs(self.quads) do
-					q:Show()
-					q:SetWidth(size) 
-					q:SetHeight(size) 
-				end
+				-- Reset state (direct field access avoids the pairs() iterator
+				-- overhead four times per icon per tick)
+				local qTR, qBR, qBL, qTL = self.quads.TR, self.quads.BR, self.quads.BL, self.quads.TL
+				qTR:Show() qTR:SetWidth(size) qTR:SetHeight(size)
+				qBR:Show() qBR:SetWidth(size) qBR:SetHeight(size)
+				qBL:Show() qBL:SetWidth(size) qBL:SetHeight(size)
+				qTL:Show() qTL:SetWidth(size) qTL:SetHeight(size)
 
 				if pct > 0.75 then
 					-- 100% to 75%: Shrink TOP RIGHT width
-					self.quads.TR:SetWidth(size * ((pct - 0.75) / 0.25))
+					qTR:SetWidth(size * ((pct - 0.75) / 0.25))
 				elseif pct > 0.50 then
 					-- 75% to 50%: TR is gone, shrink BOTTOM RIGHT height
-					self.quads.TR:Hide()
-					self.quads.BR:SetHeight(size * ((pct - 0.50) / 0.25))
+					qTR:Hide()
+					qBR:SetHeight(size * ((pct - 0.50) / 0.25))
 				elseif pct > 0.25 then
 					-- 50% to 25%: TR/BR gone, shrink BOTTOM LEFT width
-					self.quads.TR:Hide()
-					self.quads.BR:Hide()
-					self.quads.BL:SetWidth(size * ((pct - 0.25) / 0.25))
+					qTR:Hide()
+					qBR:Hide()
+					qBL:SetWidth(size * ((pct - 0.25) / 0.25))
 				elseif pct > 0 then
 					-- 25% to 0%: Only TL left, shrink TOP LEFT height
-					self.quads.TR:Hide()
-					self.quads.BR:Hide()
-					self.quads.BL:Hide()
-					self.quads.TL:SetHeight(size * (pct / 0.25))
+					qTR:Hide()
+					qBR:Hide()
+					qBL:Hide()
+					qTL:SetHeight(size * (pct / 0.25))
 				else
-					for _, q in pairs(self.quads) do
-						q:Hide()
-					end
+					qTR:Hide() qBR:Hide() qBL:Hide() qTL:Hide()
 				end
 			end
 		end)
@@ -2957,205 +2974,212 @@ UnitPlatesMainFrame:RegisterEvent("RAID_ROSTER_UPDATE")
 
 
 --MAIN LOOP
+-- Applies the per-plate frame-level sandbox stack. This is ~25 SetFrameLevel
+-- calls per plate, so it only runs when the sorted plate order (or a plate's
+-- target/pet status) actually changed, not on every main-loop tick.
+local function UPApplyFrameLevelStack(activePlates, activeCount)
+	for i = 1, activeCount do
+		local f = activePlates[i]
+		local kuiPlateFrame = f.kui
+
+		-- Each plate gets an exclusive block of 7 levels.
+		local targetLevel = i * 7
+
+		-- Target priority: force the current target (and own pet) to the top
+		if f.isTarget then
+			targetLevel = 120 -- Safe ceiling just below the Vanilla engine cap of 128
+		end
+		if kuiPlateFrame.isMyPet then
+			targetLevel = 119
+		end
+
+		f:SetFrameLevel(targetLevel)
+		kuiPlateFrame:SetFrameLevel(targetLevel + 1)
+
+		if kuiPlateFrame.health then
+			if kuiPlateFrame.health.bgOffsetFrame then
+				kuiPlateFrame.health.bgOffsetFrame:SetFrameLevel(targetLevel + 2)
+			end
+			kuiPlateFrame.health:SetFrameLevel(targetLevel + 3)
+			if kuiPlateFrame.health.overlayMask then
+				kuiPlateFrame.health.overlayMask:SetFrameLevel(targetLevel + 4)
+			end
+		end
+
+		if kuiPlateFrame.rarityIcon then
+			kuiPlateFrame.rarityIcon:SetFrameLevel(targetLevel + 3)
+		end
+		if kuiPlateFrame.rarityIconR then
+			kuiPlateFrame.rarityIconR:SetFrameLevel(targetLevel + 3)
+		end
+		if kuiPlateFrame.glow then
+			kuiPlateFrame.glow:SetFrameLevel(targetLevel + 4)
+		end
+		if kuiPlateFrame.glow2 then
+			kuiPlateFrame.glow2:SetFrameLevel(targetLevel + 4)
+		end
+
+		if kuiPlateFrame.typeIcon then
+			if kuiPlateFrame.typeIcon.bgOffsetFrame then
+				kuiPlateFrame.typeIcon.bgOffsetFrame:SetFrameLevel(targetLevel + 2)
+			end
+			kuiPlateFrame.typeIcon:SetFrameLevel(targetLevel + 3)
+			if kuiPlateFrame.typeIcon.overlayMask then
+				kuiPlateFrame.typeIcon.overlayMask:SetFrameLevel(targetLevel + 4)
+			end
+		end
+
+		if kuiPlateFrame.power then
+			kuiPlateFrame.power:SetFrameLevel(targetLevel + 1)
+		end
+		if kuiPlateFrame.classIcon then
+			kuiPlateFrame.classIcon:SetFrameLevel(targetLevel + 5)
+		end
+
+		-- aura icons are children of aurasContainer and inherit its level
+		-- relative to it; the old per-icon SetFrameLevel loop (80 calls per
+		-- plate per tick) was redundant with this single call.
+		if kuiPlateFrame.aurasContainer then
+			kuiPlateFrame.aurasContainer:SetFrameLevel(targetLevel + 5)
+		end
+
+		if kuiPlateFrame.textLayerHost then
+			kuiPlateFrame.textLayerHost:SetFrameLevel(targetLevel + 5)
+		end
+		if kuiPlateFrame.shootingIcon then
+			kuiPlateFrame.shootingIcon:SetFrameLevel(targetLevel + 5)
+		end
+		if kuiPlateFrame.pvpRankIcon then
+			kuiPlateFrame.pvpRankIcon:SetFrameLevel(targetLevel + 5)
+		end
+		if kuiPlateFrame.pvpIcon then
+			kuiPlateFrame.pvpIcon:SetFrameLevel(targetLevel + 5)
+		end
+		if kuiPlateFrame.combopoints then
+			kuiPlateFrame.combopoints:SetFrameLevel(targetLevel + 5)
+		end
+		if kuiPlateFrame.questIcon then
+			kuiPlateFrame.questIcon:SetFrameLevel(targetLevel + 5)
+		end
+		if kuiPlateFrame.petHappiness then
+			kuiPlateFrame.petHappiness:SetFrameLevel(targetLevel + 5)
+		end
+		if kuiPlateFrame.combatIcon then
+			kuiPlateFrame.combatIcon:SetFrameLevel(targetLevel + 5)
+		end
+
+		if kuiPlateFrame.originalPlateFrame.totem then
+			if kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame then
+				kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame:SetFrameLevel(targetLevel + 2)
+			end
+			kuiPlateFrame.originalPlateFrame.totem:SetFrameLevel(targetLevel + 3)
+			if kuiPlateFrame.originalPlateFrame.totem.overlayMask then
+				kuiPlateFrame.originalPlateFrame.totem.overlayMask:SetFrameLevel(targetLevel + 4)
+			end
+		end
+	end
+end
+
 UnitPlatesMainFrame:SetScript("OnUpdate", function()
 
-	--print("here0")
 	if (UnitPlatesAddonIsLoaded) and (UnitPlatesPlayerEnteredWorld) then
 		UnitPlatesElapsedTimeSinceFullyLoaded = UnitPlatesElapsedTimeSinceFullyLoaded + arg1
 	end
 
-	if (UnitPlatesAddonIsLoaded) and (UnitPlatesPlayerEnteredWorld) and (UnitPlatesElapsedTimeSinceFullyLoaded > UnitPlatesLoadDelay) and UnitPlatesConstantsInitialized then	
-		--print("here2")
+	if (UnitPlatesAddonIsLoaded) and (UnitPlatesPlayerEnteredWorld) and (UnitPlatesElapsedTimeSinceFullyLoaded > UnitPlatesLoadDelay) and UnitPlatesConstantsInitialized then
 
 		local self = UnitPlatesMainFrame
 		local elapsed = arg1
 		self.TimeToCheck = self.TimeToCheck - elapsed
-		if self.TimeToCheck > 0 then 
-			return -- We haven't counted down to zero yet so do nothing
+		if self.TimeToCheck > 0 then
+			return
 		end
-		self.TimeToCheck = 0.01 -- We've waited a second so reset the timer
-		
-		-- find new nameplates
-		local frames = {WorldFrame:GetChildren()} -- Pack them into a table
-		
-		local framesCount = table.getn(frames)
-		if framesCount ~= self.numFrames then
-			for i = 1, framesCount do
-				local f = frames[i]
-				--print("x1")
-				-- if UPCoreIsNameplate(f) and not f.kui then
-					-- --print("x2")
-					-- InitFrame(f)
-				-- end
-				-- if UPCoreIsNameplate(f) and f:IsShown() and f.kui then
-					-- table.insert(activePlates, f)
-				-- end
-				if UPCoreIsNameplate(f) then
-					if not f.kui then
-						--print("x2")
-						InitFrame(f)
-					end
-				end
-			end
+		-- 50ms is plenty for plate discovery and z-ordering; plate content has
+		-- its own per-plate updaters.
+		self.TimeToCheck = 0.05
+
+		local framesCount = WorldFrame:GetNumChildren()
+		local childrenChanged = framesCount ~= self.numFrames
+
+		-- find new nameplates and gather the visible ones for z-ordering.
+		-- The frames table is reused across ticks to avoid allocating a
+		-- WorldFrame-sized table every 50ms in crowded areas.
+		local frames = self.framesCache or {}
+		self.framesCache = frames
+		local activePlates = self.activePlatesCache or {}
+		self.activePlatesCache = activePlates
+		local activeCount = 0
+
+		if childrenChanged then
+			frames = {WorldFrame:GetChildren()}
+			self.framesCache = frames
 			self.numFrames = framesCount
 		end
-		
-		-- update chat bubbles
-		if UnitPlatesSettings and UnitPlatesSettings.enableChatBubbleHandling then
-			for _, v in pairs(frames) do
+
+		for i = 1, framesCount do
+			local f = frames[i]
+			if childrenChanged and UPCoreIsNameplate(f) and not f.kui then
+				InitFrame(f)
+			end
+			if f.kui and f:IsShown() then
+				activeCount = activeCount + 1
+				activePlates[activeCount] = f
+			end
+		end
+		-- clear stale entries beyond the current count
+		for i = activeCount + 1, table_getn(activePlates) do
+			activePlates[i] = nil
+		end
+
+		-- update chat bubbles (needs the raw children list; only on change)
+		if childrenChanged and UnitPlatesSettings and UnitPlatesSettings.enableChatBubbleHandling then
+			for i = 1, framesCount do
+				local v = frames[i]
 				if UPCoreIsBalloon(v) then
 					UPCoreStyleBalloon(v)
 				end
 			end
 		end
-		
-		
-		
-		-- FRAME LEVEL SORTING!
-		local activePlates = {}		
-		-- 1. Gather all currently visible nameplates
-		for i = 1, framesCount do
-			local f = frames[i]
-			if UPCoreIsNameplate(f) and f:IsShown() and f.kui then
-				table.insert(activePlates, f)
+
+		-- FRAME LEVEL SORTING: sort by screen Y (highest Y = background), then
+		-- apply the level stack only when the resulting order changed.
+		for i = 1, activeCount do
+			local f = activePlates[i]
+			local _, y = f:GetCenter()
+			self.sortYCache = self.sortYCache or {}
+			self.sortYCache[f] = y or 0
+		end
+		table_sort(activePlates, function(a, b)
+			return UnitPlatesMainFrame.sortYCache[a] > UnitPlatesMainFrame.sortYCache[b]
+		end)
+
+		-- change detection: order, target or pet status of any plate
+		local stackChanged = childrenChanged or (activeCount ~= self.lastActiveCount)
+		if not stackChanged then
+			for i = 1, activeCount do
+				local f = activePlates[i]
+				if self.lastSortOrder[i] ~= f or f.isTarget ~= self.lastSortTarget[f] or f.kui.isMyPet ~= self.lastSortPet[f] then
+					stackChanged = true
+					break
+				end
 			end
 		end
-		
-		-- 2. Sort them cleanly by their Y position on the screen 
-		-- (Highest Y is near the top of the monitor, so it should be in the background)
-		table.sort(activePlates, function(a, b)
-			local _, yA = a:GetCenter()
-			local _, yB = b:GetCenter()
-			return (yA or 0) > (yB or 0)
-		end)
-		
-		-- 3. Apply strict, non-overlapping frame level sandboxes based on their sorted order
-		for i = 1, table.getn(activePlates) do
-			local f = activePlates[i]
-			local kuiPlateFrame = f.kui
-			
-			-- Each plate gets an exclusive block of 7 levels.
-			-- Plate 1 gets 7-13. Plate 2 gets 14-20. Plate 3 gets 21-27, etc.
-			local targetLevel = i * 7 
-			
-			-- Target priority: If this is your current target, force it to the absolute top safely
-			--if f.isTarget or (UnitName("target") == kuiPlateFrame.nameTextVariable) then
-			if f.isTarget then
-				targetLevel = 120 -- Safe ceiling just below the Vanilla engine cap of 128
+
+		if stackChanged then
+			self.lastSortOrder = self.lastSortOrder or {}
+			self.lastSortTarget = self.lastSortTarget or {}
+			self.lastSortPet = self.lastSortPet or {}
+			for i = 1, activeCount do
+				local f = activePlates[i]
+				self.lastSortOrder[i] = f
+				self.lastSortTarget[f] = f.isTarget
+				self.lastSortPet[f] = f.kui.isMyPet
 			end
-			
-			if kuiPlateFrame.isMyPet then
-				targetLevel = 119 -- Safe ceiling just below the Vanilla engine cap of 128
+			for i = activeCount + 1, table_getn(self.lastSortOrder) do
+				self.lastSortOrder[i] = nil
 			end
-			
-			-- 4. Apply the stack without any fear of interleaving
-			f:SetFrameLevel(targetLevel)
-			kuiPlateFrame:SetFrameLevel(targetLevel + 1)
-			
-			if kuiPlateFrame.health then
-				if kuiPlateFrame.health.bgOffsetFrame then
-					kuiPlateFrame.health.bgOffsetFrame:SetFrameLevel(targetLevel + 2)
-				end
-				kuiPlateFrame.health:SetFrameLevel(targetLevel + 3)
-				if kuiPlateFrame.health.overlayMask then
-					kuiPlateFrame.health.overlayMask:SetFrameLevel(targetLevel + 4)
-				end
-			end
-			
-			if kuiPlateFrame.rarityIcon then
-				kuiPlateFrame.rarityIcon:SetFrameLevel(targetLevel + 3)
-			end
-			
-			if kuiPlateFrame.rarityIconR then
-				kuiPlateFrame.rarityIconR:SetFrameLevel(targetLevel + 3)
-			end
-			
-			if kuiPlateFrame.glow then
-				kuiPlateFrame.glow:SetFrameLevel(targetLevel + 4)
-			end
-			
-			if kuiPlateFrame.glow2 then
-				kuiPlateFrame.glow2:SetFrameLevel(targetLevel + 4)
-			end
-			
-			if kuiPlateFrame.typeIcon then
-				if kuiPlateFrame.typeIcon.bgOffsetFrame then
-					kuiPlateFrame.typeIcon.bgOffsetFrame:SetFrameLevel(targetLevel + 2)
-				end
-				kuiPlateFrame.typeIcon:SetFrameLevel(targetLevel + 3)
-				if kuiPlateFrame.typeIcon.overlayMask then
-					kuiPlateFrame.typeIcon.overlayMask:SetFrameLevel(targetLevel + 4)
-				end
-			end
-			
-			-- if kuiPlateFrame.levelFrame then
-				-- if kuiPlateFrame.levelFrame.bgOffsetFrame then
-					-- kuiPlateFrame.levelFrame.bgOffsetFrame:SetFrameLevel(targetLevel + 2)
-				-- end
-				-- kuiPlateFrame.levelFrame:SetFrameLevel(targetLevel + 3)
-				-- if kuiPlateFrame.levelFrame.overlayMask then
-					-- kuiPlateFrame.levelFrame.overlayMask:SetFrameLevel(targetLevel + 4)
-				-- end
-			-- end
-			
-			if kuiPlateFrame.power then
-				kuiPlateFrame.power:SetFrameLevel(targetLevel + 1)
-			end
-			
-			if kuiPlateFrame.classIcon then
-				kuiPlateFrame.classIcon:SetFrameLevel(targetLevel + 5)
-			end
-			
-			if kuiPlateFrame.aurasContainer then
-				kuiPlateFrame.aurasContainer:SetFrameLevel(targetLevel + 5)
-				for i = 1, UPConstants.maxAuras do
-					if kuiPlateFrame.aurasContainer.auraIcons[i] then
-						kuiPlateFrame.aurasContainer.auraIcons[i]:SetFrameLevel(targetLevel + 5)
-					end
-				end
-			end
-			
-			if kuiPlateFrame.textLayerHost then
-				kuiPlateFrame.textLayerHost:SetFrameLevel(targetLevel + 5)
-			end
-			
-			if kuiPlateFrame.shootingIcon then
-				kuiPlateFrame.shootingIcon:SetFrameLevel(targetLevel + 5)
-			end
-			
-			if kuiPlateFrame.pvpRankIcon then
-				kuiPlateFrame.pvpRankIcon:SetFrameLevel(targetLevel + 5)
-			end
-			
-			if kuiPlateFrame.pvpIcon then
-				kuiPlateFrame.pvpIcon:SetFrameLevel(targetLevel + 5)
-			end
-			
-			if kuiPlateFrame.combopoints then
-				kuiPlateFrame.combopoints:SetFrameLevel(targetLevel + 5)
-			end
-			
-			if kuiPlateFrame.questIcon then
-				kuiPlateFrame.questIcon:SetFrameLevel(targetLevel + 5)
-			end
-			
-			if kuiPlateFrame.petHappiness then
-				kuiPlateFrame.petHappiness:SetFrameLevel(targetLevel + 5)
-			end
-			
-			if kuiPlateFrame.combatIcon then
-				kuiPlateFrame.combatIcon:SetFrameLevel(targetLevel + 5)
-			end
-			
-			if kuiPlateFrame.originalPlateFrame.totem then
-				if kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame then
-					kuiPlateFrame.originalPlateFrame.totem.bgOffsetFrame:SetFrameLevel(targetLevel + 2)
-				end
-				kuiPlateFrame.originalPlateFrame.totem:SetFrameLevel(targetLevel + 3)
-				if kuiPlateFrame.originalPlateFrame.totem.overlayMask then
-					kuiPlateFrame.originalPlateFrame.totem.overlayMask:SetFrameLevel(targetLevel + 4)
-				end
-			end
+			self.lastActiveCount = activeCount
+			UPApplyFrameLevelStack(activePlates, activeCount)
 		end
 	end
 end)

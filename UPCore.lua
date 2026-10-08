@@ -36,9 +36,19 @@ function UPCoreDelayCall(delayInSeconds, func, ...)
     })
 end
 
+-- GetNetStats is not free; ping only needs one decimal of precision, so cache
+-- it for a second and let every caller in the same frame share the result.
+local UPCoreCachedPingSeconds = 0
+local UPCorePingFetchedAt = 0
+
 function UPCoreGetCurrentPingSeconds()
-	local down, up, lagHome, lagWorld = GetNetStats() --lagWorld is not in 1.12
-	return lagHome / 1000
+	local now = GetTime()
+	if (now - UPCorePingFetchedAt) > 1 then
+		UPCorePingFetchedAt = now
+		local down, up, lagHome, lagWorld = GetNetStats() --lagWorld is not in 1.12
+		UPCoreCachedPingSeconds = lagHome / 1000
+	end
+	return UPCoreCachedPingSeconds
 end
 
 function UPCoreTrimString(s)
@@ -95,7 +105,7 @@ UnitPlatesFrameFadeFrame = CreateFrame('Frame')
 UNITPLATES_FADEFRAMES = {}
 
 function UPCoreFrameIsFading(frame)
-    for index, value in pairs(UNITPLATES_FADEFRAMES) do
+    for index, value in ipairs(UNITPLATES_FADEFRAMES) do
         if value == frame then
             return true
         end
@@ -108,7 +118,7 @@ end
 
 function UPCoreFrameFadeOnUpdate(self, elapsed)
     local frame, info
-    for index, value in pairs(UNITPLATES_FADEFRAMES) do
+    for index, value in ipairs(UNITPLATES_FADEFRAMES) do
         frame, info = value, value.fadeInfo
 
         if info.startDelay and info.startDelay > 0 then

@@ -1,6 +1,16 @@
 local _G = getfenv(0)
 
-local function UPApiGetAdditionalAuraPollingDelaySeconds()
+-- Static locals for hot paths (combat-log parsing runs per message, aura
+-- polling runs per plate per poll).
+local GetTime = GetTime
+local SpellInfo = SpellInfo
+local UnitBuff = UnitBuff
+local UnitDebuff = UnitDebuff
+local UnitExists = UnitExists
+local string_find = string.find
+local string_upper = string.upper
+
+function UPApiGetAdditionalAuraPollingDelaySeconds()
 	return 0.1
 
 	-- local fallbackDelay = 0.2 --0.2 default fallback
@@ -23,6 +33,11 @@ local function UPApiGetAdditionalAuraPollingDelaySeconds()
     
     -- -- 5. If it passed all checks, return the valid, positive number
     -- return delay
+end
+
+-- Compute the aura-poll delay once per caller instead of per queued task.
+local function UPApiGetAuraSyncDelay()
+	return UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds()
 end
 
 UPApiScanTool = CreateFrame( "GameTooltip", "UPApiScanTool", nil, "GameTooltipTemplate" )
@@ -162,9 +177,34 @@ function UPApiIsRaidAssistant(guid)
 	return false
 end
 
+-- Target GUID changes at most a few times per second, but this was called for
+-- every plate every plate-update tick.
+local UPApiTargetGuidCached = nil
+local UPApiTargetGuidCachedAt = 0
+
 function UPApiIsTarget(guid)
-	local unitExists, unitExistsGuid = UnitExists("target")	
-	return unitExistsGuid and (unitExistsGuid == guid)
+	local now = GetTime()
+	if (now - UPApiTargetGuidCachedAt) > 0.1 then
+		UPApiTargetGuidCachedAt = now
+		local unitExists, unitExistsGuid = UnitExists("target")
+		UPApiTargetGuidCached = unitExistsGuid
+	end
+	return UPApiTargetGuidCached and (UPApiTargetGuidCached == guid)
+end
+
+-- current target's guid, or nil when nothing is targeted (uses the same 0.1s
+-- cache as UPApiIsTarget)
+function UPApiGetTargetGuid()
+	UPApiIsTarget(nil) -- refresh the cache if stale
+	return UPApiTargetGuidCached
+end
+
+-- The engine's "fade non-targeted nameplates" alpha is not exposed via API in
+-- 1.12, so this is the standard value it uses. Kept in one place so it can be
+-- tweaked if a server/client uses a different fade.
+local UPApiNonTargetAlpha = 0.5
+function UPApiGetNonTargetAlpha()
+	return UPApiNonTargetAlpha
 end
 
 function UPApiGetCreatureType(guid)
@@ -266,6 +306,7 @@ end
 ------------------------------AURAS
 
 local UPApiGuidAurasCache = {}
+local UPApiSyncQueuedForGuid = {}
 
 -- A helper to get or create the sub-table for a GUID
 local function UPApiGetGuidAurasCache(guid)
@@ -648,21 +689,31 @@ local function UPApiCacheInAuraIfValid(guid, auraName, isDebuff, isMyAura, caste
 		-- )
 	-- end
 	UPCoreDelayCall(
-		UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(),
+		UPApiGetAuraSyncDelay(),
 		UPApiSyncAurasCacheWithActual,
 		guid
 	)
-	
+
 end
 
 --PUBLIC
-function UpApiGetUnitAuras(guid, getBuffs, onlyMineBuffs, getDebuffs, onlyMineDebuffs, ignoredBuffNames, ignoredDebuffNames)	
+function UpApiGetUnitAuras(guid, getBuffs, onlyMineBuffs, getDebuffs, onlyMineDebuffs, ignoredBuffNames, ignoredDebuffNames)
 	--UPApiSyncAurasCacheWithActual(guid)
-	UPCoreDelayCall(
-		UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(),
-		UPApiSyncAurasCacheWithActual,
-		guid
-	)
+	-- Queue at most one sync per guid at a time; every plate polls every 0.2s,
+	-- so without this the timer queue accumulates duplicate sync tasks.
+	if not guid or not UnitExists(guid) then
+		return nil
+	end
+	if not UPApiSyncQueuedForGuid[guid] then
+		UPApiSyncQueuedForGuid[guid] = true
+		UPCoreDelayCall(
+			UPApiGetAuraSyncDelay(),
+			function()
+				UPApiSyncQueuedForGuid[guid] = nil
+				UPApiSyncAurasCacheWithActual(guid)
+			end
+		)
+	end
 
 	local maxAuras = 80 -- maybe it could be more than 16, whatever
 	local unitBuffs = {}
@@ -691,7 +742,7 @@ function UpApiGetUnitAuras(guid, getBuffs, onlyMineBuffs, getDebuffs, onlyMineDe
 		if getBuffs and (not isDebuff) then
 			local nameIsIgnored = false
 			for _, ignoredBuffName in ipairs(ignoredBuffNames) do
-				if (string.upper(name) == string.upper(ignoredBuffName)) then
+				if (string_upper(name) == ignoredBuffName) then
 					nameIsIgnored = true
 					break
 				end
@@ -717,7 +768,7 @@ function UpApiGetUnitAuras(guid, getBuffs, onlyMineBuffs, getDebuffs, onlyMineDe
 		if getDebuffs and (isDebuff) then
 			local nameIsIgnored = false
 			for _, ignoredDebuffName in ipairs(ignoredDebuffNames) do
-				if (string.upper(name) == string.upper(ignoredDebuffName)) then
+				if (string_upper(name) == ignoredDebuffName) then
 					nameIsIgnored = true
 					break
 				end
@@ -842,7 +893,10 @@ UPApiFrame:RegisterEvent("SPELLS_CHANGED")
 UPApiFrame:SetScript("OnUpdate", function()
 	if UnitPlatesAddonIsLoaded and UnitPlatesPlayerEnteredWorld and (UnitPlatesElapsedTimeSinceFullyLoaded > UnitPlatesLoadDelay) then
 		local currentTime = GetTime()
-		
+		local pingSeconds = UPCoreGetCurrentPingSeconds()
+		local commitThreshold = 0.2 + pingSeconds
+		local syncDelay = UPApiGetAdditionalAuraPollingDelaySeconds() + pingSeconds
+
 		for casterGUID, spells in pairs(UPApiPendingAuraRefreshes) do
 			for spellName, data in pairs(spells) do
 			
@@ -859,26 +913,17 @@ UPApiFrame:SetScript("OnUpdate", function()
 				
 				-- If 0.2 seconds pass without a failure combat log, commit it!
 				-- need a higher delay, it may not be in the ACTUAL buff/debuff list YET!!!
-				if (currentTime - data.time) > (0.2 + UPCoreGetCurrentPingSeconds()) then --used to be 0.5	
-				
-					-- local isDebuff = UPApiGetAuraTypeOnUnit(data.targetGUID, data.spellId)
-					
-					-- if data.isMyAura then
-						-- print("UPApiPendingAuraRefreshes release for "..spellName.." auraType: "..tostring(auraType))
-					-- end
-					
-					--print("UPApiPendingAuraRefreshes release for "..spellName.." auraType: "..tostring(auraType))
-					
+				if (currentTime - data.time) > commitThreshold then --used to be 0.5
+
 					-- 1. Snapshot the variables for this specific loop iteration
 					local pTarget = data.targetGUID
 					local pSpell = spellName
 					local pDebuff = data.isDebuff or UPApiGetAuraTypeOnUnit(data.targetGUID, data.spellId)
 					local pMine = data.isMyAura
 					local pCaster = casterGUID
-					
-					-- print("UPCoreDelayCall "..spellName.." from UPApiPendingAuraRefreshes")
+
 					UPCoreDelayCall(
-						UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(), 
+						syncDelay,
 						function()
 							UPApiCacheInAuraIfValid(pTarget, pSpell, pDebuff, pMine, pCaster)
 						end
@@ -928,20 +973,18 @@ UPApiFrame:SetScript("OnUpdate", function()
 				for targetGUID, data in pairs(targets) do
 			
 					-- If 0.2 seconds pass without a failure combat log, commit it!
-					if (currentTime - data.time) > (0.2 + UPCoreGetCurrentPingSeconds()) then					
-					
-						-- local isDebuff = UPApiGetAuraTypeOnUnit(targetGUID, data.spellId)
-						
+					if (currentTime - data.time) > commitThreshold then
+
 						-- 1. Snapshot the variables for the AoE loop iteration
 						local pTarget = targetGUID
 						local pSpell = spellName
 						local pDebuff = data.isDebuff or UPApiGetAuraTypeOnUnit(targetGUID, data.spellId)
 						local pMine = data.isMyAura
 						local pCaster = casterGUID
-						
+
 						-- 2. Pass them inside a parameter-less anonymous function
 						UPCoreDelayCall(
-							UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(), 
+							syncDelay,
 							function()
 								UPApiCacheInAuraIfValid(pTarget, pSpell, pDebuff, pMine, pCaster)
 							end
@@ -1245,8 +1288,8 @@ UPApiFrame:SetScript("OnEvent", function()
 				-- )
 				
 				UPCoreDelayCall(
-					UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(), 
-					UPApiCacheInAuraIfValid, 
+					UPApiGetAuraSyncDelay(),
+					UPApiCacheInAuraIfValid,
 					guid,
 					auraName,
 					false,
@@ -1295,8 +1338,8 @@ UPApiFrame:SetScript("OnEvent", function()
 				-- )				
 				
 				UPCoreDelayCall(
-					UPApiGetAdditionalAuraPollingDelaySeconds() + UPCoreGetCurrentPingSeconds(), 
-					UPApiCacheInAuraIfValid, 
+					UPApiGetAuraSyncDelay(),
+					UPApiCacheInAuraIfValid,
 					guid,
 					auraName,
 					true,

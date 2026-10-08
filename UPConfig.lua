@@ -113,7 +113,8 @@ function UPConfigLoadUnitPlatesDefaultSettings()
 		nameplateWidthPercent = 65,
 		nameplateWidthPercentTrivial = 45,
 		selectionGlowScale = 100,
-		selectionGlowAlpha = 50		
+		selectionGlowAlpha = 50,
+		keepOriginalNameplateAlpha = true
 	}
 end
 
@@ -172,6 +173,9 @@ function UPConfigLoadUnitPlatesSettings()
 		end
 		if UnitPlatesSettings.selectionGlowAlpha == nil then
 			UnitPlatesSettings.selectionGlowAlpha=50
+		end
+		if UnitPlatesSettings.keepOriginalNameplateAlpha == nil then
+			UnitPlatesSettings.keepOriginalNameplateAlpha=true
 		end
 		print("UnitPlates saved data loaded")
 	end
@@ -506,9 +510,18 @@ function UPConfigInitUnitPlatesSettings()
 		UnitPlatesSettings.overlapping=not UnitPlatesSettings.overlapping
 		--applyAllSettings()
 	end)
-	
+
+	local keepOriginalNameplateAlphaCheckbox = CreateFrame("CheckButton", "keepOriginalNameplateAlphaCheckbox", scrollChild, "UICheckButtonTemplate")
+	keepOriginalNameplateAlphaCheckbox:SetPoint("TOPLEFT", overlappingNameplatesCheckbox, "BOTTOMLEFT", 0, -0)
+	getglobal(keepOriginalNameplateAlphaCheckbox:GetName() .. 'Text'):SetText("Keep original nameplate alpha")
+	keepOriginalNameplateAlphaCheckbox:SetChecked(UnitPlatesSettings.keepOriginalNameplateAlpha)
+	keepOriginalNameplateAlphaCheckbox.tooltip = "Keep original nameplate alpha"
+	keepOriginalNameplateAlphaCheckbox:SetScript("OnClick", function()
+		UnitPlatesSettings.keepOriginalNameplateAlpha=not UnitPlatesSettings.keepOriginalNameplateAlpha
+	end)
+
 	local scaleTitle = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-	scaleTitle:SetPoint("TOPLEFT", overlappingNameplatesCheckbox, "BOTTOMLEFT", 0, -8)
+	scaleTitle:SetPoint("TOPLEFT", keepOriginalNameplateAlphaCheckbox, "BOTTOMLEFT", 0, -8)
 	scaleTitle:SetTextColor(0.999,0.819,0,barAlpha)
 	scaleTitle:SetJustifyH("LEFT")
 	scaleTitle:SetText("Scale (Valid value is number e.g. 1 or 1.0 or 0.3434 etc.): ")
