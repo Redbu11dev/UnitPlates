@@ -3131,8 +3131,13 @@ UnitPlatesMainFrame:SetScript("OnUpdate", function()
 			activePlates[i] = nil
 		end
 
-		-- update chat bubbles (needs the raw children list; only on change)
-		if childrenChanged and UnitPlatesSettings and UnitPlatesSettings.enableChatBubbleHandling then
+		-- update chat bubbles. Must run every tick, not only on childrenChanged:
+		-- the engine RECYCLES balloon frames for new messages (children count
+		-- does not change), so a change-gated scan keeps showing the previous
+		-- message/author. UPCoreStyleBalloon is cheap on re-entry: frame
+		-- creation is behind f.skinned and the text copy early-returns when
+		-- the text is unchanged.
+		if UnitPlatesSettings and UnitPlatesSettings.enableChatBubbleHandling then
 			for i = 1, framesCount do
 				local v = frames[i]
 				if UPCoreIsBalloon(v) then
