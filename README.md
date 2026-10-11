@@ -39,7 +39,8 @@ Features:
 - "Tapped" state indicator - when an NPC is tapped by another player (when the kill would not be yours - when you get no loot or xp for killing it)
 - Indicates if a mob is attacking you (the mob name becomes red, the health statusbar changes color to brighter red and changes texture)
 - Party/raid colors - party and raid members will have different healthbar and name/guild text colors
-- 
+
+- questie-octo integration (shows icons for quest mobs) https://github.com/Blaststar/Questie-Octo-Vanilla
 - pfquest integration (shows icons for quest mobs)
 - MobHealth integration https://github.com/kc8pnd/MobHealth
 - ShaguTweaks health estimation integration
