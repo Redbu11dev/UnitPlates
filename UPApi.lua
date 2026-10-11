@@ -283,22 +283,41 @@ local UPApiTotemNameToIconList = {
   ["Wrath of Air Totem"] = "spell_nature_slowingtotem"
 }
 
+local function IsTotemString(str)
+    if not str then return false end
+    local s = strlower(str)
+    return (string.find(s, "^totem ") ~= nil) or (string.find(s, " totem$") ~= nil)
+end
+
 function UpApiGetTotemIconForName(name)
-	for totem, icon in pairs(UPApiTotemNameToIconList) do
-		if string.find(name, totem) then
-			return ("Interface\\Icons\\"..icon)
-		end
+	-- for totem, icon in pairs(UPApiTotemNameToIconList) do
+		-- if string.find(name, totem) then
+			-- return ("Interface\\Icons\\"..icon)
+		-- end
+	-- end
+	
+	if UPApiTotemNameToIconList[name] then
+		return ("Interface\\Icons\\"..icon)
+	else
+		return ("Interface\\Icons\\"..UPApiTotemNameToIconList["Earthbind Totem"])
 	end
 	return nil
 	--return ("Interface\\Icons\\".."spell_nature_slowingtotem")
 end
 
 function UPApiIsTotem(name)
-	local totemIcon = UpApiGetTotemIconForName(name)
-	if totemIcon then
-		return true
+	if not name then 
+		return false 
 	end
-	return false
+	
+	local s = strlower(name)
+	return (string.find(s, "^totem ") ~= nil) or (string.find(s, " totem$") ~= nil)
+
+	-- local totemIcon = UpApiGetTotemIconForName(name)
+	-- if totemIcon then
+		-- return true
+	-- end
+	-- return false
 	-- return true
 end
 ---------------TOTEMS END

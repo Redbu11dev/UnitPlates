@@ -133,14 +133,50 @@ function UPCompatPfQuestHasHearthDB()
 	return type(pfQuestHearthDB) == "table" and type(pfQuestHearthDB.GetQuestTargetsAsync) == "function"
 end
 
+--questie-octo compatibility
+function UPCompatQuestieOctoIsLoaded()
+        return type(QuestieOcto) == "table"
+end
+
+function UPCompatQuestieOctoIsReady()
+        return UPCompatQuestieOctoIsLoaded()
+                and type(QuestieOcto.DatabaseAPI) == "table"
+                and type(QuestieOcto.DatabaseAPI.IsReady) == "function"
+                and QuestieOcto.DatabaseAPI:IsReady()
+                and type(QuestieOcto.Objectives) == "table"
+                and QuestieOcto.Objectives.ready == true
+                and type(QuestieOcto.QuestLog) == "table"
+                and type(QuestieOcto.QuestLog.active) == "table"
+                and type(QuestieOcto.QuestModel) == "table"
+                and type(QuestieOcto.QuestModel.Get) == "function"
+end
+
+-- Questie-Octo's GetCreatureName never returns nil; it falls back to
+-- "Creature <id>" when the DB has no name. Filter those placeholders out.
+local function UPCompatQuestieOctoCreatureName(unitId)
+        local name = QuestieOcto.DatabaseAPI:GetCreatureName(unitId)
+        if name and not string.find(name, "^Creature %d+$") then
+                return name
+        end
+        return nil
+end
+--questie-octo compatibility END
+
 UPCompatPfQuestQuestObjectives = {}
 
-local function UPCompatPfQuestScanQuestObjectives()
-    UPCompatPfQuestQuestObjectives = {}
-
-    if not pfDB or not pfDB["quests"] or not pfDB["quests"]["data"] or not pfDB["quests"]["enUS"] then
+local function UPCompatPfQuestScanQuestObjectivesPfDB()
+	-- This path is only valid against the real pfQuest addon; Questie-Octo
+    -- also creates a pfDB global, so detection must go through pfQuest's own
+    -- pfDatabase table instead.
+    if not pfDatabase or not pfDB or not pfDB["quests"] or not pfDB["quests"]["data"] or not pfDB["quests"]["enUS"] then
         return
     end
+
+    UPCompatPfQuestQuestObjectives = {}
+
+    -- if not pfDB or not pfDB["quests"] or not pfDB["quests"]["data"] or not pfDB["quests"]["enUS"] then
+        -- return
+    -- end
 
     local activeQuests = {}
     local completedQuestTitles = {}
@@ -267,6 +303,79 @@ local function UPCompatPfQuestScanQuestObjectives()
     end
 end
 
+local function UPCompatPfQuestScanQuestObjectivesQuestieOcto()
+    UPCompatPfQuestQuestObjectives = {}
+
+    if not UPCompatQuestieOctoIsReady() then
+        return
+    end
+
+    -- Questie-Octo's QuestLog.active is the authoritative set of quests the
+    -- player currently has, keyed by questID, with .complete and .failed.
+    for questID, state in pairs(QuestieOcto.QuestLog.active) do
+        if state and not state.failed then
+
+            -- CASE A: TURN-IN (?)
+            if state.complete then
+                local q = QuestieOcto.QuestModel:Get(questID)
+                if q and q.finishes and q.finishes.creature then
+                    for _, unitId in pairs(q.finishes.creature) do
+                        local npcName = UPCompatQuestieOctoCreatureName(unitId)
+                        if npcName then
+                            -- Turn-in always wins; assign unconditionally
+                            UPCompatPfQuestQuestObjectives[npcName] = UPComapt_PFQUEST_TURNIN_ICON
+                        end
+                    end
+                end
+
+            -- CASE B: ACTIVE OBJECTIVES (Sword/Bag)
+            else
+                -- byQuest[questID] is Questie-Octo's live-resolved objective map:
+                -- creature kills and item loot sources already matched against
+                -- the native quest log, each with a .complete flag.
+                local resolved = QuestieOcto.Objectives.byQuest[questID]
+                if resolved then
+
+                    -- KILL OBJECTIVES
+                    for _, entry in pairs(resolved.creature or {}) do
+                        if not entry.complete then
+                            local npcName = UPCompatQuestieOctoCreatureName(entry.id)
+                            if npcName and not UPCompatPfQuestQuestObjectives[npcName] then
+                                UPCompatPfQuestQuestObjectives[npcName] = UPComapt_PFQUEST_SWORD_ICON
+                            end
+                        end
+                    end
+
+                    -- LOOT OBJECTIVES
+                    for _, item in pairs(resolved.item or {}) do
+                        if not item.complete then
+                            for _, source in pairs(item.sources or {}) do
+                                if source.kind == "creature" then
+                                    local npcName = UPCompatQuestieOctoCreatureName(source.id)
+                                    if npcName and not UPCompatPfQuestQuestObjectives[npcName] then
+                                        UPCompatPfQuestQuestObjectives[npcName] = UPComapt_PFQUEST_BAG_ICON
+                                    end
+                                end
+                            end
+                        end
+                    end
+
+                end
+            end
+        end
+    end
+end
+
+-- Dispatcher: prefer whichever quest addon is actually present.
+-- pfQuest takes priority when both are somehow loaded.
+local function UPCompatPfQuestScanQuestObjectives()
+    if pfDatabase then
+        UPCompatPfQuestScanQuestObjectivesPfDB()
+    elseif UPCompatQuestieOctoIsLoaded() then
+        UPCompatPfQuestScanQuestObjectivesQuestieOcto()
+    end
+end
+
 -- local function UPCompatPfQuestScanQuestObjectives()
     -- UPCompatPfQuestQuestObjectives = {}
 
@@ -387,12 +496,42 @@ end
 local UPCompatPfQuestPendingScan = false
 local UPCompatPfQuestDebounceTimer = 0
 
+-- Questie-Octo message-bus listener. QuestieOcto:RegisterMessage expects an
+-- owner table plus a method name; it calls owner[method](owner, ...).
+local UPCompatQuestieOctoListener = {}
+local UPCompatQuestieOctoRegistered = false
+
+function UPCompatQuestieOctoListener.OnObjectivesUpdated(self)
+        UPCompatPfQuestPendingScan = true
+        UPCompatPfQuestDebounceTimer = 0
+end
+
+local function UPCompatQuestieOctoRegisterMessages()
+        if UPCompatQuestieOctoRegistered then return end
+        if type(QuestieOcto) ~= "table" or type(QuestieOcto.RegisterMessage) ~= "function" then return end
+
+        -- OBJECTIVES_READY  = full objective rebuild finished
+        -- OBJECTIVES_CHANGED = individual quest objectives changed
+        QuestieOcto:RegisterMessage("OBJECTIVES_READY", UPCompatQuestieOctoListener, "OnObjectivesUpdated")
+        QuestieOcto:RegisterMessage("OBJECTIVES_CHANGED", UPCompatQuestieOctoListener, "OnObjectivesUpdated")
+        UPCompatQuestieOctoRegistered = true
+end
+
 local function UPCompatPfQuestScanWithDebounce()
 	-- 1. Do nothing if no scan has been requested
 	if not UPCompatPfQuestPendingScan then return end
 	
-	-- 2. Ensure pfQuest has finished building its localization caches
-	if not (pfDatabase and pfDatabase.localized) then return end
+	-- -- 2. Ensure pfQuest has finished building its localization caches
+	-- if not (pfDatabase and pfDatabase.localized) then return end
+	
+	-- 2. Ensure the active quest addon has finished building its caches
+	if pfDatabase then
+			if not pfDatabase.localized then return end
+	elseif UPCompatQuestieOctoIsLoaded() then
+			if not UPCompatQuestieOctoIsReady() then return end
+	else
+			return
+	end
 
 	-- 3. Run the debounce timer (arg1 in Vanilla WoW is elapsed time in seconds)
 	UPCompatPfQuestDebounceTimer = UPCompatPfQuestDebounceTimer + arg1
@@ -407,6 +546,10 @@ local function UPCompatPfQuestScanWithDebounce()
 end
 
 local function UPCompatPfQuestOnEvent(event)
+	-- Late-bind to Questie-Octo's message bus. Attempted on every event but
+	-- only actually registers once, and only after Questie-Octo has loaded.
+	UPCompatQuestieOctoRegisterMessages()
+
 	if event == "QUEST_LOG_UPDATE" or event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED" or event == "ZONE_CHANGED_NEW_AREA" then
 		
 		-- Assuming you track these variables elsewhere as intended
