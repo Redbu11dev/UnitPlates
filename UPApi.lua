@@ -509,12 +509,28 @@ local function UPApiSyncAurasCacheWithActual(guid)
         if not actualUnitAuras[cachedName] then
 			-- The aura is in our cache but no longer on the unit (faded/dispelled)
 			cache[cachedName] = nil 
-		else
+		 else
 			-- It's still there! Update the count/texture/isDebuff in case they changed
 			cachedData.count = actualUnitAuras[cachedName].count
 			cachedData.texture = actualUnitAuras[cachedName].texture
 			cachedData.isDebuff = actualUnitAuras[cachedName].isDebuff
-		end
+
+			-- RECAST SAFETY NET: the pending-refresh queue can lose a commit when a
+			-- channelled spell is re-cast in quick succession (the (caster,spell)
+			-- slot gets overwritten before its delayed commit fires). If the cached
+			-- timer has expired but the aura is verifiably still on the unit, it was
+			-- refreshed server-side; restart the timer from now.
+			if cachedData.expirationTime and cachedData.expirationTime > 0
+					and cachedData.expirationTime < GetTime() then
+					local refreshDuration = UPLibAuraDurationsGetAuraDuration(cachedName, 0, cachedData.isMyAura)
+					if refreshDuration and refreshDuration > 0 then
+							local now = GetTime()
+							cachedData.duration = refreshDuration
+							cachedData.startTime = now
+							cachedData.expirationTime = now + refreshDuration
+					end
+			end
+	end
     end
 	
 	-- -- INFINITE DURATION HANDLER: Add paladin auras, warrior stances etc.
