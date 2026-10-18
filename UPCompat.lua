@@ -221,13 +221,20 @@ local function UPCompatPfQuestScanQuestObjectivesPfDB()
         end
     end
 
-    -- 2. Match Quest Log against pfDB
+    -- 2. Match Quest Log against pfDB.
+    -- NPC-resolution is ID-driven end to end: for each active quest we resolve
+    -- its kill/loot objectives to concrete NPC IDs, then convert ID -> name once
+    -- at the end to key the nameplate (the plate itself only exposes a name, so
+    -- the final key must be a name -- but the matching is exact-ID, never
+    -- substring). This fixes quest 192 ("Shadowmaw Panther slain"), whose DB
+    -- obj.U also lists the plain "Panther": a name-substring match would icon the
+    -- wrong mob, ID matching cannot.
     for questId, localizedData in pairs(pfDB["quests"]["enUS"]) do
         local questTitle = localizedData["T"]
 
         if questTitle then
             local questData = pfDB["quests"]["data"][questId]
-            
+
             if questData then
                 -- CASE A: TURN-IN (?)
                 if completedQuestTitles[questTitle] then
@@ -244,53 +251,76 @@ local function UPCompatPfQuestScanQuestObjectivesPfDB()
 
                 -- CASE B: ACTIVE OBJECTIVES (Sword/Bag)
                 elseif activeQuests[questTitle] then
-                    -- KILL OBJECTIVES
-                    if questData["obj"] and questData["obj"]["U"] then
-                        for _, unitId in pairs(questData["obj"]["U"]) do
-                            local targetName = pfDB["units"]["enUS"][unitId]
-                            if targetName then
-                                for _, activeObj in ipairs(activeQuests[questTitle]) do
-                                    local objStr = type(activeObj) == "table" and activeObj.objective or activeObj
-                                    local current = type(activeObj) == "table" and activeObj.current or 0
-                                    local total   = type(activeObj) == "table" and activeObj.total or 1
+                    -- Resolve each quest-log objective line to the exact set of NPC
+                    -- IDs it refers to, keyed by ID (never by name-substring). The
+                    -- objective's bare name (counter + verb stripped) is looked up in
+                    -- pfQuest's own name index with an EXACT match, so "Shadowmaw
+                    -- Panther slain" resolves to unit 684 only and never to the plain
+                    -- "Panther" (736). Unfinished objectives icon their NPCs; finished
+                    -- ones are skipped.
+                    local swordIDs = {}  -- unitId -> true for unfinished kill objectives
+                    local lootItemIDs = {} -- itemId -> true for unfinished loot objectives
 
-                                    if type(objStr) == "string" then
-                                        local objNameBase = string.gsub(objStr, " slain$", "")
-                                        objNameBase = string.gsub(objNameBase, " killed$", "")
-                                        
-                                        if objNameBase == targetName or string.find(objStr, targetName, 1, true) then
-                                            -- Only apply if a higher-priority icon (like turn-in) hasn't already been set for this NPC
-                                            if current < total and not UPCompatPfQuestQuestObjectives[targetName] then
-                                                UPCompatPfQuestQuestObjectives[targetName] = UPComapt_PFQUEST_SWORD_ICON
-                                            end
-                                        end
-                                    end
+                    for _, activeObj in ipairs(activeQuests[questTitle]) do
+                        local objStr  = type(activeObj) == "table" and activeObj.objective or activeObj
+                        local current = type(activeObj) == "table" and activeObj.current or 0
+                        local total   = type(activeObj) == "table" and activeObj.total or 1
+
+                        if type(objStr) == "string" and current < total then
+                            -- bare subject: drop trailing ": N/M" counter and verb
+                            local base = string.gsub(objStr, "%s*:%s*%d+%s*/%s*%d+$", "")
+                            base = string.gsub(base, "%s+slain$", "")
+                            base = string.gsub(base, "%s+killed$", "")
+                            base = string.gsub(base, "^%s*(.-)%s*$", "%1")
+
+                            -- exact-match lookup against units (kill) and items (loot).
+                            -- If the exact form misses, retry the singular ("... Stalkers"
+                            -- -> "... Stalker"): the quest log plurals the objective but
+                            -- the DB stores the singular creature/item name.
+                            local unitIds = pfDatabase:GetIDByName(base, "units")
+                            if (not unitIds or not next(unitIds)) and string.find(base, "s$") then
+                                unitIds = pfDatabase:GetIDByName(string.sub(base, 1, -2), "units")
+                            end
+                            if unitIds then
+                                for unitId in pairs(unitIds) do
+                                    swordIDs[unitId] = true
+                                end
+                            end
+                            local itemIds = pfDatabase:GetIDByName(base, "items")
+                            if (not itemIds or not next(itemIds)) and string.find(base, "s$") then
+                                itemIds = pfDatabase:GetIDByName(string.sub(base, 1, -2), "items")
+                            end
+                            if itemIds then
+                                for itemId in pairs(itemIds) do
+                                    lootItemIDs[itemId] = true
                                 end
                             end
                         end
                     end
 
-                    -- LOOT OBJECTIVES
+                    -- KILL OBJECTIVES -> sword on each unfinished objective's NPC IDs
+                    if questData["obj"] and questData["obj"]["U"] then
+                        for _, unitId in pairs(questData["obj"]["U"]) do
+                            if swordIDs[unitId] then
+                                local npcName = pfDB["units"]["enUS"][unitId]
+                                -- higher-priority icon (turn-in) already set wins
+                                if npcName and not UPCompatPfQuestQuestObjectives[npcName] then
+                                    UPCompatPfQuestQuestObjectives[npcName] = UPComapt_PFQUEST_SWORD_ICON
+                                end
+                            end
+                        end
+                    end
+
+                    -- LOOT OBJECTIVES -> bag on every NPC that drops an unfinished item, by NPC ID
                     if questData["obj"] and questData["obj"]["I"] then
                         for _, itemId in pairs(questData["obj"]["I"]) do
-                            local itemName = pfDB["items"]["enUS"][itemId]
-                            local itemData = pfDB["items"]["data"][itemId]
-
-                            if itemName and itemData and itemData["U"] then
-                                for unitId, _ in pairs(itemData["U"]) do
-                                    local npcName = pfDB["units"]["enUS"][unitId]
-                                    if npcName then
-                                        for _, activeObj in ipairs(activeQuests[questTitle]) do
-                                            local objStr = type(activeObj) == "table" and activeObj.objective or activeObj
-                                            local current = type(activeObj) == "table" and activeObj.current or 0
-                                            local total   = type(activeObj) == "table" and activeObj.total or 1
-
-                                            if type(objStr) == "string" and string.find(objStr, itemName, 1, true) then
-                                                -- Only apply if a higher-priority icon hasn't already been set
-                                                if current < total and not UPCompatPfQuestQuestObjectives[npcName] then
-                                                    UPCompatPfQuestQuestObjectives[npcName] = UPComapt_PFQUEST_BAG_ICON
-                                                end
-                                            end
+                            if lootItemIDs[itemId] then
+                                local itemData = pfDB["items"]["data"][itemId]
+                                if itemData and itemData["U"] then
+                                    for unitId, _ in pairs(itemData["U"]) do
+                                        local npcName = pfDB["units"]["enUS"][unitId]
+                                        if npcName and not UPCompatPfQuestQuestObjectives[npcName] then
+                                            UPCompatPfQuestQuestObjectives[npcName] = UPComapt_PFQUEST_BAG_ICON
                                         end
                                     end
                                 end
