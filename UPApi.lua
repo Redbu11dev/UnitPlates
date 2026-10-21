@@ -297,7 +297,7 @@ function UpApiGetTotemIconForName(name)
 	-- end
 	
 	if UPApiTotemNameToIconList[name] then
-		return ("Interface\\Icons\\"..icon)
+		return ("Interface\\Icons\\"..UPApiTotemNameToIconList[name])
 	else
 		return ("Interface\\Icons\\"..UPApiTotemNameToIconList["Earthbind Totem"])
 	end
