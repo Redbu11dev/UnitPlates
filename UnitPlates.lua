@@ -1238,12 +1238,15 @@ local function OnFrameUpdate(originalPlateFrame, e)
 		-- no target at all -> everything full alpha; with a target, the target
 		-- is full alpha and everything else uses the engine's non-target fade
 		if not UPApiGetTargetGuid() or UPApiIsTarget(plateGuid) then
-			kuiPlateFrame:SetAlpha(1)
+			--kuiPlateFrame:SetAlpha(1)
+			kuiPlateFrame.originalPlateFrame:SetAlpha(1)
 		else
-			kuiPlateFrame:SetAlpha(UPApiGetNonTargetAlpha())
+			--kuiPlateFrame:SetAlpha(UPApiGetNonTargetAlpha())
+			kuiPlateFrame.originalPlateFrame:SetAlpha(UPApiGetNonTargetAlpha())
 		end
 	else
-		kuiPlateFrame:SetAlpha(1)
+		--kuiPlateFrame:SetAlpha(1)
+		kuiPlateFrame.originalPlateFrame:SetAlpha(1)
 	end
 	
 	------------------------------------------------------------------ Fading --
