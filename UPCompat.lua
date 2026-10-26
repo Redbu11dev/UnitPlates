@@ -311,16 +311,22 @@ local function UPCompatPfQuestScanQuestObjectivesPfDB()
                         end
                     end
 
-                    -- LOOT OBJECTIVES -> bag on every NPC that drops an unfinished item, by NPC ID
+                    -- LOOT OBJECTIVES -> bag on every NPC that drops an unfinished item, by NPC ID.
+                    -- Respect pfQuest's "Minimum Item Drop Chance" (mindropchance): only icon
+                    -- units whose drop chance meets the configured minimum, matching what the
+                    -- pfQuest map shows (SearchItemID skips sub-threshold drops).
+                    local minDropChance = tonumber(pfQuest_config and pfQuest_config.mindropchance) or 0
                     if questData["obj"] and questData["obj"]["I"] then
                         for _, itemId in pairs(questData["obj"]["I"]) do
                             if lootItemIDs[itemId] then
                                 local itemData = pfDB["items"]["data"][itemId]
                                 if itemData and itemData["U"] then
-                                    for unitId, _ in pairs(itemData["U"]) do
-                                        local npcName = pfDB["units"]["enUS"][unitId]
-                                        if npcName and not UPCompatPfQuestQuestObjectives[npcName] then
-                                            UPCompatPfQuestQuestObjectives[npcName] = UPComapt_PFQUEST_BAG_ICON
+                                    for unitId, chance in pairs(itemData["U"]) do
+                                        if (chance or 0) >= minDropChance then
+                                            local npcName = pfDB["units"]["enUS"][unitId]
+                                            if npcName and not UPCompatPfQuestQuestObjectives[npcName] then
+                                                UPCompatPfQuestQuestObjectives[npcName] = UPComapt_PFQUEST_BAG_ICON
+                                            end
                                         end
                                     end
                                 end
